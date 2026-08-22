@@ -1,0 +1,15 @@
+{
+  "appId": "com.dcalzona.econera",
+  "appName": "Eco Nera",
+  "webDir": "client",
+  "backgroundColor": "#05070c",
+  "android": {
+    "backgroundColor": "#05070c",
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": true
+  },
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

@@ -17,12 +17,33 @@ function sessione() {
   return s;
 }
 
+/**
+ * Dentro l'app non c'e' un indirizzo da cui dedurre dov'e' il server: la
+ * pagina arriva dal telefono stesso. Nel browser invece la pagina la serve il
+ * server, quindi si sa gia' tutto e non si chiede niente.
+ */
+function inApp() {
+  if (window.Capacitor?.isNativePlatform?.()) return true;
+  // Ripiego se Capacitor non si presenta: la pagina servita dal server ha
+  // sempre una porta (5190), quella impacchettata nell'app no.
+  return location.protocol === 'file:' || !location.port;
+}
+
 function indirizzo() {
-  // Servito dal server stesso: l'indirizzo lo sappiamo gia'.
-  if (location.protocol === 'http:') return `ws://${location.host}`;
-  // Impacchettato come app: li' bisognera' chiederlo. Per ora un ripiego.
+  if (!inApp()) return `ws://${location.host}`;
   const salvato = localStorage.getItem('ecoNera.server');
   return salvato ? `ws://${salvato}` : null;
+}
+
+/** Accetta "192.168.2.46" o "192.168.2.46:5190" e normalizza. */
+export function normalizzaIndirizzo(testo) {
+  const pulito = String(testo || '')
+    .trim()
+    .replace(/^wss?:\/\//, '')
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '');
+  if (!pulito) return null;
+  return pulito.includes(':') ? pulito : `${pulito}:5190`;
 }
 
 export class Rete {
@@ -43,10 +64,26 @@ export class Rete {
     this.versioneMappa = 0; // cambia a ogni settore nuovo
   }
 
+  /** Cambia server e riparte. Il telefono se lo ricorda per la volta dopo. */
+  usaIndirizzo(testo) {
+    const pulito = normalizzaIndirizzo(testo);
+    if (!pulito) return false;
+    localStorage.setItem('ecoNera.server', pulito);
+    this.tentativi = 0;
+    try {
+      this.ws?.close();
+    } catch {
+      /* gia' chiuso */
+    }
+    this.avvia();
+    return true;
+  }
+
   avvia() {
     const url = indirizzo();
     if (!url) {
-      this.stato = 'caduto';
+      this.stato = 'senzaIndirizzo';
+      this.chiediIndirizzo?.();
       return;
     }
 
@@ -71,6 +108,13 @@ export class Rete {
       clearInterval(this.battito);
       this.stato = 'caduto';
       this.tentativi++;
+      // Nell'app, dopo qualche tentativo a vuoto, e' molto piu' probabile che
+      // l'indirizzo sia sbagliato che non che la rete sia lenta: si richiede.
+      if (inApp() && this.tentativi >= 4 && this.io === null) {
+        this.stato = 'senzaIndirizzo';
+        this.chiediIndirizzo?.('Non risponde nessuno a questo indirizzo.');
+        return;
+      }
       // Riprova da sola: il telefono che si blocca in tasca non deve
       // costringere a ricaricare la pagina.
       setTimeout(() => this.avvia(), Math.min(500 * this.tentativi, 4000));

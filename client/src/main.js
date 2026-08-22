@@ -12,6 +12,32 @@ const canvas = document.getElementById('gioco');
 const disegno = new Disegno(canvas);
 const comandi = new Comandi(canvas);
 const rete = new Rete();
+
+// --- Il pannello dell'indirizzo -------------------------------------------
+// Nel browser non si vede mai: la pagina arriva dal server, quindi l'indirizzo
+// si sa. Dentro l'APK invece la pagina sta sul telefono e il server va cercato.
+const pannello = document.getElementById('collegamento');
+const modulo = document.getElementById('modulo');
+const campo = document.getElementById('indirizzo');
+const nota = document.getElementById('nota');
+
+rete.chiediIndirizzo = (messaggio = '') => {
+  nota.textContent = messaggio;
+  campo.value = localStorage.getItem('ecoNera.server') ?? '';
+  pannello.hidden = false;
+  setTimeout(() => campo.focus(), 50);
+};
+
+modulo.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!rete.usaIndirizzo(campo.value)) {
+    nota.textContent = 'Scrivi qualcosa tipo 192.168.2.46:5190';
+    return;
+  }
+  nota.textContent = '';
+  pannello.hidden = true;
+});
+
 rete.avvia();
 
 // --- La previsione locale --------------------------------------------------
@@ -39,12 +65,14 @@ function giro(ora) {
   fps += (1 / (dt || 1) - fps) * 0.05;
 
   if (rete.stato !== 'dentro' || !rete.mappa) {
+    if (rete.stato === 'senzaIndirizzo') return; // parla il pannello
     disegno.scena({ larghezza: 0, altezza: 0, griglia: [] }, [], 0, null, null);
     disegno.messaggio(
       rete.stato === 'caduto' ? 'Connessione persa — riprovo…' : 'Mi collego al server…',
     );
     return;
   }
+  if (!pannello.hidden) pannello.hidden = true;
 
   const mappa = rete.mappa;
   if (rete.versioneMappa !== versioneMappaVista) {

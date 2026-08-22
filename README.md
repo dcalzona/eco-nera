@@ -24,6 +24,42 @@ almeno sulle **reti private**, altrimenti il telefono non entra.
 Da soli il server mette in campo un **fantoccio** che gira per la mappa, cosi'
 si prova con un cellulare solo. Appena entra una seconda persona, sparisce.
 
+## L'app Android
+
+```bash
+npm install
+```
+
+```bash
+npm run apk
+```
+
+L'APK esce in `android/app/build/outputs/apk/debug/app-debug.apk`. Serve Android
+Studio per JDK e SDK; se Gradle non trova Java, punta `JAVA_HOME` al runtime che
+ci sta dentro: `C:\Program Files\Android\Android Studio\jbr`.
+
+Il server resta sul PC: l'app e' solo il client. Alla prima apertura chiede
+**l'indirizzo del server** — quello che il terminale stampa all'avvio — e se lo
+ricorda. Se sbagli a scriverlo, dopo qualche tentativo a vuoto te lo richiede da
+solo invece di restare li' a girare a vuoto.
+
+Due dettagli che sembrano di contorno e senza i quali l'app non si collega
+affatto: Capacitor serve la pagina da `https://localhost`, e da un'origine
+sicura il WebView di Android **blocca le connessioni `ws://` in chiaro**. Per
+questo `capacitor.config.json` mette `androidScheme: "http"` e
+`cleartext: true`. Senza, l'app si apre benissimo e non trova mai il server, e
+non c'e' niente nei log che lo dica chiaramente.
+
+L'icona e la schermata d'avvio si rigenerano da codice, come tutta la grafica
+del progetto:
+
+```bash
+python tools/genera_icone.py
+```
+
+Disegna i due coni che si incrociano nel buio — il Faro caldo e l'Eco freddo —
+e scrive da se' tutte le densita' dentro `android/app/src/main/res`.
+
 ## Comandi
 
 | | Telefono | PC |
@@ -247,4 +283,4 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **3. Il conflitto** — sparare, nemici, danni, stato critico e rianimazione
 - [x] **4. L'orecchio** — propagazione del suono, allerta, ping, batteria, i due ruoli
 - [x] **5. La spedizione** — mappe generate, obiettivi, estrazione
-- [ ] 6. L'app — APK con Capacitor
+- [x] **6. L'app** — APK con Capacitor
