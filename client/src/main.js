@@ -8,6 +8,8 @@ import { Comandi } from './input.js';
 import { Disegno } from './render.js';
 import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
 import { Suoni } from './audio.js';
+import { disegnaOmino, coloreDi, armaDi } from './render.js';
+import { CLASSI, ABILITA } from '../condiviso/regole.js';
 
 const canvas = document.getElementById('gioco');
 const disegno = new Disegno(canvas);
@@ -33,6 +35,7 @@ const campo = document.getElementById('indirizzo');
 const nota = document.getElementById('nota');
 
 rete.chiediIndirizzo = (messaggio = '') => {
+  pannelloMenu.hidden = true; // prima il server, poi la scelta della classe
   nota.textContent = messaggio;
   campo.value = localStorage.getItem('ecoNera.server') ?? '';
   pannello.hidden = false;
@@ -47,8 +50,82 @@ modulo.addEventListener('submit', (e) => {
   }
   nota.textContent = '';
   pannello.hidden = true;
+  if (rete.stato === 'menu') pannelloMenu.hidden = false;
 });
 
+// --- Il menu ---------------------------------------------------------------
+// Si sceglie la classe e si entra. Ogni scheda mostra l'omino vero, disegnato
+// con lo stesso codice del gioco: quello che scegli e' quello che vedrai.
+const pannelloMenu = document.getElementById('menu');
+const pannelloGuida = document.getElementById('guida');
+const elencoClassi = document.getElementById('classi');
+const bottoneAvvio = document.getElementById('avvio');
+
+let classeScelta = localStorage.getItem('ecoNera.classe');
+if (!CLASSI[classeScelta]) classeScelta = null;
+
+function costruisciMenu() {
+  elencoClassi.innerHTML = '';
+  for (const [id, classe] of Object.entries(CLASSI)) {
+    const scheda = document.createElement('button');
+    scheda.type = 'button';
+    scheda.className = 'classe';
+    scheda.style.color = coloreDi(id);
+    scheda.setAttribute('aria-pressed', String(id === classeScelta));
+
+    const tela = document.createElement('canvas');
+    tela.width = 96;
+    tela.height = 52;
+    const c = tela.getContext('2d');
+    c.translate(30, 26);
+    c.scale(2.6, 2.6);
+    disegnaOmino(c, 0, 0, 0, { corpo: coloreDi(id), arma: armaDi(id) });
+
+    const abilita = ABILITA[id];
+    scheda.append(tela);
+    scheda.insertAdjacentHTML(
+      'beforeend',
+      `<div class="nome">${classe.nome}</div>
+       <div class="arma">${classe.arma} · ${classe.ruolo}</div>
+       <div class="desc">${classe.descrizione}</div>
+       <div class="desc"><b>Abilita':</b> ${nomeAbilita(abilita.tipo)} — pronta ogni ${abilita.ricarica} s</div>`,
+    );
+
+    scheda.addEventListener('click', () => {
+      classeScelta = id;
+      suoni.avvia();
+      for (const altra of elencoClassi.children) altra.setAttribute('aria-pressed', 'false');
+      scheda.setAttribute('aria-pressed', 'true');
+      bottoneAvvio.disabled = false;
+    });
+    elencoClassi.append(scheda);
+  }
+  bottoneAvvio.disabled = !classeScelta;
+}
+
+function nomeAbilita(tipo) {
+  if (tipo === 'kit') return 'kit medico a terra';
+  if (tipo === 'sonar') return 'sonar a terra';
+  return 'scatto';
+}
+
+bottoneAvvio.addEventListener('click', () => {
+  if (!classeScelta) return;
+  suoni.avvia();
+  rete.entra(classeScelta);
+  pannelloMenu.hidden = true;
+});
+document.getElementById('apriGuida').addEventListener('click', () => {
+  pannelloGuida.hidden = false;
+});
+document.getElementById('chiudiGuida').addEventListener('click', () => {
+  pannelloGuida.hidden = true;
+});
+
+costruisciMenu();
+rete.chiediClasse = () => {
+  pannelloMenu.hidden = false;
+};
 rete.avvia();
 
 // --- La previsione locale --------------------------------------------------
@@ -75,6 +152,11 @@ function giro(ora) {
   const dt = Math.min((ora - scorso) / 1000, 0.25);
   scorso = ora;
   fps += (1 / (dt || 1) - fps) * 0.05;
+
+  if (rete.stato === 'menu') {
+    if (pannelloMenu.hidden) pannelloMenu.hidden = false;
+    return; // parla il menu
+  }
 
   if (rete.stato !== 'dentro' || !rete.mappa) {
     if (rete.stato === 'senzaIndirizzo') return; // parla il pannello
@@ -130,7 +212,13 @@ function giro(ora) {
   // stessa regola del server, altrimenti prevederebbe una corsa che non c'e'.
   const mioStato = nostro?.st ?? STATO.VIVO;
   const velocita =
-    mioStato === STATO.MORTO ? 0 : mioStato === STATO.CRITICO ? VELOCITA_CRITICO : VELOCITA;
+    mioStato === STATO.MORTO
+      ? 0
+      : mioStato === STATO.CRITICO
+        ? VELOCITA_CRITICO
+        : (nostro?.sc ?? 0) > 0
+          ? VELOCITA * ABILITA.assalto.moltiplicatore
+          : VELOCITA;
 
   accumulo += stallo ? 0 : dt;
   let fatti = 0;
@@ -180,7 +268,9 @@ function giro(ora) {
     umore: n.u,
   }));
 
-  disegno.scena(mappa, scena, rete.io, luci, memoria, nemiciVisti, coni, rete.colpi(), fuochi);
+  disegno.scena(
+    mappa, scena, rete.io, luci, memoria, nemiciVisti, coni, rete.colpi(), fuochi, rete.sonar(),
+  );
   disegno.stick(comandi);
 
   // I rumori sentiti di recente, con quanto sono svaniti.

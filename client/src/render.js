@@ -22,6 +22,9 @@ const COLORI = {
   fantoccio: '#8b95b3',
   nemico: '#e05a5a',
   nemicoAllerta: '#ffa03c',
+  assalto: '#b6e06a',
+  kit: '#7fe0a0',
+  sonar: '#8fd0ff',
   colpo: '#ffe9a8',
   colpoNemico: '#ff7a6a',
   vita: '#5fd08a',
@@ -96,7 +99,7 @@ export class Disegno {
     return { x: this.cam.x - mezzaW, y: this.cam.y - mezzaH, w: mezzaW * 2, h: mezzaH * 2 };
   }
 
-  scena(mappa, personaggi, io, luci, memoria, nemici = [], coni = [], colpi = [], fuochi = []) {
+  scena(mappa, personaggi, io, luci, memoria, nemici = [], coni = [], colpi = [], oggetti = [], sonar = []) {
     const c = this.ctx;
     c.fillStyle = COLORI.fondo;
     c.fillRect(0, 0, this.w, this.h);
@@ -134,8 +137,9 @@ export class Disegno {
     //    sotto, come una macchia sul pavimento.
     for (const cono of coni) this.conoNemico(cono);
 
-    // 3b. I fuochi piantati per terra.
-    for (const f of fuochi) this.fuoco(f);
+    // 3b. Le cose lasciate per terra: kit e sonar.
+    for (const s of sonar) this.sonarATerra(s);
+    for (const o of oggetti) this.kitMedico(o);
 
     // 4. I personaggi. I compagni si vedono sempre: si sa dov'e' il proprio,
     //    anche al buio. I nemici solo quando qualcuno li illumina.
@@ -159,20 +163,48 @@ export class Disegno {
     c.restore();
   }
 
-  fuoco(f) {
+  /** Il kit medico lasciato a terra: una croce che pulsa piano. */
+  kitMedico(k) {
     const c = this.ctx;
-    // Un puntino che pulsa: si deve capire che e' una cosa messa li' da
-    // qualcuno, non un nemico.
-    const battito = 4 + Math.sin(performance.now() / 180) * 1.2;
-    c.fillStyle = COLORI.fuoco;
-    c.beginPath();
-    c.arc(f.x, f.y, battito, 0, Math.PI * 2);
-    c.fill();
-    c.strokeStyle = 'rgba(255,179,71,0.5)';
+    const battito = 0.75 + 0.25 * Math.sin(performance.now() / 320);
+    c.save();
+    c.globalAlpha = Math.min(1, k.resta / 3) * battito; // sbiadisce prima di sparire
+    c.fillStyle = COLORI.kit;
+    c.fillRect(k.x - 6, k.y - 2, 12, 4);
+    c.fillRect(k.x - 2, k.y - 6, 4, 12);
+    c.strokeStyle = tinta(COLORI.kit, 0.45);
     c.lineWidth = 1.5;
     c.beginPath();
-    c.arc(f.x, f.y, 10, 0, Math.PI * 2);
+    c.arc(k.x, k.y, 11, 0, Math.PI * 2);
     c.stroke();
+    c.restore();
+  }
+
+  /**
+   * Il sonar: un cerchio che si allarga a ondate. Si vede anche al buio, e la
+   * sua portata si intuisce dall'onda — cosi' si capisce dove conviene posarlo.
+   */
+  sonarATerra(s) {
+    const c = this.ctx;
+    const fase = ((performance.now() / 1600) % 1);
+    c.save();
+    c.globalAlpha = Math.min(1, s.resta / 3);
+
+    c.strokeStyle = tinta(COLORI.sonar, 0.5 * (1 - fase));
+    c.lineWidth = 2;
+    c.beginPath();
+    c.arc(s.x, s.y, 10 + fase * (s.r - 10), 0, Math.PI * 2);
+    c.stroke();
+
+    c.fillStyle = COLORI.sonar;
+    c.beginPath();
+    c.arc(s.x, s.y, 4.5, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = tinta(COLORI.sonar, 0.35);
+    c.beginPath();
+    c.arc(s.x, s.y, 9, 0, Math.PI * 2);
+    c.stroke();
+    c.restore();
   }
 
   nemico(n) {
@@ -283,70 +315,13 @@ export class Disegno {
    * Tutto disegnato con forme, come il resto: le due armi sono diverse fra
    * loro perche' i due ruoli si riconoscano anche da lontano.
    */
-  omino(x, y, angolo, { corpo, arma = 'corta', alpha = 1 }) {
-    const c = this.ctx;
-    c.save();
-    c.translate(x, y);
-    c.rotate(angolo);
-    c.globalAlpha = alpha;
-
-    const lunga = arma === 'lunga';
-    const scuro = 'rgba(5,7,12,0.7)';
-
-    // Le spalle: nettamente piu' larghe che profonde. E' questa proporzione a
-    // dire "visto dall'alto": quadrate leggono come una scatola, ovali come un
-    // uovo. Vengono per prime, sotto a tutto il resto.
-    c.fillStyle = corpo;
-    c.strokeStyle = scuro;
-    c.lineWidth = 1;
-    stondato(c, -4.6, -5.7, 7.2, 11.4, 2.6);
-    c.fill();
-    c.stroke();
-
-    // L'arma, impugnata da un lato solo e tesa in avanti: e' l'asimmetria a
-    // far leggere "persona che impugna qualcosa", e la canna che sporge a dire
-    // da che parte guarda. Corta e grossa per il Faro, lunga e sottile per
-    // l'Eco: le stesse gittate del gioco, in miniatura.
-    c.fillStyle = '#0e121a';
-    c.fillRect(4.2, lunga ? 1.9 : 1.4, lunga ? 11.5 : 7, lunga ? 1.8 : 2.8);
-
-    // Le braccia sopra al busto, cosi' si vedono: quella armata tesa, l'altra
-    // raccolta contro il corpo.
-    c.strokeStyle = scurisci(corpo, 0.78);
-    c.lineWidth = 2.3;
-    c.lineCap = 'round';
-    c.beginPath();
-    c.moveTo(0.5, 4.4);
-    c.lineTo(4.6, 2.9);
-    c.stroke();
-    c.beginPath();
-    c.moveTo(-0.5, -4.4);
-    c.lineTo(2.2, -3.9);
-    c.stroke();
-
-    // La mano che stringe il calcio: un puntino chiaro, ma tiene insieme
-    // braccio e arma, che altrimenti sembrano due cose staccate.
-    c.fillStyle = scurisci(corpo, 1.15);
-    c.beginPath();
-    c.arc(5, 2.7, 1.5, 0, Math.PI * 2);
-    c.fill();
-
-    // La testa, piccola e sopra a tutto: dall'alto e' la prima cosa che si vede.
-    c.fillStyle = scurisci(corpo, 0.5);
-    c.strokeStyle = scuro;
-    c.beginPath();
-    c.arc(0.4, 0, 3.4, 0, Math.PI * 2);
-    c.fill();
-    c.stroke();
-
-    c.globalAlpha = 1;
-    c.lineCap = 'butt';
-    c.restore();
+  omino(x, y, angolo, opzioni) {
+    disegnaOmino(this.ctx, x, y, angolo, opzioni);
   }
 
   personaggio(p, sonoIo) {
     const c = this.ctx;
-    const colore = p.b ? COLORI.fantoccio : p.r === 'faro' ? COLORI.faro : COLORI.eco;
+    const colore = p.b ? COLORI.fantoccio : coloreDi(p.r);
 
     if (p.st === STATO.CRITICO) {
       // A terra: un cerchio spezzato che si richiude man mano che il compagno
@@ -360,9 +335,23 @@ export class Disegno {
 
     this.omino(p.x, p.y, p.a, {
       corpo: colore,
-      arma: p.r === 'eco' ? 'lunga' : 'corta',
-      alpha: p.st === STATO.CRITICO ? 0.55 : 1,
+      arma: armaDi(p.r),
+      alpha: p.st === STATO.CRITICO ? 0.75 : 1,
+      aTerra: p.st === STATO.CRITICO,
     });
+
+    // Chi sta scattando si porta dietro una scia: si vede che va piu' forte.
+    if (p.sc > 0) {
+      c.strokeStyle = tinta(COLORI.assalto, 0.5);
+      c.lineWidth = 2;
+      for (let k = 1; k <= 3; k++) {
+        c.globalAlpha = 0.5 / k;
+        c.beginPath();
+        c.arc(p.x - Math.cos(p.a) * k * 7, p.y - Math.sin(p.a) * k * 7, 7 - k, 0, Math.PI * 2);
+        c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
 
     if (sonoIo) {
       c.strokeStyle = '#ffffff';
@@ -661,6 +650,125 @@ export class Disegno {
   }
 }
 
+
+/**
+ * Un omino visto dall'alto. Sta fuori dalla classe perche' lo disegna anche il
+ * menu, su una tela sua, per far vedere com'e' fatta ogni classe.
+ *
+ * Spalle nettamente piu' larghe che profonde: e' quella proporzione a dire
+ * "visto dall'alto". E l'arma impugnata da un lato solo, perche' e'
+ * l'asimmetria a far leggere "persona che tiene qualcosa" — con le braccia
+ * simmetriche viene fuori un imbuto senza direzione.
+ */
+export function disegnaOmino(c, x, y, angolo, { corpo, arma = 'corta', alpha = 1, aTerra = false }) {
+  c.save();
+  c.translate(x, y);
+  c.rotate(angolo);
+  c.globalAlpha = alpha;
+
+  if (aTerra) {
+    disegnaSteso(c, corpo);
+    c.globalAlpha = 1;
+    c.restore();
+    return;
+  }
+
+  const lunga = arma === 'lunga';
+  const media = arma === 'media';
+  const scuro = 'rgba(5,7,12,0.7)';
+
+  c.fillStyle = corpo;
+  c.strokeStyle = scuro;
+  c.lineWidth = 1;
+  stondato(c, -4.6, -5.7, 7.2, 11.4, 2.6);
+  c.fill();
+  c.stroke();
+
+  // Tre armi diverse a vedersi: corta e grossa, media, lunga e sottile.
+  const lunghezza = lunga ? 11.5 : media ? 9.5 : 7;
+  const spessore = lunga ? 1.8 : media ? 2.2 : 2.8;
+  c.fillStyle = '#0e121a';
+  c.fillRect(4.2, 2.6 - spessore / 2, lunghezza, spessore);
+  if (media) {
+    // Il caricatore curvo del fucile d'assalto: piccolo, ma lo distingue.
+    c.fillRect(6.2, 3.9, 2, 2.6);
+  }
+
+  c.strokeStyle = scurisci(corpo, 0.78);
+  c.lineWidth = 2.3;
+  c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(0.5, 4.4);
+  c.lineTo(4.6, 2.9);
+  c.stroke();
+  c.beginPath();
+  c.moveTo(-0.5, -4.4);
+  c.lineTo(2.2, -3.9);
+  c.stroke();
+
+  c.fillStyle = scurisci(corpo, 1.15);
+  c.beginPath();
+  c.arc(5, 2.7, 1.5, 0, Math.PI * 2);
+  c.fill();
+
+  c.fillStyle = scurisci(corpo, 0.5);
+  c.strokeStyle = scuro;
+  c.lineWidth = 1;
+  c.beginPath();
+  c.arc(0.4, 0, 3.4, 0, Math.PI * 2);
+  c.fill();
+  c.stroke();
+
+  c.globalAlpha = 1;
+  c.lineCap = 'butt';
+  c.restore();
+}
+
+/**
+ * Chi e' a terra si vede disteso: il corpo lungo invece che largo, le braccia
+ * aperte, l'arma caduta di lato. In piedi e a terra devono essere due sagome
+ * diverse a colpo d'occhio — se cambia solo il colore, in mezzo a una
+ * sparatoria non ci si accorge che il compagno e' giu'.
+ */
+function disegnaSteso(c, corpo) {
+  const scuro = 'rgba(5,7,12,0.7)';
+
+  // L'arma sfuggita di mano, un po' piu' in la'.
+  c.fillStyle = '#0e121a';
+  c.save();
+  c.rotate(0.6);
+  c.fillRect(2, 7, 9, 2.2);
+  c.restore();
+
+  // Le braccia larghe, abbandonate.
+  c.strokeStyle = scurisci(corpo, 0.7);
+  c.lineWidth = 2.2;
+  c.lineCap = 'round';
+  for (const lato of [-1, 1]) {
+    c.beginPath();
+    c.moveTo(-1, lato * 2);
+    c.lineTo(3.5, lato * 6.5);
+    c.stroke();
+  }
+
+  // Il corpo disteso: lungo nel verso in cui e' caduto, non largo.
+  c.fillStyle = scurisci(corpo, 0.82);
+  c.strokeStyle = scuro;
+  c.lineWidth = 1;
+  stondato(c, -7.5, -3.4, 14, 6.8, 3);
+  c.fill();
+  c.stroke();
+
+  // La testa da un capo, per capire da che parte e' girato.
+  c.fillStyle = scurisci(corpo, 0.5);
+  c.beginPath();
+  c.arc(6.4, 0, 3.1, 0, Math.PI * 2);
+  c.fill();
+  c.stroke();
+
+  c.lineCap = 'butt';
+}
+
 /** Un rettangolo con gli angoli stondati, gia' pronto da riempire o contornare. */
 function stondato(c, x, y, larghezza, altezza, raggio) {
   c.beginPath();
@@ -698,6 +806,19 @@ function barra(c, x, y, larghezza, altezza, quanto, colore) {
   c.fillRect(x, y, larghezza, altezza);
   c.fillStyle = colore;
   c.fillRect(x, y, larghezza * Math.max(0, Math.min(1, quanto)), altezza);
+}
+
+/** Il colore e l'arma di una classe, in un posto solo. */
+export function coloreDi(classe) {
+  if (classe === 'eco') return COLORI.eco;
+  if (classe === 'assalto') return COLORI.assalto;
+  return COLORI.faro;
+}
+
+export function armaDi(classe) {
+  if (classe === 'eco') return 'lunga';
+  if (classe === 'assalto') return 'media';
+  return 'corta';
 }
 
 function tinta(hex, a) {

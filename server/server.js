@@ -81,7 +81,11 @@ wss.on('connection', (ws, req) => {
     }
 
     if (msg.t === 'entra') {
-      const g = mondo.entra(String(msg.sessione || ''), String(msg.nome || '').slice(0, 16));
+      const g = mondo.entra(
+        String(msg.sessione || ''),
+        String(msg.nome || '').slice(0, 16),
+        String(msg.classe || ''),
+      );
 
       const vecchio = padroni.get(g.id);
       if (vecchio && vecchio !== ws) {

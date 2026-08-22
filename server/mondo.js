@@ -20,6 +20,7 @@ import {
   RIANIMA_DISTANZA,
   VITA_DOPO_RIANIMA,
   RIENTRO_SECONDI,
+  VELOCITA,
   VELOCITA_CRITICO,
   DURATA_TORCIA,
   RICARICA_TORCIA,
@@ -28,13 +29,14 @@ import {
   ABILITA,
   PASSO_RUMOROSO,
   SPEDIZIONE,
+  CLASSI,
+  CLASSE_PREDEFINITA,
+  IMPULSO_SONAR,
 } from '../client/condiviso/regole.js';
 import { creaNemici, passoNemici, chiVede } from './nemici.js';
 import { creaColpo, passoProiettili } from './proiettili.js';
 import { campo, passoVerso, lineaLibera } from './navigazione.js';
 import { Rumori } from './suoni.js';
-
-const RUOLI = ['faro', 'eco'];
 
 /** Quanto sopravvive un personaggio dopo che il telefono si scollega. */
 const GRAZIA_MS = 30_000;
@@ -68,7 +70,8 @@ export class Mondo {
     this.caselleLibere = pavimenti(this.mappa);
     this.rumori = new Rumori(this.mappa);
     this.proiettili = [];
-    this.fuochi = [];
+    this.kit = [];
+    this.sonar = [];
     this.tuttiGiu = 0;
 
     // I nuclei vanno nelle stanze piu' lontane dall'ingresso: vicini
@@ -113,7 +116,7 @@ export class Mondo {
     if (g.coda) g.coda.length = 0;
   }
 
-  entra(sessione, nome) {
+  entra(sessione, nome, classe) {
     // Stessa sessione = stesso personaggio: un ricaricamento della pagina o
     // lo schermo che si spegne non fanno ricominciare da capo.
     for (const g of this.giocatori.values()) {
@@ -125,15 +128,17 @@ export class Mondo {
     }
 
     const id = this.prossimoId++;
-    const usati = [...this.giocatori.values()].filter((g) => !g.bot).map((g) => g.ruolo);
-    const ruolo = RUOLI.find((r) => !usati.includes(r)) ?? RUOLI[usati.length % RUOLI.length];
+    // La classe la sceglie chi gioca, dal menu. Due che scelgono uguale sono
+    // liberi di farlo: e' una scelta loro, e scoprire che due Eco non aprono
+    // le porte da soli fa parte dell'imparare a giocarci.
+    const ruolo = CLASSI[classe] ? classe : CLASSE_PREDEFINITA;
     const posto = this.mappa.partenze[(id - 1) % this.mappa.partenze.length];
     const p = centroCasella(this.mappa, posto.tx, posto.ty);
 
     const g = {
       id,
       sessione,
-      nome: nome || (ruolo === 'faro' ? 'Faro' : 'Eco'),
+      nome: nome || CLASSI[ruolo].nome,
       ruolo,
       bot: false,
       online: true,
@@ -199,8 +204,9 @@ export class Mondo {
     }
 
     this.curaFeriti(dt);
+    this.curaConIKit(dt);
+    this.battonoISonar(dt);
     this.consumaTorce(dt);
-    this.spegniFuochiVecchi(dt);
 
     // Un solo campo di distanze per tutti i nemici: chi insegue scende lungo
     // la discesa piu' ripida e finisce naturalmente sul giocatore piu' vicino.
@@ -245,13 +251,6 @@ export class Mondo {
     }
   }
 
-  spegniFuochiVecchi(dt) {
-    for (let k = this.fuochi.length - 1; k >= 0; k--) {
-      this.fuochi[k].resta -= dt;
-      if (this.fuochi[k].resta <= 0) this.fuochi.splice(k, 1);
-    }
-  }
-
   /**
    * L'abilita' del ruolo. L'Eco marca i nemici che sta vedendo, e per qualche
    * secondo li vedete tutti e due anche attraverso i muri: e' il "vede prima e
@@ -262,22 +261,69 @@ export class Mondo {
     const regola = ABILITA[g.ruolo];
     if (!regola || g.abilitaRicarica > 0) return;
 
-    if (regola.tipo === 'marchio') {
-      const marcati = this.nemici.filter(
-        (n) =>
-          Math.hypot(n.x - g.x, n.y - g.y) <= ARMI.eco.gittata &&
-          lineaLibera(this.mappa, g.x, g.y, n.x, n.y),
-      );
-      if (!marcati.length) return; // niente da marcare: non si spreca la ricarica
-      for (const n of marcati) n.marcatoResta = regola.durata;
-      console.log(`${g.nome} ha marcato ${marcati.length} nemici.`);
-    } else {
-      this.fuochi.push({ x: g.x, y: g.y, resta: regola.durata, raggio: regola.raggio });
+    if (regola.tipo === 'kit') {
+      // Un kit lasciato per terra, non una cura addosso a se stessi: resta li'
+      // e serve a tutti e due. Il medico che si cura da solo non e' un medico.
+      this.kit.push({ x: g.x, y: g.y, resta: regola.durata, usatoDa: [] });
       this.rumori.emetti('faro', g.x, g.y, g.id);
-      console.log(`${g.nome} ha piantato un fuoco.`);
+      console.log(`${g.nome} ha lasciato un kit medico.`);
+    } else if (regola.tipo === 'sonar') {
+      // Il sonar sta a terra e continua a battere: chi lo posa puo' andarsene
+      // e sapere lo stesso cosa si muove in quella stanza.
+      this.sonar.push({ x: g.x, y: g.y, resta: regola.durata, raggio: regola.raggio, battito: 0 });
+      console.log(`${g.nome} ha posato un sonar.`);
+    } else if (regola.tipo === 'scatto') {
+      g.scattoResta = regola.durata;
+      console.log(`${g.nome} scatta.`);
     }
 
     g.abilitaRicarica = regola.ricarica;
+  }
+
+  /**
+   * I kit a terra. Curano fino a un tetto, non fino a pieno: chi e' malmesso
+   * torna in condizione di combattere, non torna nuovo. E ogni kit vale una
+   * volta sola per ciascuno, altrimenti basterebbe restarci sopra.
+   */
+  curaConIKit(dt) {
+    const regola = ABILITA.faro;
+    const tetto = VITA_MASSIMA * regola.tetto;
+
+    for (let k = this.kit.length - 1; k >= 0; k--) {
+      const kit = this.kit[k];
+      kit.resta -= dt;
+      if (kit.resta <= 0) {
+        this.kit.splice(k, 1);
+        continue;
+      }
+      for (const g of this.giocatori.values()) {
+        if (g.stato !== STATO.VIVO || (!g.online && !g.bot)) continue;
+        if (g.vita >= tetto) continue;
+        if (kit.usatoDa.includes(g.id)) continue;
+        if (Math.hypot(g.x - kit.x, g.y - kit.y) > regola.raggio) continue;
+        g.vita = Math.min(tetto, g.vita + regola.cura);
+        kit.usatoDa.push(g.id);
+        console.log(`${g.nome} si e' curato: ${Math.round(g.vita)} di vita.`);
+      }
+    }
+  }
+
+  /** I sonar a terra: ogni impulso segna i nemici che ci passano dentro. */
+  battonoISonar(dt) {
+    for (let k = this.sonar.length - 1; k >= 0; k--) {
+      const s = this.sonar[k];
+      s.resta -= dt;
+      if (s.resta <= 0) {
+        this.sonar.splice(k, 1);
+        continue;
+      }
+      s.battito -= dt;
+      if (s.battito > 0) continue;
+      s.battito = IMPULSO_SONAR;
+      for (const n of this.nemici) {
+        if (Math.hypot(n.x - s.x, n.y - s.y) <= s.raggio) n.marcatoResta = IMPULSO_SONAR + 0.4;
+      }
+    }
   }
 
   /**
@@ -411,7 +457,13 @@ export class Mondo {
       g.ultimoSeq = c.seq;
       if (g.stato === STATO.MORTO) continue;
 
-      const velocita = g.stato === STATO.CRITICO ? VELOCITA_CRITICO : undefined;
+      g.scattoResta = Math.max(0, g.scattoResta - SOTTOPASSO);
+      const velocita =
+        g.stato === STATO.CRITICO
+          ? VELOCITA_CRITICO
+          : g.scattoResta > 0
+            ? VELOCITA * ABILITA.assalto.moltiplicatore
+            : undefined;
       const primaX = g.x;
       const primaY = g.y;
       muovi(g, c.mx, c.my, SOTTOPASSO, this.mappa, velocita);
@@ -442,9 +494,10 @@ export class Mondo {
     if (g.ricarica > 0) return;
     const arma = ARMI[g.ruolo] ?? ARMI.faro;
     g.ricarica = arma.cadenza;
-    // Uno sparo si sente in mezza mappa: e' il prezzo di risolvere le cose
-    // sparando invece che passando piano.
-    this.rumori.emetti('sparo', g.x, g.y, g.id);
+    // Ogni arma si sente per quanto e' rumorosa: il fucile a canne mozze
+    // sveglia mezzo settore, quello di precisione molto meno. E' un pezzo di
+    // identita' della classe che non si vede ma si sente.
+    this.rumori.emetti('sparo', g.x, g.y, g.id, arma.rumore);
     for (let k = 0; k < arma.colpi; k++) {
       // La rosa e' simmetrica con un pizzico di casualita': tutta casuale
       // renderebbe il fucile una lotteria, tutta regolare un pettine.
@@ -618,7 +671,9 @@ export class Mondo {
         id,
         sessione: null,
         nome: 'Fantoccio',
-        ruolo: 'eco',
+        // Una classe a caso: da solo si prova a turno con tutti i compagni
+        // possibili, invece che sempre con lo stesso.
+        ruolo: ['faro', 'eco', 'assalto'][(Math.random() * 3) | 0],
         bot: true,
         online: true,
         x: p.x,
@@ -774,6 +829,7 @@ export class Mondo {
         ca: Math.round(p.carica * 100) / 100,
         es: p.esaurita ? 1 : 0,
         ab: Math.round(p.abilitaRicarica * 10) / 10,
+        sc: Math.round(p.scattoResta * 10) / 10,
       });
     }
 
@@ -794,12 +850,23 @@ export class Mondo {
       e: p.daNemico ? 1 : 0,
     }));
 
-    const fu = this.fuochi.map((f, k) => ({
-      i: k,
-      x: Math.round(f.x),
-      y: Math.round(f.y),
-      r: f.raggio,
-      resta: Math.round(f.resta * 10) / 10,
+    // I kit fanno anche un po' di luce: uno da terra si deve poter trovare
+    // al buio, altrimenti lasciarlo dietro non serve a niente.
+    const fu = this.kit.map((k, i) => ({
+      i,
+      x: Math.round(k.x),
+      y: Math.round(k.y),
+      r: 74,
+      resta: Math.round(k.resta * 10) / 10,
+      kit: 1,
+    }));
+
+    const so = this.sonar.map((s, i) => ({
+      i,
+      x: Math.round(s.x),
+      y: Math.round(s.y),
+      r: s.raggio,
+      resta: Math.round(s.resta * 10) / 10,
     }));
 
     const ob = {
@@ -818,7 +885,7 @@ export class Mondo {
       },
     };
 
-    return { t: 'stato', tick: this.tick, ms: ora, g, n, c, fu, ob, su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)) };
+    return { t: 'stato', tick: this.tick, ms: ora, g, n, c, fu, so, ob, su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)) };
   }
 }
 
@@ -834,6 +901,7 @@ function statoIniziale() {
     carica: 1,
     esaurita: false,
     abilitaRicarica: 0,
+    scattoResta: 0,
     passoRumore: 0,
   };
 }

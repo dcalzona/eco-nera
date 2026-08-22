@@ -63,6 +63,16 @@ export class Rete {
     this.rumoriVisti = new Set();
     this.versioneMappa = 0; // cambia a ogni settore nuovo
     this.ultimaFotografiaOra = 0;
+    this.classe = null;
+  }
+
+  /** Entra in partita con la classe scelta. */
+  entra(classe) {
+    this.classe = classe;
+    localStorage.setItem('ecoNera.classe', classe);
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.stato = 'collego';
+    this.ws.send(JSON.stringify({ t: 'entra', sessione: sessione(), classe }));
   }
 
   /** Cambia server e riparte. Il telefono se lo ricorda per la volta dopo. */
@@ -95,7 +105,18 @@ export class Rete {
     ws.onopen = () => {
       if (this.io !== null) this.riconnessioni++;
       this.tentativi = 0;
-      ws.send(JSON.stringify({ t: 'entra', sessione: sessione() }));
+      // Non si entra piu' appena aperto il collegamento: prima si sceglie la
+      // classe dal menu. Se pero' si era gia' dentro (e questa e' una
+      // riconnessione), si rientra da soli con la stessa scelta di prima.
+      if (this.classe) {
+        this.entra(this.classe);
+      } else {
+        // Il menu si mostra da qui e non dal giro di rendering: se la pagina
+        // e' in secondo piano il rendering non gira, e resterebbe una
+        // schermata nera senza spiegazioni.
+        this.stato = 'menu';
+        this.chiediClasse?.();
+      }
       this.battito = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ t: 'ping', c: performance.now() }));
@@ -231,10 +252,14 @@ export class Rete {
     return this.fotografie.at(-1)?.ob ?? null;
   }
 
-  /** I fuochi piantati per terra: luci in piu' per tutti. */
+  /** I kit a terra: fanno anche un po' di luce, cosi' si trovano al buio. */
   fuochi() {
-    const ultima = this.fotografie.at(-1);
-    return ultima?.fu ?? [];
+    return this.fotografie.at(-1)?.fu ?? [];
+  }
+
+  /** I sonar posati dall'Eco. */
+  sonar() {
+    return this.fotografie.at(-1)?.so ?? [];
   }
 
   /** I colpi in volo. Corrono: senza interpolarli si vedrebbero a scatti. */

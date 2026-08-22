@@ -142,6 +142,32 @@ spigolo di striscio riemergerebbe nel pavimento dall'altra parte (succedeva
 all'1,1% dei raggi). E il cerchietto ravvicinato non sfuma sui bordi: sfumando
 lasciava un anello scuro attorno al personaggio, proprio dentro al cono.
 
+## Le tre classi
+
+Si scelgono dal menu, e ognuna e' un modo diverso di stare nel buio.
+
+| | **Faro** | **Eco** | **Assalto** |
+| --- | --- | --- | --- |
+| Vista | 112 gradi, 168 px | 26 gradi, 384 px | 58 gradi, 262 px |
+| Arma | canne mozze, 5 pallini | precisione, un colpo | raffica |
+| Gittata | 190 px | 430 px | 300 px |
+| Rumore dello sparo | 15 caselle | 9 caselle | 12 caselle |
+| Abilita' | **kit medico** a terra | **sonar** a terra | **scatto** |
+
+Le gittate seguono le viste: ognuno colpisce fin dove vede. Anche il baccano e'
+diverso — il fucile a canne mozze sveglia mezzo settore, quello di precisione
+molto meno: e' un pezzo di identita' della classe che non si vede ma si sente.
+
+Il **kit** resta per terra e vale per tutti e due, una volta a testa, e cura
+fino al 70% e non oltre: chi e' malmesso torna in condizione di combattere, non
+torna nuovo. Il **sonar** continua a battere da terra e segna i nemici che gli
+passano vicino, anche oltre i muri: chi lo posa puo' andarsene e sapere lo
+stesso cosa si muove in quella stanza. Lo **scatto** fa attraversare una stanza
+scoperta prima che se ne accorgano.
+
+Due giocatori possono scegliere la stessa classe: e' una scelta loro, e
+scoprire che due Eco non aprono le porte da soli fa parte dell'imparare.
+
 ## Il conflitto
 
 Si spara tenendo premuto lo stick destro: su un telefono un pulsante separato

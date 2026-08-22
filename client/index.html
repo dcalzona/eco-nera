@@ -27,15 +27,60 @@
         --sab: env(safe-area-inset-bottom, 0px);
       }
       #wrap { position: relative; width: 100vw; height: 100vh; height: 100dvh; }
-      #collegamento {
+      /* Le schermate a tutto schermo: menu, guida e collegamento. */
+      #menu, #guida, #collegamento {
         position: absolute;
         inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         background: #05070c;
-        padding: calc(16px + env(safe-area-inset-top, 0px)) 20px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: calc(18px + env(safe-area-inset-top, 0px)) 20px
+                 calc(18px + env(safe-area-inset-bottom, 0px));
       }
+      #menu[hidden], #guida[hidden] { display: none; }
+
+      #menuDentro, #guidaDentro { max-width: 760px; margin: 0 auto; }
+      #menuDentro h1, #guidaDentro h1 {
+        font-size: 26px; font-weight: 600; letter-spacing: 0.05em;
+      }
+      .sottotitolo { color: #78849f; font-size: 13px; margin: 6px 0 16px; }
+
+      /* Le tre classi: in fila su schermo largo, in colonna sul telefono in
+         verticale. */
+      #classi { display: flex; gap: 10px; flex-wrap: wrap; }
+      .classe {
+        flex: 1 1 200px;
+        text-align: left;
+        background: #0c1017;
+        border: 2px solid #232d41;
+        border-radius: 12px;
+        padding: 12px 14px;
+        color: #dfe6f5;
+        font: inherit;
+        cursor: pointer;
+      }
+      .classe[aria-pressed='true'] { border-color: currentColor; background: #131a26; }
+      .classe .nome { font-size: 17px; font-weight: 600; }
+      .classe .arma { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+      .classe .desc { font-size: 12px; color: #98a3bd; margin-top: 8px; line-height: 1.45; }
+      .classe canvas { display: block; margin: 8px 0 2px; }
+
+      .pulsantiera { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+      .pulsantiera button, #chiudiGuida {
+        font: inherit; font-size: 16px; font-weight: 600;
+        padding: 12px 22px; border: 0; border-radius: 10px;
+        background: #ffc65c; color: #05070c; cursor: pointer;
+      }
+      .pulsantiera button:disabled { background: #2a3550; color: #6a7590; cursor: default; }
+      .pulsantiera .secondario { background: #1b2434; color: #dfe6f5; }
+
+      #guidaDentro h2 { font-size: 15px; margin: 18px 0 6px; color: #ffc65c; }
+      #guidaDentro p, #guidaDentro li { font-size: 13px; line-height: 1.55; color: #c3cbde; }
+      #guidaDentro ul { margin-left: 18px; }
+      #guidaDentro b { color: #dfe6f5; }
+      #chiudiGuida { margin-top: 22px; }
+
+      #collegamento { display: flex; align-items: center; justify-content: center; }
       #collegamento[hidden] { display: none; }
       #modulo {
         display: flex;
@@ -70,6 +115,70 @@
   </head>
   <body>
     <div id="wrap"><canvas id="gioco"></canvas></div>
+
+    <!-- Il menu: si sceglie la classe e si parte. Sta in HTML e non nel
+         canvas perche' un elenco di schede con del testo lo sa fare meglio il
+         browser, e su un telefono i tocchi li gestisce gia' lui. -->
+    <div id="menu" hidden>
+      <div id="menuDentro">
+        <h1>Eco Nera</h1>
+        <p class="sottotitolo">Scegli chi sei. Nel buio, da soli, non si va da nessuna parte.</p>
+        <div id="classi"></div>
+        <div class="pulsantiera">
+          <button id="avvio" type="button" disabled>Entra</button>
+          <button id="apriGuida" type="button" class="secondario">Come si gioca</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="guida" hidden>
+      <div id="guidaDentro">
+        <h1>Come si gioca</h1>
+
+        <h2>Il buio</h2>
+        <p>
+          Vedi solo quello che la tua torcia illumina — piu' quello che illumina
+          il tuo compagno. I due campi visivi si sommano: in due si vede quasi
+          il doppio. Quello che hai gia' visto resta disegnato spento, come un
+          ricordo.
+        </p>
+
+        <h2>Comandi</h2>
+        <ul>
+          <li><b>Dito a sinistra</b> — ti muovi.</li>
+          <li><b>Dito a destra</b> — punti, e spari tenendo premuto.</li>
+          <li><b>TORCIA</b> — la spegni. Vedi pochissimo, ma i nemici ti individuano a meno della meta' della distanza. La carica dura ventiquattro secondi.</li>
+          <li><b>Il secondo pulsante</b> — l'abilita' della tua classe.</li>
+        </ul>
+
+        <h2>Il rumore</h2>
+        <p>
+          I rumori girano per i corridoi, non attraverso i muri: uno sparo in
+          una stanza chiusa non si sente. Quello che senti arriva dall'orecchio
+          giusto, e un archetto sul bordo dello schermo ti dice da dove. Sai
+          <i>dove</i>, non sai <i>cosa</i>. Ogni arma fa un baccano diverso: il
+          fucile a canne mozze sveglia mezzo settore, quello di precisione
+          molto meno.
+        </p>
+
+        <h2>A terra, non morti</h2>
+        <p>
+          A zero vita resti a terra trenta secondi e ti trascini piano. Il
+          compagno puo' raggiungerti e rimetterti in piedi restandoti vicino
+          tre secondi. Se non resta nessuno in piedi, la spedizione ricomincia.
+        </p>
+
+        <h2>La spedizione</h2>
+        <p>
+          Ogni settore: accendi i nuclei sparsi nelle stanze — tre secondi
+          fermo accanto, in due la meta' — e poi torna all'ingresso. Si esce
+          <b>insieme</b>: se uno solo e' fuori dal cerchio non si parte. Il
+          settore dopo e' un po' piu' affollato.
+        </p>
+
+        <button id="chiudiGuida" type="button">Ho capito</button>
+      </div>
+    </div>
 
     <!-- Serve solo dentro l'app: nel browser l'indirizzo del server e' quello
          della pagina, nell'APK non c'e' niente da cui dedurlo. -->

@@ -50,7 +50,39 @@ export const CASELLA = { PAVIMENTO: 0, MURO: 1, PORTA: 2 };
 export const LUCI = {
   faro: { apertura: (112 * Math.PI) / 180, raggio: 168, colore: '#ffc65c' },
   eco: { apertura: (26 * Math.PI) / 180, raggio: 384, colore: '#4ecdc4' },
+  assalto: { apertura: (58 * Math.PI) / 180, raggio: 262, colore: '#b6e06a' },
 };
+
+/**
+ * Le tre classi, con il nome che si legge nel menu. Sono tre modi di stare
+ * nel buio: chi ci entra dentro, chi lo guarda da lontano, chi ci passa in
+ * mezzo di corsa. Le portate delle armi seguono quelle delle torce — ognuno
+ * colpisce fin dove vede — e ogni abilita' fa una cosa che le altre due non
+ * sanno fare, cosi' due scelte uguali si sentono subito piu' povere di due
+ * diverse.
+ */
+export const CLASSI = {
+  faro: {
+    nome: 'Faro',
+    arma: 'Fucile a canne mozze',
+    ruolo: 'Medico',
+    descrizione: 'Vede largo e vicino. Devastante addosso, inutile lontano. Lascia a terra un kit che rimette in piedi tutti e due.',
+  },
+  eco: {
+    nome: 'Eco',
+    arma: 'Fucile di precisione',
+    ruolo: 'Ricognitore',
+    descrizione: 'Vede stretto e lontanissimo. Un colpo solo, lento e pesante. Posa un sonar che scopre i nemici anche oltre i muri.',
+  },
+  assalto: {
+    nome: 'Assalto',
+    arma: "Fucile d'assalto",
+    ruolo: 'Incursore',
+    descrizione: 'Vede a media distanza. Raffica veloce e continua. Con lo scatto attraversa una stanza scoperta prima che se ne accorgano.',
+  },
+};
+
+export const CLASSE_PREDEFINITA = 'faro';
 
 /**
  * Il cerchio di consapevolezza attorno a se', a 360 gradi: chi ti arriva alle
@@ -78,8 +110,9 @@ export const VITA_MASSIMA = 100;
  * arriva il suo fascio. Nessuno dei due copre il lavoro dell'altro.
  */
 export const ARMI = {
-  faro: { cadenza: 0.42, colpi: 5, dispersione: 0.34, gittata: 190, danno: 9, velocita: 640 },
-  eco: { cadenza: 0.9, colpi: 1, dispersione: 0.015, gittata: 430, danno: 36, velocita: 940 },
+  faro: { cadenza: 0.42, colpi: 5, dispersione: 0.34, gittata: 190, danno: 9, velocita: 640, rumore: 15 },
+  eco: { cadenza: 0.9, colpi: 1, dispersione: 0.015, gittata: 430, danno: 36, velocita: 940, rumore: 9 },
+  assalto: { cadenza: 0.16, colpi: 1, dispersione: 0.07, gittata: 300, danno: 10, velocita: 820, rumore: 12 },
 };
 
 /** Quanto si resta a terra prima di morire davvero, e cosa serve per rialzarsi. */
@@ -162,9 +195,13 @@ export const SCONTO_AL_BUIO = 0.45;
  * stanza per entrambi e continua a farlo mentre lui va avanti.
  */
 export const ABILITA = {
-  eco: { tipo: 'marchio', ricarica: 9, durata: 6 },
-  faro: { tipo: 'fuoco', ricarica: 16, durata: 18, raggio: 152 },
+  faro: { tipo: 'kit', ricarica: 22, durata: 40, raggio: 30, cura: 45, tetto: 0.7 },
+  eco: { tipo: 'sonar', ricarica: 18, durata: 14, raggio: 320 },
+  assalto: { tipo: 'scatto', ricarica: 13, durata: 3.5, moltiplicatore: 1.6 },
 };
+
+/** Quanto batte il sonar: ogni impulso rinfresca il marchio sui nemici sentiti. */
+export const IMPULSO_SONAR = 1.6;
 
 // --- La spedizione ---------------------------------------------------------
 

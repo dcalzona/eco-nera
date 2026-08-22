@@ -28,18 +28,20 @@ export class Rumori {
    * Fa rumore. Torna l'elenco delle caselle raggiunte insieme alla distanza,
    * cosi' chi ascolta puo' sapere non solo se ha sentito ma anche quanto forte.
    */
-  emetti(genere, x, y, autore) {
+  emetti(genere, x, y, autore, raggio) {
     const regola = SUONI[genere];
     if (!regola) return null;
+    // Il raggio si puo' forzare: le tre armi non fanno lo stesso baccano.
+    const portata = raggio ?? regola.raggio;
 
-    const propagazione = campo(this.mappa, [{ x, y }], regola.raggio);
+    const propagazione = campo(this.mappa, [{ x, y }], portata);
     const suono = {
       id: prossimoId++,
       genere,
       x,
       y,
       autore,
-      raggio: regola.raggio,
+      raggio: portata,
       forza: regola.forza,
       propagazione,
     };
