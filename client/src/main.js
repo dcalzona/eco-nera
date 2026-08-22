@@ -27,6 +27,7 @@ let seq = 0;
 let pendenti = []; // comandi che il server non ha ancora confermato
 let ultimoTickVisto = -1;
 let memoria = null; // le caselle gia' viste, che restano disegnate spente
+let versioneMappaVista = -1;
 
 let scorso = performance.now();
 let fps = 0;
@@ -46,6 +47,18 @@ function giro(ora) {
   }
 
   const mappa = rete.mappa;
+  if (rete.versioneMappa !== versioneMappaVista) {
+    // Settore nuovo: si riparte al buio, senza ricordi di una pianta che non
+    // esiste piu', e senza previsioni riferite a posizioni di prima.
+    versioneMappaVista = rete.versioneMappa;
+    memoria = nuovaMemoria(mappa);
+    io = null;
+    prima = null;
+    pendenti = [];
+    accumulo = 0;
+    ultimoTickVisto = -1;
+    return;
+  }
   if (!memoria) memoria = nuovaMemoria(mappa);
   const nostro = rete.ultimaNostra();
   if (!io && nostro) {
@@ -132,10 +145,10 @@ function giro(ora) {
   const mio = scena.find((p) => p.i === rete.io);
   disegno.pulsanti(comandi, mio);
   disegno.cruscotto(mio, scena, VITA_MASSIMA);
-  disegno.hud([
-    `ping ${rete.ping} ms   fps ${fps.toFixed(0)}`,
-    `nemici in vista: ${nemiciVisti.length}`,
-  ]);
+  const ob = rete.obiettivi();
+  disegno.obiettivi(ob, memoria, mappa);
+  disegno.missione(ob, disegnato);
+  disegno.hud([`ping ${rete.ping} ms   fps ${fps.toFixed(0)}`]);
 
   aggiornaDiario(dt, scena.some((p) => p.i === rete.io), fps, disegnato);
 }

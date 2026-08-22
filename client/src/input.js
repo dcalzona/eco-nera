@@ -53,16 +53,30 @@ export class Comandi {
    * anche al disegno, quindi stanno qui una volta sola.
    */
   misura(larghezza, altezza) {
+    if (larghezza === this.larghezza && altezza === this.altezza) return;
     this.larghezza = larghezza;
     this.altezza = altezza;
+    this.leggiMargini();
+  }
+
+  leggiMargini() {
+    const stile = getComputedStyle(document.body);
+    const numero = (nome) => parseFloat(stile.getPropertyValue(nome)) || 0;
+    this.margineDestro = numero('--sar');
+    this.margineBasso = numero('--sab');
   }
 
   pulsanti() {
     const w = this.larghezza || this.canvas.clientWidth;
     const h = this.altezza || this.canvas.clientHeight;
+    // In fila lungo il bordo inferiore, non impilati: impilati occupano
+    // proprio la fascia verticale dove il pollice destro deve poter appoggiare
+    // per lo stick di mira.
+    const y = h - 52 - (this.margineBasso ?? 0);
+    const destra = w - 52 - (this.margineDestro ?? 0);
     return {
-      abilita: { x: w - 56, y: h - 132, r: 34 },
-      torcia: { x: w - 56, y: h - 56, r: 30 },
+      torcia: { x: destra, y, r: 32 },
+      abilita: { x: destra - 78, y, r: 32 },
     };
   }
 

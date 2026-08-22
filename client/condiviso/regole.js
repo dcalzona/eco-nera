@@ -165,3 +165,22 @@ export const ABILITA = {
   eco: { tipo: 'marchio', ricarica: 9, durata: 6 },
   faro: { tipo: 'fuoco', ricarica: 16, durata: 18, raggio: 152 },
 };
+
+// --- La spedizione ---------------------------------------------------------
+
+/**
+ * Un settore per volta: si entra, si accendono i nuclei sparsi per le stanze,
+ * si torna al punto di ingresso e si esce. Poi il settore dopo, un po' piu'
+ * affollato. La tensione sta dentro il settore, non fra un settore e l'altro:
+ * a ogni passaggio si riparte con la vita piena.
+ */
+export const SPEDIZIONE = {
+  nucleiBase: 2,
+  nucleiMax: 4,
+  nemiciBase: 6,
+  nemiciMax: 14,
+  raggioNucleo: 44,
+  durataNucleo: 3,
+  raggioEstrazione: 56,
+  durataEstrazione: 2.5,
+};

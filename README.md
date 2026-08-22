@@ -29,7 +29,9 @@ si prova con un cellulare solo. Appena entra una seconda persona, sparisce.
 | | Telefono | PC |
 | --- | --- | --- |
 | Muoversi | dito sulla meta' sinistra | WASD o frecce |
-| Puntare | dito sulla meta' destra | mouse |
+| Puntare e sparare | dito sulla meta' destra | mouse |
+| Abilita' del ruolo | pulsante in basso a destra | E |
+| Torcia | pulsante in basso a destra | L |
 
 ## Com'e' fatto
 
@@ -42,7 +44,7 @@ server/     la simulazione, gira solo sul PC
   navigazione.js come si aggirano i muri, e chi vede chi
   proiettili.js  i colpi in volo
 client/     quello che finisce sui telefoni (e nell'APK)
-  condiviso/  regole, mappa e fisica: le usano sia server sia client
+  condiviso/  regole, mappa, generatore e fisica: li usano sia server sia client
   src/        rete, comandi, visione, disegno
 ```
 
@@ -196,6 +198,41 @@ luce — ma piantarlo fa rumore.
 
 Si comandano con i due pulsanti in basso a destra (o `L` e `E` da tastiera).
 
+## La spedizione
+
+Un **settore** per volta: si entra, si accendono i nuclei sparsi nelle stanze
+piu' lontane, si torna al punto di ingresso e si esce. Poi il settore dopo, un
+po' piu' affollato — dal primo al sesto si passa da due nuclei e sette nemici a
+quattro e dodici.
+
+Accendere un nucleo vuole tre secondi fermi accanto, ed e' il momento in cui si
+e' piu' scoperti: per questo conviene essere in due, uno accende e l'altro
+guarda le spalle. In due si accende in meta' tempo. Allontanandosi il lavoro si
+perde, piano.
+
+L'uscita si apre solo a nuclei finiti, e si esce **insieme**: se uno solo e'
+fuori dal cerchio non si parte. Da quel momento una freccia sul bordo dello
+schermo indica dove tornare — aperta l'uscita il problema non e' piu' trovarla.
+A ogni settore nuovo si riparte in piedi e con la vita piena: la tensione sta
+dentro il settore, non fra un settore e l'altro.
+
+Se non resta nessuno in piedi per quattro secondi la spedizione e' perduta e si
+ricomincia dal primo settore.
+
+### Le mappe si generano
+
+Stanze rettangolari collegate da corridoi a gomito, con qualche scorciatoia
+perche' un percorso ad albero costringe sempre a tornare indietro dalla stessa
+strada. Costa 0,18 ms per mappa.
+
+La verifica conta piu' dell'algoritmo: una stanza irraggiungibile non si nota
+provando, si nota una sera che ci si gira mezz'ora cercando un nucleo che sta
+dietro un muro. Ogni mappa viene controllata e, se non e' tutta connessa,
+rifatta. E la prova non si ferma al grafo delle caselle: fa **camminare
+davvero** un personaggio dalla partenza al centro di ogni stanza, perche' un
+corpo largo 22 px in caselle da 32 e' un'altra cosa da un puntino su un grafo.
+Su 200 mappe: 386 stanze su 386 raggiunte a piedi.
+
 ### Il diario
 
 Ogni due secondi il telefono manda al server come sta andando (fotogramma piu'
@@ -209,5 +246,5 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **2. Il buio** — coni di luce, visione condivisa, memoria della mappa
 - [x] **3. Il conflitto** — sparare, nemici, danni, stato critico e rianimazione
 - [x] **4. L'orecchio** — propagazione del suono, allerta, ping, batteria, i due ruoli
-- [ ] 5. La spedizione — mappe generate, obiettivi, estrazione
+- [x] **5. La spedizione** — mappe generate, obiettivi, estrazione
 - [ ] 6. L'app — APK con Capacitor

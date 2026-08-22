@@ -40,6 +40,7 @@ export class Rete {
     this.riconnessioni = 0;
     this.rumoriSentiti = []; // rumori appena arrivati, con l'ora locale
     this.rumoriVisti = new Set();
+    this.versioneMappa = 0; // cambia a ogni settore nuovo
   }
 
   avvia() {
@@ -84,6 +85,16 @@ export class Rete {
       this.mappa = msg.mappa;
       this.ruolo = msg.ruolo;
       this.stato = 'dentro';
+      return;
+    }
+
+    if (msg.t === 'settore') {
+      // Mappa nuova: si buttano le fotografie vecchie, che parlano di un'altra
+      // pianta, e chi disegna se ne accorgera' dalla versione.
+      this.mappa = msg.mappa;
+      this.settore = msg.numero;
+      this.fotografie.length = 0;
+      this.versioneMappa++;
       return;
     }
 
@@ -155,6 +166,11 @@ export class Rete {
   /** I nemici, interpolati allo stesso modo. */
   nemici() {
     return this.interpolati('n', true);
+  }
+
+  /** Lo stato degli obiettivi del settore. */
+  obiettivi() {
+    return this.fotografie.at(-1)?.ob ?? null;
   }
 
   /** I fuochi piantati per terra: luci in piu' per tutti. */

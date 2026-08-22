@@ -23,8 +23,9 @@ let prossimoId = 1;
  * tenersi alla larga: un rinforzo che compare addosso a chi gioca e' sleale.
  */
 export function creaNemici(mappa, quanti = NEMICI_IN_CAMPO, lontanoDa = []) {
+  const partenze = mappa.partenze ?? PARTENZE;
   const libere = pavimenti(mappa).filter((c) => {
-    if (!PARTENZE.every((p) => Math.abs(p.tx - c.tx) + Math.abs(p.ty - c.ty) > DISTANZA_DALLE_PARTENZE))
+    if (!partenze.every((p) => Math.abs(p.tx - c.tx) + Math.abs(p.ty - c.ty) > DISTANZA_DALLE_PARTENZE))
       return false;
     return lontanoDa.every(
       (g) => Math.hypot(g.x - (c.tx + 0.5) * TILE, g.y - (c.ty + 0.5) * TILE) > 13 * TILE,

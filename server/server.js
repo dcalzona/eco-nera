@@ -174,6 +174,21 @@ setInterval(() => {
     // L'orario e' quello della simulazione, non l'orologio: cosi' le
     // fotografie arrivano al client perfettamente equidistanti e
     // l'interpolazione non ha sussulti anche se il timer ha tremato.
+    // Settore nuovo: prima la mappa, poi le fotografie. Nell'ordine
+    // contrario il telefono disegnerebbe per un istante i personaggi nuovi
+    // sulla pianta vecchia.
+    if (mondo.mappaCambiata) {
+      mondo.mappaCambiata = false;
+      const annuncio = JSON.stringify({
+        t: 'settore',
+        numero: mondo.settore,
+        mappa: mondo.mappa,
+      });
+      for (const ws of wss.clients) {
+        if (ws.gioco && ws.readyState === ws.OPEN) ws.send(annuncio);
+      }
+    }
+
     const foto = JSON.stringify(mondo.istantanea(oraSim));
     for (const ws of wss.clients) {
       if (ws.gioco && ws.readyState === ws.OPEN) ws.send(foto);

@@ -29,6 +29,9 @@ const COLORI = {
   critico: '#ff5d5d',
   fuoco: '#ffb347',
   marchio: '#c98bff',
+  nucleo: '#ffd166',
+  nucleoAcceso: '#5fd08a',
+  uscita: '#7fd3ff',
   rumore: '#e8e2c0',
   pulsante: 'rgba(223,230,245,0.16)',
   pulsanteAcceso: 'rgba(255,198,92,0.30)',
@@ -344,6 +347,109 @@ export class Disegno {
       c.arc(s.origine.x + (dx / len) * f, s.origine.y + (dy / len) * f, 20, 0, Math.PI * 2);
       c.fill();
     }
+  }
+
+  /**
+   * I nuclei e l'uscita, disegnati nel mondo. Un nucleo si vede solo se lo si
+   * e' gia' incontrato: trovarli e' meta' del settore. L'uscita, una volta
+   * aperta, si vede sempre — a quel punto il problema non e' piu' sapere dove
+   * andare, e' arrivarci.
+   */
+  obiettivi(ob, memoria, mappa) {
+    if (!ob) return;
+    const c = this.ctx;
+    c.save();
+    c.translate(this.w / 2, this.h / 2);
+    c.scale(this.zoom, this.zoom);
+    c.translate(-this.cam.x, -this.cam.y);
+
+    for (const nucleo of ob.nuclei) {
+      if (!this.scoperto(nucleo, memoria, mappa)) continue;
+      const colore = nucleo.a ? COLORI.nucleoAcceso : COLORI.nucleo;
+      c.strokeStyle = colore;
+      c.lineWidth = 2.5;
+      c.beginPath();
+      c.arc(nucleo.x, nucleo.y, 13, 0, Math.PI * 2);
+      c.stroke();
+      c.fillStyle = colore;
+      c.globalAlpha = nucleo.a ? 0.9 : 0.35 + 0.25 * Math.sin(performance.now() / 300);
+      c.beginPath();
+      c.arc(nucleo.x, nucleo.y, 6, 0, Math.PI * 2);
+      c.fill();
+      c.globalAlpha = 1;
+
+      if (!nucleo.a && nucleo.p > 0) {
+        c.strokeStyle = COLORI.nucleoAcceso;
+        c.lineWidth = 3.5;
+        c.beginPath();
+        c.arc(nucleo.x, nucleo.y, 19, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * nucleo.p);
+        c.stroke();
+      }
+    }
+
+    const uscita = ob.es;
+    if (uscita.a || this.scoperto(uscita, memoria, mappa)) {
+      const battito = uscita.a ? 0.55 + 0.45 * Math.sin(performance.now() / 260) : 0.3;
+      c.strokeStyle = COLORI.uscita;
+      c.globalAlpha = battito;
+      c.lineWidth = 3;
+      c.beginPath();
+      c.arc(uscita.x, uscita.y, 22, 0, Math.PI * 2);
+      c.stroke();
+      c.globalAlpha = 1;
+      if (uscita.p > 0) {
+        c.strokeStyle = COLORI.uscita;
+        c.lineWidth = 4;
+        c.beginPath();
+        c.arc(uscita.x, uscita.y, 28, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * uscita.p);
+        c.stroke();
+      }
+    }
+
+    c.restore();
+  }
+
+  scoperto(punto, memoria, mappa) {
+    if (!memoria) return false;
+    return giaVisto(memoria, Math.floor(punto.x / TILE), Math.floor(punto.y / TILE));
+  }
+
+  /** A che punto e' la missione, in alto. E dove sta l'uscita, quando conta. */
+  missione(ob, io) {
+    if (!ob) return;
+    const c = this.ctx;
+    const accesi = ob.nuclei.filter((n) => n.a).length;
+    const totale = ob.nuclei.length;
+
+    c.textAlign = 'center';
+    c.font = '13px system-ui, sans-serif';
+    c.fillStyle = ob.es.a ? COLORI.uscita : COLORI.testo;
+    c.fillText(
+      ob.es.a ? `Settore ${ob.settore} — torna all'uscita` : `Settore ${ob.settore} — nuclei ${accesi}/${totale}`,
+      this.w / 2,
+      24,
+    );
+
+    if (!ob.es.a || !io) return;
+
+    // Una freccia sul bordo, nella direzione dell'uscita: aperta l'uscita il
+    // problema non e' piu' trovarla.
+    const ang = Math.atan2(ob.es.y - io.y, ob.es.x - io.x);
+    const raggio = Math.min(this.w, this.h) * 0.44;
+    const x = this.w / 2 + Math.cos(ang) * raggio;
+    const y = this.h / 2 + Math.sin(ang) * raggio;
+    c.save();
+    c.translate(x, y);
+    c.rotate(ang);
+    c.fillStyle = COLORI.uscita;
+    c.globalAlpha = 0.5 + 0.35 * Math.sin(performance.now() / 260);
+    c.beginPath();
+    c.moveTo(11, 0);
+    c.lineTo(-7, 7);
+    c.lineTo(-7, -7);
+    c.closePath();
+    c.fill();
+    c.restore();
   }
 
   /**

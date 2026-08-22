@@ -20,6 +20,11 @@
       body {
         font-family: "Segoe UI", system-ui, sans-serif;
         color: #dfe6f5;
+        /* Margini di sicurezza del telefono (foro fotocamera, angoli stondati,
+           barra dei gesti): li legge input.js per non metterci sotto i
+           pulsanti, dove il dito non li prenderebbe mai. */
+        --sar: env(safe-area-inset-right, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
       }
       #wrap { position: relative; width: 100vw; height: 100vh; height: 100dvh; }
       canvas {

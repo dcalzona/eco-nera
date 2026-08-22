@@ -3,7 +3,8 @@
 // scrive e si controlla da questo lato, con i messaggi nel terminale,
 // invece che dentro una WebView su un telefono.
 
-import { MAPPA, PARTENZE, centroCasella, pavimenti, muro } from '../client/condiviso/mappa.js';
+import { centroCasella, pavimenti, muro } from '../client/condiviso/mappa.js';
+import { generaMappa, centroStanza } from '../client/condiviso/generatore.js';
 import { muovi, limita, angolo, scorri } from '../client/condiviso/fisica.js';
 import {
   TILE,
@@ -26,6 +27,7 @@ import {
   SCONTO_AL_BUIO,
   ABILITA,
   PASSO_RUMOROSO,
+  SPEDIZIONE,
 } from '../client/condiviso/regole.js';
 import { creaNemici, passoNemici, chiVede, NEMICI_IN_CAMPO } from './nemici.js';
 import { creaColpo, passoProiettili } from './proiettili.js';
@@ -42,18 +44,72 @@ const CORPO = 11;
 
 export class Mondo {
   constructor() {
-    this.mappa = MAPPA;
     this.giocatori = new Map(); // id -> personaggio
     this.prossimoId = 1;
     this.tick = 0;
     this.fantoccio = null;
-    this.caselleLibere = pavimenti(this.mappa);
-    this.nemici = creaNemici(this.mappa);
-    this.proiettili = [];
     this.campoGiocatori = null;
     this.attesaRinforzi = 0;
+    this.settore = 0;
+    this.mappaCambiata = false;
+    this.tuttiGiu = 0;
+    this.nuovoSettore(1);
+  }
+
+  /**
+   * Un settore nuovo: mappa nuova, nuclei sparsi nelle stanze lontane,
+   * estrazione al punto di ingresso. Si entra, si accende quello che c'e' da
+   * accendere e si torna indietro — e tornare indietro non e' una formalita',
+   * perche' nel frattempo la mappa si e' svegliata.
+   */
+  nuovoSettore(numero) {
+    this.settore = numero;
+    this.mappa = generaMappa(Date.now() + numero * 7717, numero);
+    this.caselleLibere = pavimenti(this.mappa);
     this.rumori = new Rumori(this.mappa);
-    this.fuochi = []; // i fari piantati per terra dal Faro
+    this.proiettili = [];
+    this.fuochi = [];
+    this.tuttiGiu = 0;
+
+    // I nuclei vanno nelle stanze piu' lontane dall'ingresso: vicini
+    // renderebbero il settore una formalita'.
+    const ingresso = this.mappa.stanze[0];
+    const lontane = this.mappa.stanze
+      .slice(1)
+      .map((s) => ({ s, d: Math.hypot(s.x - ingresso.x, s.y - ingresso.y) }))
+      .sort((a, b) => b.d - a.d);
+    const quanti = Math.min(SPEDIZIONE.nucleiMax, SPEDIZIONE.nucleiBase + Math.floor(numero / 2));
+    this.nuclei = lontane.slice(0, quanti).map(({ s }) => ({
+      ...centroStanza(s),
+      attivo: false,
+      progresso: 0,
+    }));
+
+    this.estrazione = { ...centroStanza(ingresso), aperta: false, progresso: 0 };
+
+    const quantiNemici = Math.min(SPEDIZIONE.nemiciMax, SPEDIZIONE.nemiciBase + numero);
+    this.nemici = creaNemici(this.mappa, quantiNemici);
+
+    for (const g of this.giocatori.values()) this.riportaAllIngresso(g);
+    this.mappaCambiata = true;
+    console.log(`
+=== Settore ${numero}: ${quanti} nuclei, ${quantiNemici} nemici ===`);
+  }
+
+  riportaAllIngresso(g) {
+    const posto = this.mappa.partenze[(g.id - 1) % this.mappa.partenze.length];
+    const p = centroCasella(this.mappa, posto.tx, posto.ty);
+    g.x = p.x;
+    g.y = p.y;
+    g.vita = VITA_MASSIMA;
+    g.stato = STATO.VIVO;
+    g.rianima = 0;
+    g.criticoRimasto = 0;
+    g.rientroRimasto = 0;
+    g.carica = 1;
+    g.esaurita = false;
+    g.meta = null;
+    g.coda.length = 0;
   }
 
   entra(sessione, nome) {
@@ -70,7 +126,7 @@ export class Mondo {
     const id = this.prossimoId++;
     const usati = [...this.giocatori.values()].filter((g) => !g.bot).map((g) => g.ruolo);
     const ruolo = RUOLI.find((r) => !usati.includes(r)) ?? RUOLI[usati.length % RUOLI.length];
-    const posto = PARTENZE[(id - 1) % PARTENZE.length];
+    const posto = this.mappa.partenze[(id - 1) % this.mappa.partenze.length];
     const p = centroCasella(this.mappa, posto.tx, posto.ty);
 
     const g = {
@@ -162,6 +218,8 @@ export class Mondo {
 
     this.ascoltano();
     this.sbiadisciMarchi(dt);
+    this.obiettivi(dt);
+    this.controllaDisfatta(dt);
     this.ripopola(dt);
     this.regolaFantoccio();
   }
@@ -239,6 +297,69 @@ export class Mondo {
         // Piu' forte l'ha sentito, piu' a lungo lo tiene a mente.
         n.oblio = Math.max(n.oblio, 3 + quanto * 5);
       }
+    }
+  }
+
+  /**
+   * Gli obiettivi del settore. Accendere un nucleo vuole qualche secondo fermi
+   * accanto: e' il momento in cui si e' scoperti, e per questo conviene essere
+   * in due — uno accende, l'altro guarda le spalle.
+   */
+  obiettivi(dt) {
+    const vivi = this.inPiedi();
+
+    for (const nucleo of this.nuclei) {
+      if (nucleo.attivo) continue;
+      const quanti = vivi.filter(
+        (g) => Math.hypot(g.x - nucleo.x, g.y - nucleo.y) <= SPEDIZIONE.raggioNucleo,
+      ).length;
+      if (quanti === 0) {
+        nucleo.progresso = Math.max(0, nucleo.progresso - dt / SPEDIZIONE.durataNucleo);
+        continue;
+      }
+      // In due si fa il doppio piu' in fretta: premia stare insieme.
+      nucleo.progresso += (dt * quanti) / SPEDIZIONE.durataNucleo;
+      if (nucleo.progresso >= 1) {
+        nucleo.progresso = 1;
+        nucleo.attivo = true;
+        const restano = this.nuclei.filter((n) => !n.attivo).length;
+        console.log(restano ? `Nucleo acceso, ne restano ${restano}.` : 'Tutti i nuclei accesi: si torna indietro.');
+      }
+    }
+
+    this.estrazione.aperta = this.nuclei.every((n) => n.attivo);
+    if (!this.estrazione.aperta || !vivi.length) {
+      this.estrazione.progresso = 0;
+      return;
+    }
+
+    // Si esce insieme: se uno solo e' fuori dal cerchio non si parte.
+    const tuttiDentro = vivi.every(
+      (g) => Math.hypot(g.x - this.estrazione.x, g.y - this.estrazione.y) <= SPEDIZIONE.raggioEstrazione,
+    );
+    if (!tuttiDentro) {
+      this.estrazione.progresso = Math.max(0, this.estrazione.progresso - dt);
+      return;
+    }
+    this.estrazione.progresso += dt / SPEDIZIONE.durataEstrazione;
+    if (this.estrazione.progresso >= 1) this.nuovoSettore(this.settore + 1);
+  }
+
+  /**
+   * Se non resta nessuno in piedi per qualche secondo la spedizione e' finita
+   * e si ricomincia dal primo settore. Non e' una punizione severa: una
+   * partita dura una serata, non un mese.
+   */
+  controllaDisfatta(dt) {
+    if (this.giocatori.size === 0) return;
+    if (this.inPiedi().length > 0) {
+      this.tuttiGiu = 0;
+      return;
+    }
+    this.tuttiGiu += dt;
+    if (this.tuttiGiu > 4) {
+      console.log('Spedizione perduta: si riparte dal primo settore.');
+      this.nuovoSettore(1);
     }
   }
 
@@ -433,7 +554,7 @@ export class Mondo {
 
   rimettiInPiedi(g, vita) {
     if (g.stato === STATO.MORTO) {
-      const posto = PARTENZE[(g.id - 1) % PARTENZE.length];
+      const posto = this.mappa.partenze[(g.id - 1) % this.mappa.partenze.length];
       const p = centroCasella(this.mappa, posto.tx, posto.ty);
       g.x = p.x;
       g.y = p.y;
@@ -490,7 +611,7 @@ export class Mondo {
       // Accanto a chi sta giocando: un compagno di prova che nasce dall'altra
       // parte della mappa non si vede mai, ed e' il motivo per cui esiste.
       const umano = [...this.giocatori.values()].find((g) => !g.bot && g.online);
-      const posto = this.casellaLiberaVicino(umano, 3) ?? PARTENZE[1];
+      const posto = this.casellaLiberaVicino(umano, 3) ?? this.mappa.partenze[1];
       const p = centroCasella(this.mappa, posto.tx, posto.ty);
       this.fantoccio = {
         id,
@@ -646,7 +767,23 @@ export class Mondo {
       resta: Math.round(f.resta * 10) / 10,
     }));
 
-    return { t: 'stato', tick: this.tick, ms: ora, g, n, c, fu, su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)) };
+    const ob = {
+      settore: this.settore,
+      nuclei: this.nuclei.map((k) => ({
+        x: Math.round(k.x),
+        y: Math.round(k.y),
+        a: k.attivo ? 1 : 0,
+        p: Math.round(k.progresso * 100) / 100,
+      })),
+      es: {
+        x: Math.round(this.estrazione.x),
+        y: Math.round(this.estrazione.y),
+        a: this.estrazione.aperta ? 1 : 0,
+        p: Math.round(this.estrazione.progresso * 100) / 100,
+      },
+    };
+
+    return { t: 'stato', tick: this.tick, ms: ora, g, n, c, fu, ob, su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)) };
   }
 }
 
