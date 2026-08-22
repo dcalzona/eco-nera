@@ -11,7 +11,7 @@ Wi-Fi di casa. Come Dragon Tower: JavaScript puro, moduli ES nativi, Canvas 2D,
 ## Come provarlo
 
 ```bash
-node eco-nera/server/server.js
+node server/server.js
 ```
 
 Il terminale stampa l'indirizzo da aprire dal telefono, tipo
