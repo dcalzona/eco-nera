@@ -13,6 +13,14 @@ export class Comandi {
     this.ax = 0;
     this.ay = 0;
     this.spara = false;
+    this.torcia = true;   // acceso di partenza
+    this.abilita = false;
+    this.abilitaFino = 0;
+    // La misura dello schermo la detta il disegno, non il canvas: due fonti
+    // di verita' sulle stesse coordinate prima o poi divergono, e i pulsanti
+    // finirebbero disegnati in un posto e premibili in un altro.
+    this.larghezza = 0;
+    this.altezza = 0;
 
     this.stickSx = null; // { origine:{x,y}, dito:{x,y} } in pixel CSS
     this.stickDx = null;
@@ -28,9 +36,49 @@ export class Comandi {
     canvas.addEventListener('pointercancel', (e) => this.su(e));
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    addEventListener('keydown', (e) => this.tasti.add(e.code));
+    addEventListener('keydown', (e) => {
+      // Tasti per provare dal PC. L'accensione e l'abilita' vogliono il fronte
+      // di salita, non lo stato: tenendo premuto non si deve lampeggiare.
+      if (!e.repeat && e.code === 'KeyL') this.torcia = !this.torcia;
+      if (!e.repeat && e.code === 'KeyE') this.premiAbilita();
+      this.tasti.add(e.code);
+    });
     addEventListener('keyup', (e) => this.tasti.delete(e.code));
     addEventListener('blur', () => this.tasti.clear());
+  }
+
+  /**
+   * I due pulsanti stanno nell'angolo in basso a destra, dove il pollice
+   * arriva lasciando un attimo lo stick di mira. Le loro posizioni servono
+   * anche al disegno, quindi stanno qui una volta sola.
+   */
+  misura(larghezza, altezza) {
+    this.larghezza = larghezza;
+    this.altezza = altezza;
+  }
+
+  pulsanti() {
+    const w = this.larghezza || this.canvas.clientWidth;
+    const h = this.altezza || this.canvas.clientHeight;
+    return {
+      abilita: { x: w - 56, y: h - 132, r: 34 },
+      torcia: { x: w - 56, y: h - 56, r: 30 },
+    };
+  }
+
+  premiAbilita() {
+    // Resta premuto un attimo: i comandi partono sessanta volte al secondo e
+    // uno solo potrebbe cadere in un momento in cui il server non lo consuma.
+    this.abilita = true;
+    this.abilitaFino = performance.now() + 200;
+  }
+
+  dentroUnPulsante(p) {
+    const b = this.pulsanti();
+    for (const nome of ['abilita', 'torcia']) {
+      if (Math.hypot(p.x - b[nome].x, p.y - b[nome].y) <= b[nome].r + 8) return nome;
+    }
+    return null;
   }
 
   posizione(e) {
@@ -45,8 +93,19 @@ export class Comandi {
       this.mouseGiu = true;
       return;
     }
+    // Un dito che comincia su un pulsante e' un pulsante, non uno stick.
+    const pulsante = this.dentroUnPulsante(p);
+    if (pulsante === 'torcia') {
+      this.torcia = !this.torcia;
+      return;
+    }
+    if (pulsante === 'abilita') {
+      this.premiAbilita();
+      return;
+    }
+
     this.canvas.setPointerCapture?.(e.pointerId);
-    const lato = p.x < this.canvas.clientWidth / 2 ? 'sx' : 'dx';
+    const lato = p.x < (this.larghezza || this.canvas.clientWidth) / 2 ? 'sx' : 'dx';
     // Un dito per lato: il secondo sullo stesso lato viene ignorato.
     if (this.diti.has(e.pointerId)) return;
     if (lato === 'sx' && this.stickSx) return;
@@ -109,6 +168,7 @@ export class Comandi {
     // Si spara tenendo premuto lo stick destro: su un telefono un pulsante
     // separato costringe a un terzo dito che non c'e'. Mirare e' sparare.
     this.spara = Math.hypot(this.ax, this.ay) > 0.45;
+    if (this.abilita && performance.now() > this.abilitaFino) this.abilita = false;
 
     if (this.ax === 0 && this.ay === 0 && this.mouse && centro) {
       const vx = this.mouse.x - centro.x;

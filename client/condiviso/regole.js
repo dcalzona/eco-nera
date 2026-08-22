@@ -114,3 +114,54 @@ export const OBLIO_SECONDI = 6;
 
 export const STATO = { VIVO: 0, CRITICO: 1, MORTO: 2 };
 export const UMORE = { PATTUGLIA: 0, CERCA: 1, CACCIA: 2 };
+
+// --- Il suono --------------------------------------------------------------
+
+/**
+ * Quanto lontano si sente una cosa, in caselle percorse. Non in linea d'aria:
+ * il suono gira per i corridoi come si gira a piedi, quindi uno sparo in una
+ * stanza chiusa non allarma chi sta tre stanze piu' in la' anche se in linea
+ * retta e' vicinissimo. E' la differenza fra un gioco in cui nascondersi
+ * significa qualcosa e uno in cui non significa niente.
+ */
+export const SUONI = {
+  sparo: { raggio: 13, forza: 1 },
+  sparoNemico: { raggio: 11, forza: 0.8 },
+  passi: { raggio: 4, forza: 0.35 },
+  faro: { raggio: 6, forza: 0.5 },
+};
+
+/** Ogni quanto un personaggio in movimento fa rumore coi piedi. */
+export const PASSO_RUMOROSO = 0.5;
+
+/** Quanto resta a schermo il segnale di un rumore. */
+export const ECO_SECONDI = 1.4;
+
+// --- La torcia -------------------------------------------------------------
+
+/** Secondi di torcia accesa a carica piena, e secondi per ricaricarla tutta. */
+export const DURATA_TORCIA = 24;
+export const RICARICA_TORCIA = 16;
+
+/**
+ * Finita la carica la torcia si spegne, e non basta un istante di ricarica per
+ * riaccenderla: serve arrivare a questo livello. Senza questa soglia di
+ * ripresa la torcia sfarfalla — si spegne, si ricarica un briciolo, si
+ * riaccende, si rispegne — ed e' insopportabile da guardare.
+ */
+export const RIPRESA_TORCIA = 0.35;
+
+/** Quanto ci vedono meno i nemici quando sei al buio. */
+export const SCONTO_AL_BUIO = 0.45;
+
+// --- Le abilita' dei due ruoli --------------------------------------------
+
+/**
+ * L'Eco marca i nemici che sta vedendo: per qualche secondo li vedete tutti e
+ * due, anche attraverso i muri. Il Faro pianta un fuoco che illumina una
+ * stanza per entrambi e continua a farlo mentre lui va avanti.
+ */
+export const ABILITA = {
+  eco: { tipo: 'marchio', ricarica: 9, durata: 6 },
+  faro: { tipo: 'fuoco', ricarica: 16, durata: 18, raggio: 152 },
+};

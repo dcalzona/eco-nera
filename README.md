@@ -38,6 +38,7 @@ server/     la simulazione, gira solo sul PC
   server.js      serve il gioco ai telefoni + ciclo a 20 passi al secondo
   mondo.js       personaggi, movimento, combattimento, fantoccio
   nemici.js      i tre umori: pattuglia, cerca, caccia
+  suoni.js       come si propaga un rumore
   navigazione.js come si aggirano i muri, e chi vede chi
   proiettili.js  i colpi in volo
 client/     quello che finisce sui telefoni (e nell'APK)
@@ -147,6 +148,54 @@ Il fantoccio, quando si prova da soli, fa la sua parte: spara ai nemici che
 vede e ti viene a rialzare. Cosi' il giro completo — sparare, cadere, essere
 rimessi in piedi — si prova con un telefono solo.
 
+## L'orecchio
+
+Un rumore **non si propaga in linea d'aria**: gira per i corridoi come si gira
+a piedi. Si visita la griglia in ampiezza dal punto d'origine e ci si ferma
+alla distanza che quel rumore puo' percorrere. Cosi' uno sparo dentro una
+stanza sigillata non allarma chi sta dall'altra parte del muro anche se in
+linea retta e' a due passi, e girare largo per non farsi sentire diventa una
+cosa che si puo' davvero fare.
+
+| | quanto si sente |
+| --- | --- |
+| Uno sparo | 13 caselle |
+| Uno sparo nemico | 11 caselle — e chiama i compagni |
+| I passi | 4 caselle |
+
+Chi sente va a controllare: non sa cosa fosse, sa solo dove. Piu' forte l'ha
+sentito, piu' a lungo se lo ricorda.
+
+Sul telefono un rumore arriva come **un archetto sul bordo dello schermo**,
+nella direzione da cui e' venuto, che si allarga mentre svanisce. Sai dove, non
+sai cosa. Quanto forte lo senti lo calcola il server, che conosce i muri: se lo
+stimasse il telefono a distanza in linea d'aria sentiresti gli spari dentro le
+stanze chiuse.
+
+## La torcia si consuma
+
+Ventiquattro secondi di luce, sedici per ricaricarla da spenta. A torcia spenta
+resta solo il cerchietto ravvicinato — si vede pochissimo, ma **i nemici ti
+individuano a meno della meta' della distanza**. Illuminare smette di essere un
+interruttore sempre acceso e diventa una risorsa da spendere.
+
+Finita la carica non basta un istante di ricarica per riaccendere: serve
+risalire a un terzo. Senza quella soglia la torcia sfarfalla — si spegne, si
+ricarica un briciolo, si riaccende — ed e' insopportabile da guardare.
+
+## Le abilita' dei due ruoli
+
+**L'Eco marca**: i nemici che sta vedendo diventano visibili a tutti e due per
+sei secondi, anche attraverso i muri. E' il "vede prima e indica" scritto in
+codice. Se non c'e' niente da marcare non spreca la ricarica.
+
+**Il Faro pianta un fuoco**: una luce a terra che illumina tutt'intorno per
+diciotto secondi e continua a farlo mentre lui va avanti. Gli permette di
+lasciarsi una stanza illuminata alle spalle invece di portarsi dietro tutta la
+luce — ma piantarlo fa rumore.
+
+Si comandano con i due pulsanti in basso a destra (o `L` e `E` da tastiera).
+
 ### Il diario
 
 Ogni due secondi il telefono manda al server come sta andando (fotogramma piu'
@@ -159,6 +208,6 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **1. Due puntini** — server, due telefoni, movimento, muri, riconnessione
 - [x] **2. Il buio** — coni di luce, visione condivisa, memoria della mappa
 - [x] **3. Il conflitto** — sparare, nemici, danni, stato critico e rianimazione
-- [ ] 4. L'orecchio — propagazione del suono, allerta, ping, batteria, i due ruoli
+- [x] **4. L'orecchio** — propagazione del suono, allerta, ping, batteria, i due ruoli
 - [ ] 5. La spedizione — mappe generate, obiettivi, estrazione
 - [ ] 6. L'app — APK con Capacitor

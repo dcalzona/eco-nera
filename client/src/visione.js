@@ -88,11 +88,13 @@ export function ventaglio(mappa, x, y, direzione, apertura, raggio, memoria) {
  * Tutte le luci in scena. I coni dei compagni finiscono nella stessa lista:
  * il campo visivo e' la loro unione, ed e' tutto il cooperativo in una riga.
  */
-export function calcolaVisione(mappa, personaggi, memoria) {
+export function calcolaVisione(mappa, personaggi, memoria, fuochi = []) {
   const luci = [];
   for (const p of personaggi) {
     const regola = LUCI[p.r] ?? LUCI.faro;
-    luci.push({
+    // A torcia spenta resta solo il cerchio ravvicinato: si vede pochissimo,
+    // ma i nemici ti individuano a meno della meta' della distanza.
+    if (p.l !== 0) luci.push({
       x: p.x,
       y: p.y,
       raggio: regola.raggio,
@@ -112,6 +114,22 @@ export function calcolaVisione(mappa, personaggi, memoria) {
       punti: ventaglio(mappa, p.x, p.y, 0, Math.PI * 2, CONSAPEVOLEZZA, memoria),
     });
   }
+
+  // I fuochi piantati per terra dal Faro: illuminano tutt'intorno e continuano
+  // a farlo mentre lui va avanti. E' quello che gli permette di lasciare una
+  // stanza illuminata alle spalle invece di portarsi dietro tutta la luce.
+  for (const f of fuochi) {
+    luci.push({
+      x: f.x,
+      y: f.y,
+      raggio: f.r,
+      colore: LUCI.faro.colore,
+      sfuma: true,
+      fuoco: true,
+      punti: ventaglio(mappa, f.x, f.y, 0, Math.PI * 2, f.r, memoria),
+    });
+  }
+
   return luci;
 }
 

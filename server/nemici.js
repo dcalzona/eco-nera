@@ -2,7 +2,7 @@
 // pattuglia, cerca, caccia. Un nemico che si capisce e' un nemico con cui si
 // puo' giocare — se non si intuisce cosa sta per fare, morire sembra ingiusto.
 
-import { NEMICI, OBLIO_SECONDI, UMORE, TILE } from '../client/condiviso/regole.js';
+import { NEMICI, OBLIO_SECONDI, UMORE, TILE, SCONTO_AL_BUIO } from '../client/condiviso/regole.js';
 import { PARTENZE, pavimenti, centroCasella } from '../client/condiviso/mappa.js';
 import { scorri } from '../client/condiviso/fisica.js';
 import { campo, passoVerso, lineaLibera } from './navigazione.js';
@@ -125,7 +125,10 @@ function chiVede(mappa, n, regola, bersagli) {
     const dx = b.x - n.x;
     const dy = b.y - n.y;
     const distanza = Math.hypot(dx, dy);
-    if (distanza > regola.vista || distanza > piuVicino) continue;
+    // Al buio si e' molto piu' difficili da individuare: e' il guadagno che
+    // ripaga la scomodita' di spegnere la torcia.
+    const portata = regola.vista * (b.torcia === false ? SCONTO_AL_BUIO : 1);
+    if (distanza > portata || distanza > piuVicino) continue;
     const scarto = Math.abs(differenza(Math.atan2(dy, dx), n.ang));
     if (scarto > regola.cono / 2) continue;
     if (!lineaLibera(mappa, n.x, n.y, b.x, b.y)) continue;

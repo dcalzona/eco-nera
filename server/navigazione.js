@@ -14,9 +14,11 @@ const IRRAGGIUNGIBILE = 30000;
 
 /**
  * Distanza in passi di ogni casella dalla piu' vicina fra le sorgenti.
- * `sorgenti` sono punti in pixel di mondo.
+ * `sorgenti` sono punti in pixel di mondo. Con `massimo` la visita si ferma a
+ * quella distanza: per il suono non serve sapere che una casella e' a
+ * quaranta passi, basta sapere che e' troppo lontana per sentirsi.
  */
-export function campo(mappa, sorgenti) {
+export function campo(mappa, sorgenti, massimo = Infinity) {
   const larghezza = mappa.larghezza;
   const altezza = mappa.altezza;
   const distanze = new Int32Array(larghezza * altezza).fill(IRRAGGIUNGIBILE);
@@ -36,6 +38,7 @@ export function campo(mappa, sorgenti) {
 
   while (testa < fine) {
     const i = coda[testa++];
+    if (distanze[i] >= massimo) continue;
     const tx = i % larghezza;
     const ty = (i / larghezza) | 0;
     const d = distanze[i] + 1;

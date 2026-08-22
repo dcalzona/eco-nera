@@ -20,10 +20,17 @@ import {
   VITA_DOPO_RIANIMA,
   RIENTRO_SECONDI,
   VELOCITA_CRITICO,
+  DURATA_TORCIA,
+  RICARICA_TORCIA,
+  RIPRESA_TORCIA,
+  SCONTO_AL_BUIO,
+  ABILITA,
+  PASSO_RUMOROSO,
 } from '../client/condiviso/regole.js';
 import { creaNemici, passoNemici, chiVede, NEMICI_IN_CAMPO } from './nemici.js';
 import { creaColpo, passoProiettili } from './proiettili.js';
-import { campo, passoVerso } from './navigazione.js';
+import { campo, passoVerso, lineaLibera } from './navigazione.js';
+import { Rumori } from './suoni.js';
 
 const RUOLI = ['faro', 'eco'];
 
@@ -45,6 +52,8 @@ export class Mondo {
     this.proiettili = [];
     this.campoGiocatori = null;
     this.attesaRinforzi = 0;
+    this.rumori = new Rumori(this.mappa);
+    this.fuochi = []; // i fari piantati per terra dal Faro
   }
 
   entra(sessione, nome) {
@@ -99,7 +108,16 @@ export class Mondo {
     if (!g) return;
     const m = limita(Number(msg.mx) || 0, Number(msg.my) || 0);
     const a = limita(Number(msg.ax) || 0, Number(msg.ay) || 0);
-    g.coda.push({ seq: Number(msg.q) || 0, mx: m.x, my: m.y, ax: a.x, ay: a.y, f: msg.f ? 1 : 0 });
+    g.coda.push({
+      seq: Number(msg.q) || 0,
+      mx: m.x,
+      my: m.y,
+      ax: a.x,
+      ay: a.y,
+      f: msg.f ? 1 : 0,
+      l: msg.l ? 1 : 0, // torcia accesa
+      b: msg.b ? 1 : 0, // abilita' del ruolo
+    });
     // Se il telefono e' molto avanti (e' successo qualcosa alla rete) non si
     // accumula all'infinito: si buttano i comandi piu' vecchi.
     while (g.coda.length > 60) g.coda.shift();
@@ -108,6 +126,7 @@ export class Mondo {
   passo(dt) {
     this.tick++;
     const ora = Date.now();
+    this.rumori.giroNuovo();
 
     for (const g of this.giocatori.values()) {
       if (g.bot) {
@@ -123,6 +142,8 @@ export class Mondo {
     }
 
     this.curaFeriti(dt);
+    this.consumaTorce(dt);
+    this.spegniFuochiVecchi(dt);
 
     // Un solo campo di distanze per tutti i nemici: chi insegue scende lungo
     // la discesa piu' ripida e finisce naturalmente sul giocatore piu' vicino.
@@ -133,12 +154,99 @@ export class Mondo {
       this.proiettili.push(
         creaColpo(n.id, n.x, n.y, ang, regola.danno, regola.gittata, regola.velocitaColpo, true),
       );
+      // Anche i loro spari si sentono, e chiamano i compagni.
+      this.rumori.emetti('sparoNemico', n.x, n.y, -n.id);
     });
 
     passoProiettili(this.mappa, this.proiettili, dt, (c) => this.chiHoColpito(c));
 
+    this.ascoltano();
+    this.sbiadisciMarchi(dt);
     this.ripopola(dt);
     this.regolaFantoccio();
+  }
+
+  /**
+   * La torcia si consuma accesa e si ricarica spenta. E' quello che trasforma
+   * "illuminare" da interruttore sempre acceso a risorsa da spendere: al buio
+   * si vede pochissimo, ma i nemici ti vedono meno della meta'.
+   */
+  consumaTorce(dt) {
+    for (const g of this.giocatori.values()) {
+      if (g.torcia) {
+        g.carica = Math.max(0, g.carica - dt / DURATA_TORCIA);
+        if (g.carica <= 0) {
+          g.torcia = false;
+          g.esaurita = true;
+        }
+      } else {
+        g.carica = Math.min(1, g.carica + dt / RICARICA_TORCIA);
+        if (g.esaurita && g.carica >= RIPRESA_TORCIA) g.esaurita = false;
+      }
+    }
+  }
+
+  spegniFuochiVecchi(dt) {
+    for (let k = this.fuochi.length - 1; k >= 0; k--) {
+      this.fuochi[k].resta -= dt;
+      if (this.fuochi[k].resta <= 0) this.fuochi.splice(k, 1);
+    }
+  }
+
+  /**
+   * L'abilita' del ruolo. L'Eco marca i nemici che sta vedendo, e per qualche
+   * secondo li vedete tutti e due anche attraverso i muri: e' il "vede prima e
+   * indica" scritto in codice. Il Faro pianta un fuoco che illumina una stanza
+   * per entrambi e continua a illuminarla mentre lui va avanti.
+   */
+  usaAbilita(g) {
+    const regola = ABILITA[g.ruolo];
+    if (!regola || g.abilitaRicarica > 0) return;
+
+    if (regola.tipo === 'marchio') {
+      const marcati = this.nemici.filter(
+        (n) =>
+          Math.hypot(n.x - g.x, n.y - g.y) <= ARMI.eco.gittata &&
+          lineaLibera(this.mappa, g.x, g.y, n.x, n.y),
+      );
+      if (!marcati.length) return; // niente da marcare: non si spreca la ricarica
+      for (const n of marcati) n.marcatoResta = regola.durata;
+      console.log(`${g.nome} ha marcato ${marcati.length} nemici.`);
+    } else {
+      this.fuochi.push({ x: g.x, y: g.y, resta: regola.durata, raggio: regola.raggio });
+      this.rumori.emetti('faro', g.x, g.y, g.id);
+      console.log(`${g.nome} ha piantato un fuoco.`);
+    }
+
+    g.abilitaRicarica = regola.ricarica;
+  }
+
+  /**
+   * Chi ha sentito cosa. Un nemico che sente qualcosa va a controllare — non
+   * sa cosa fosse, sa solo dove. Chi sta gia' cacciando non si distrae.
+   */
+  ascoltano() {
+    if (!this.rumori.nuovi.length) return;
+    for (const suono of this.rumori.nuovi) {
+      for (const n of this.nemici) {
+        if (n.umore === UMORE.CACCIA) continue;
+        if (suono.autore === -n.id) continue; // non ci si allarma da soli
+        const quanto = this.rumori.quantoSiSente(suono, n.x, n.y);
+        if (quanto <= 0) continue;
+        n.umore = UMORE.CERCA;
+        n.ultimaNota = { x: suono.x, y: suono.y };
+        n.campoMeta = campo(this.mappa, [n.ultimaNota]);
+        // Piu' forte l'ha sentito, piu' a lungo lo tiene a mente.
+        n.oblio = Math.max(n.oblio, 3 + quanto * 5);
+      }
+    }
+  }
+
+  /** Il marchio dell'Eco si spegne da solo. */
+  sbiadisciMarchi(dt) {
+    for (const n of this.nemici) {
+      if (n.marcatoResta > 0) n.marcatoResta = Math.max(0, n.marcatoResta - dt);
+    }
   }
 
   /**
@@ -182,12 +290,29 @@ export class Mondo {
       if (g.stato === STATO.MORTO) continue;
 
       const velocita = g.stato === STATO.CRITICO ? VELOCITA_CRITICO : undefined;
+      const primaX = g.x;
+      const primaY = g.y;
       muovi(g, c.mx, c.my, SOTTOPASSO, this.mappa, velocita);
       const a = angolo(c.ax, c.ay) ?? angolo(c.mx, c.my);
       if (a !== null) g.ang = a;
 
+      // Camminare fa rumore. Poco — quattro caselle — ma abbastanza da farsi
+      // trovare da chi ti sta gia' cercando nella stanza accanto.
+      if (Math.hypot(g.x - primaX, g.y - primaY) > 0.5 && g.stato === STATO.VIVO) {
+        g.passoRumore += SOTTOPASSO;
+        if (g.passoRumore >= PASSO_RUMOROSO) {
+          g.passoRumore = 0;
+          this.rumori.emetti('passi', g.x, g.y, g.id);
+        }
+      }
+
+      // La torcia la vuole accesa il giocatore, ma la carica decide.
+      g.torcia = c.l === 1 && !g.esaurita && g.carica > 0;
+
       g.ricarica = Math.max(0, g.ricarica - SOTTOPASSO);
+      g.abilitaRicarica = Math.max(0, g.abilitaRicarica - SOTTOPASSO);
       if (c.f && g.stato === STATO.VIVO) this.sparaGiocatore(g);
+      if (c.b && g.stato === STATO.VIVO) this.usaAbilita(g);
     }
   }
 
@@ -195,6 +320,9 @@ export class Mondo {
     if (g.ricarica > 0) return;
     const arma = ARMI[g.ruolo] ?? ARMI.faro;
     g.ricarica = arma.cadenza;
+    // Uno sparo si sente in mezza mappa: e' il prezzo di risolvere le cose
+    // sparando invece che passando piano.
+    this.rumori.emetti('sparo', g.x, g.y, g.id);
     for (let k = 0; k < arma.colpi; k++) {
       // La rosa e' simmetrica con un pizzico di casualita': tutta casuale
       // renderebbe il fucile una lotteria, tutta regolare un pettine.
@@ -402,6 +530,10 @@ export class Mondo {
    */
   guidaFantoccio(g, dt) {
     g.ricarica = Math.max(0, g.ricarica - dt);
+    // La torcia se la gestisce da solo: la tiene accesa finche' ha carica.
+    // Senza questa riga si scaricherebbe e non la riaccenderebbe mai piu',
+    // perche' l'interruttore lo muovono i comandi e lui non ne manda.
+    g.torcia = !g.esaurita && g.carica > 0.05;
     if (g.stato === STATO.MORTO) return;
 
     const umano = [...this.giocatori.values()].find((p) => !p.bot && p.online);
@@ -482,6 +614,10 @@ export class Mondo {
         st: p.stato,
         rn: Math.round(p.rianima * 100) / 100,
         tc: Math.round(p.stato === STATO.CRITICO ? p.criticoRimasto : p.rientroRimasto),
+        l: p.torcia ? 1 : 0,
+        ca: Math.round(p.carica * 100) / 100,
+        es: p.esaurita ? 1 : 0,
+        ab: Math.round(p.abilitaRicarica * 10) / 10,
       });
     }
 
@@ -492,6 +628,7 @@ export class Mondo {
       a: Math.round(e.ang * 100) / 100,
       v: Math.round(e.vita),
       u: e.umore,
+      m: e.marcatoResta > 0 ? 1 : 0,
     }));
 
     const c = this.proiettili.map((p) => ({
@@ -501,7 +638,15 @@ export class Mondo {
       e: p.daNemico ? 1 : 0,
     }));
 
-    return { t: 'stato', tick: this.tick, ms: ora, g, n, c };
+    const fu = this.fuochi.map((f, k) => ({
+      i: k,
+      x: Math.round(f.x),
+      y: Math.round(f.y),
+      r: f.raggio,
+      resta: Math.round(f.resta * 10) / 10,
+    }));
+
+    return { t: 'stato', tick: this.tick, ms: ora, g, n, c, fu, su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)) };
   }
 }
 
@@ -513,5 +658,10 @@ function statoIniziale() {
     criticoRimasto: 0,
     rientroRimasto: 0,
     ricarica: 0,
+    torcia: true,
+    carica: 1,
+    esaurita: false,
+    abilitaRicarica: 0,
+    passoRumore: 0,
   };
 }

@@ -1,7 +1,8 @@
 // Avvio del client e giro di rendering.
 
 import { muovi, angolo } from '../condiviso/fisica.js';
-import { SOTTOPASSO, STATO, VELOCITA, VELOCITA_CRITICO, NEMICI, VITA_MASSIMA } from '../condiviso/regole.js';
+import { SOTTOPASSO, STATO, VELOCITA, VELOCITA_CRITICO, NEMICI, VITA_MASSIMA, ECO_SECONDI }
+  from '../condiviso/regole.js';
 import { Rete } from './rete.js';
 import { Comandi } from './input.js';
 import { Disegno } from './render.js';
@@ -53,6 +54,7 @@ function giro(ora) {
   }
   if (!io) return;
 
+  comandi.misura(disegno.w, disegno.h);
   const centro = disegno.schermo(io.x, io.y);
   const c = comandi.leggi(centro);
 
@@ -99,21 +101,37 @@ function giro(ora) {
   disegno.inquadra(mappa, disegnato.x, disegnato.y);
   // Le torce di tutti finiscono nella stessa lista: quello che si vede e'
   // la loro unione, e il compagno illumina anche per te.
-  const luci = calcolaVisione(mappa, scena, memoria);
+  const fuochi = rete.fuochi();
+  const luci = calcolaVisione(mappa, scena, memoria, fuochi);
 
   // I nemici esistono anche al buio, ma si vedono solo se qualcuno li
-  // illumina. E di quelli che si vedono si vede anche dove stanno guardando:
+  // illumina — o se l'Eco li ha marcati, e allora si vedono anche attraverso
+  // i muri. E di quelli che si vedono si vede anche dove stanno guardando:
   // sapere cosa vede la sentinella e' meta' del gioco.
   const regolaNemico = NEMICI.pattugliatore;
-  const nemiciVisti = rete.nemici().filter((n) => illuminato(luci, n.x, n.y));
+  const nemiciVisti = rete.nemici().filter((n) => n.m === 1 || illuminato(luci, n.x, n.y));
   const coni = nemiciVisti.map((n) => ({
     punti: ventaglio(mappa, n.x, n.y, n.a, regolaNemico.cono, regolaNemico.vista, null),
     umore: n.u,
   }));
 
-  disegno.scena(mappa, scena, rete.io, luci, memoria, nemiciVisti, coni, rete.colpi());
+  disegno.scena(mappa, scena, rete.io, luci, memoria, nemiciVisti, coni, rete.colpi(), fuochi);
   disegno.stick(comandi);
-  disegno.cruscotto(scena.find((p) => p.i === rete.io), scena, VITA_MASSIMA);
+
+  // I rumori sentiti di recente, con quanto sono svaniti.
+  const adesso = performance.now();
+  const echi = rete.rumoriSentiti
+    .map((r) => ({
+      ...r,
+      forza: r.a?.[rete.io] ?? 0,
+      vita: 1 - (adesso - r.nato) / (ECO_SECONDI * 1000),
+    }))
+    .filter((r) => r.vita > 0 && r.forza > 0);
+  disegno.rumori(echi, disegnato);
+
+  const mio = scena.find((p) => p.i === rete.io);
+  disegno.pulsanti(comandi, mio);
+  disegno.cruscotto(mio, scena, VITA_MASSIMA);
   disegno.hud([
     `ping ${rete.ping} ms   fps ${fps.toFixed(0)}`,
     `nemici in vista: ${nemiciVisti.length}`,

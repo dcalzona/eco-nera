@@ -38,6 +38,8 @@ export class Rete {
     this.tentativi = 0;
     this.contaFotografie = 0;
     this.riconnessioni = 0;
+    this.rumoriSentiti = []; // rumori appena arrivati, con l'ora locale
+    this.rumoriVisti = new Set();
   }
 
   avvia() {
@@ -99,6 +101,17 @@ export class Rete {
       else this.scarto += (scarto - this.scarto) * 0.01;
 
       this.contaFotografie++;
+
+      // I rumori sono eventi, non stato: si raccolgono man mano che arrivano
+      // e restano qualche istante per essere disegnati mentre svaniscono.
+      for (const s of msg.su ?? []) {
+        if (this.rumoriVisti.has(s.i)) continue;
+        this.rumoriVisti.add(s.i);
+        this.rumoriSentiti.push({ ...s, nato: performance.now() });
+      }
+      while (this.rumoriSentiti.length > 40) this.rumoriSentiti.shift();
+      if (this.rumoriVisti.size > 400) this.rumoriVisti.clear();
+
       this.fotografie.push(msg);
       const taglio = msg.ms - 2000;
       while (this.fotografie.length > 2 && this.fotografie[0].ms < taglio) {
@@ -123,6 +136,8 @@ export class Rete {
         ax: Math.round(io.ax * 1000) / 1000,
         ay: Math.round(io.ay * 1000) / 1000,
         f: io.spara ? 1 : 0,
+        l: io.torcia ? 1 : 0,
+        b: io.abilita ? 1 : 0,
       }),
     );
   }
@@ -140,6 +155,12 @@ export class Rete {
   /** I nemici, interpolati allo stesso modo. */
   nemici() {
     return this.interpolati('n', true);
+  }
+
+  /** I fuochi piantati per terra: luci in piu' per tutti. */
+  fuochi() {
+    const ultima = this.fotografie.at(-1);
+    return ultima?.fu ?? [];
   }
 
   /** I colpi in volo. Corrono: senza interpolarli si vedrebbero a scatti. */

@@ -2,7 +2,7 @@
 // la propria o quella del compagno — piu' quello che si e' gia' visto prima,
 // che resta disegnato spento, come un ricordo.
 
-import { TILE, CASELLA, STATO, UMORE, NEMICI } from '../condiviso/regole.js';
+import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA } from '../condiviso/regole.js';
 import { giaVisto } from './visione.js';
 import { RAGGIO_STICK } from './input.js';
 
@@ -27,6 +27,11 @@ const COLORI = {
   vita: '#5fd08a',
   vitaVuota: '#2a3142',
   critico: '#ff5d5d',
+  fuoco: '#ffb347',
+  marchio: '#c98bff',
+  rumore: '#e8e2c0',
+  pulsante: 'rgba(223,230,245,0.16)',
+  pulsanteAcceso: 'rgba(255,198,92,0.30)',
   testo: '#dfe6f5',
   testoSpento: '#78849f',
 };
@@ -88,7 +93,7 @@ export class Disegno {
     return { x: this.cam.x - mezzaW, y: this.cam.y - mezzaH, w: mezzaW * 2, h: mezzaH * 2 };
   }
 
-  scena(mappa, personaggi, io, luci, memoria, nemici = [], coni = [], colpi = []) {
+  scena(mappa, personaggi, io, luci, memoria, nemici = [], coni = [], colpi = [], fuochi = []) {
     const c = this.ctx;
     c.fillStyle = COLORI.fondo;
     c.fillRect(0, 0, this.w, this.h);
@@ -126,6 +131,9 @@ export class Disegno {
     //    sotto, come una macchia sul pavimento.
     for (const cono of coni) this.conoNemico(cono);
 
+    // 3b. I fuochi piantati per terra.
+    for (const f of fuochi) this.fuoco(f);
+
     // 4. I personaggi. I compagni si vedono sempre: si sa dov'e' il proprio,
     //    anche al buio. I nemici solo quando qualcuno li illumina.
     for (const n of nemici) this.nemico(n);
@@ -148,9 +156,37 @@ export class Disegno {
     c.restore();
   }
 
+  fuoco(f) {
+    const c = this.ctx;
+    // Un puntino che pulsa: si deve capire che e' una cosa messa li' da
+    // qualcuno, non un nemico.
+    const battito = 4 + Math.sin(performance.now() / 180) * 1.2;
+    c.fillStyle = COLORI.fuoco;
+    c.beginPath();
+    c.arc(f.x, f.y, battito, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = 'rgba(255,179,71,0.5)';
+    c.lineWidth = 1.5;
+    c.beginPath();
+    c.arc(f.x, f.y, 10, 0, Math.PI * 2);
+    c.stroke();
+  }
+
   nemico(n) {
     const c = this.ctx;
     const colore = n.u === UMORE.PATTUGLIA ? COLORI.nemico : COLORI.nemicoAllerta;
+
+    // Marcato dall'Eco: si vede attraverso i muri, e si vede che e' marcato.
+    if (n.m) {
+      c.strokeStyle = COLORI.marchio;
+      c.lineWidth = 2;
+      c.setLineDash([4, 3]);
+      c.beginPath();
+      c.arc(n.x, n.y, 17, 0, Math.PI * 2);
+      c.stroke();
+      c.setLineDash([]);
+    }
+
     c.fillStyle = colore;
     c.beginPath();
     c.arc(n.x, n.y, 11, 0, Math.PI * 2);
@@ -311,6 +347,70 @@ export class Disegno {
   }
 
   /**
+   * I rumori sentiti: un archetto sul bordo dello schermo, nella direzione da
+   * cui e' arrivato il suono. Si sa DOVE, non si sa COSA — ed e' proprio quello
+   * che rende il buio teso invece che soltanto scomodo.
+   */
+  rumori(echi, io) {
+    if (!echi.length) return;
+    const c = this.ctx;
+    const cx = this.w / 2;
+    const cy = this.h / 2;
+    const raggio = Math.min(this.w, this.h) * 0.40;
+
+    for (const e of echi) {
+      const ang = Math.atan2(e.y - io.y, e.x - io.x);
+      const apertura = 0.30 + e.forza * 0.34;
+      const opacita = Math.min(0.85, e.forza * 1.5) * e.vita * e.vita;
+      if (opacita < 0.02) continue;
+
+      c.strokeStyle = `rgba(232,226,192,${opacita.toFixed(3)})`;
+      c.lineWidth = 3 + e.forza * 5;
+      c.lineCap = 'round';
+      c.beginPath();
+      // L'arco si allarga mentre svanisce, come un'onda che si apre.
+      c.arc(cx, cy, raggio + (1 - e.vita) * 16, ang - apertura / 2, ang + apertura / 2);
+      c.stroke();
+    }
+    c.lineCap = 'butt';
+  }
+
+  /** I due pulsanti: torcia e abilita' del ruolo, con carica e ricarica. */
+  pulsanti(comandi, mio) {
+    if (!mio) return;
+    const c = this.ctx;
+    const b = comandi.pulsanti();
+
+    // Abilita': l'anello si richiude mentre torna disponibile.
+    const regola = ABILITA[mio.r] ?? ABILITA.faro;
+    const pronta = (mio.ab ?? 0) <= 0;
+    cerchio(c, b.abilita, pronta ? COLORI.pulsanteAcceso : COLORI.pulsante);
+    if (!pronta) {
+      const quanto = 1 - mio.ab / regola.ricarica;
+      c.strokeStyle = 'rgba(223,230,245,0.5)';
+      c.lineWidth = 3;
+      c.beginPath();
+      c.arc(b.abilita.x, b.abilita.y, b.abilita.r - 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * quanto);
+      c.stroke();
+    }
+    c.fillStyle = pronta ? COLORI.testo : COLORI.testoSpento;
+    c.font = '10px system-ui, sans-serif';
+    c.textAlign = 'center';
+    c.fillText(regola.tipo === 'marchio' ? 'MARCA' : 'FUOCO', b.abilita.x, b.abilita.y + 4);
+
+    // Torcia: il pulsante mostra la carica come un anello che si consuma.
+    const accesa = mio.l === 1;
+    cerchio(c, b.torcia, accesa ? COLORI.pulsanteAcceso : COLORI.pulsante);
+    c.strokeStyle = mio.es ? COLORI.critico : accesa ? COLORI.faro : COLORI.testoSpento;
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(b.torcia.x, b.torcia.y, b.torcia.r - 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (mio.ca ?? 1));
+    c.stroke();
+    c.fillStyle = accesa ? COLORI.testo : COLORI.testoSpento;
+    c.fillText('TORCIA', b.torcia.x, b.torcia.y + 4);
+  }
+
+  /**
    * Vita propria, stato del compagno, e — quando si e' a terra — il tempo che
    * resta. Sta in basso a sinistra, lontano dai pollici.
    */
@@ -391,6 +491,13 @@ export class Disegno {
     c.textAlign = 'center';
     c.fillText(testo, this.w / 2, this.h / 2);
   }
+}
+
+function cerchio(c, p, riempimento) {
+  c.fillStyle = riempimento;
+  c.beginPath();
+  c.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+  c.fill();
 }
 
 function barra(c, x, y, larghezza, altezza, quanto, colore) {
