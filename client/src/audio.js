@@ -63,6 +63,23 @@ export class Suoni {
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
   }
 
+  /**
+   * App in secondo piano: si zittisce tutto. Senza questo il bordone continua
+   * a suonare a icona ridotta e l'unico modo per farlo smettere e' chiudere il
+   * gioco. Basta sospendere il contesto: gli oscillatori restano dove sono e
+   * al rientro riprendono da li', senza ricostruire niente.
+   *
+   * A differenza di un gioco per uno solo, qui la partita non si mette in
+   * pausa: il server va avanti, e il compagno anche.
+   */
+  sospendi() {
+    if (this.ctx && this.ctx.state === 'running') this.ctx.suspend();
+  }
+
+  riprendi() {
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  }
+
   muto(valore) {
     this.acceso = !valore;
     localStorage.setItem('ecoNera.muto', valore ? '1' : '0');
