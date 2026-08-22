@@ -62,6 +62,7 @@ export class Rete {
     this.rumoriSentiti = []; // rumori appena arrivati, con l'ora locale
     this.rumoriVisti = new Set();
     this.versioneMappa = 0; // cambia a ogni settore nuovo
+    this.ultimaFotografiaOra = 0;
   }
 
   /** Cambia server e riparte. Il telefono se lo ricorda per la volta dopo. */
@@ -156,6 +157,7 @@ export class Rete {
       else this.scarto += (scarto - this.scarto) * 0.01;
 
       this.contaFotografie++;
+      this.ultimaFotografiaOra = arrivo;
 
       // I rumori sono eventi, non stato: si raccolgono man mano che arrivano
       // e restano qualche istante per essere disegnati mentre svaniscono.
@@ -210,6 +212,18 @@ export class Rete {
   /** I nemici, interpolati allo stesso modo. */
   nemici() {
     return this.interpolati('n', true);
+  }
+
+  /**
+   * Vero quando da un po' non arriva piu' niente. Non e' la stessa cosa di
+   * "collegamento chiuso": la presa resta aperta e i pacchetti spariscono per
+   * un paio di secondi — succede col Wi-Fi che passa da un nodo all'altro.
+   * Continuare a camminare in previsione mentre il server sta fermo produce
+   * uno strattone indietro di centinaia di pixel appena la rete torna.
+   */
+  inStallo() {
+    if (this.stato !== 'dentro' || !this.ultimaFotografiaOra) return false;
+    return performance.now() - this.ultimaFotografiaOra > 400;
   }
 
   /** Lo stato degli obiettivi del settore. */

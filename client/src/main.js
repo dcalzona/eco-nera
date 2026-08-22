@@ -1,17 +1,28 @@
 // Avvio del client e giro di rendering.
 
 import { muovi, angolo } from '../condiviso/fisica.js';
-import { SOTTOPASSO, STATO, VELOCITA, VELOCITA_CRITICO, NEMICI, VITA_MASSIMA, ECO_SECONDI }
+import { SOTTOPASSO, STATO, UMORE, VELOCITA, VELOCITA_CRITICO, NEMICI, VITA_MASSIMA, ECO_SECONDI }
   from '../condiviso/regole.js';
 import { Rete } from './rete.js';
 import { Comandi } from './input.js';
 import { Disegno } from './render.js';
 import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
+import { Suoni } from './audio.js';
 
 const canvas = document.getElementById('gioco');
 const disegno = new Disegno(canvas);
 const comandi = new Comandi(canvas);
 const rete = new Rete();
+const suoni = new Suoni();
+
+// I browser non fanno suonare niente prima di un gesto: si accende al primo
+// dito sullo schermo, e da li' in poi resta acceso.
+for (const evento of ['pointerdown', 'keydown', 'touchstart']) {
+  addEventListener(evento, () => suoni.avvia(), { once: false, passive: true });
+}
+addEventListener('keydown', (e) => {
+  if (!e.repeat && e.code === 'KeyM') suoni.muto(suoni.acceso);
+});
 
 // --- Il pannello dell'indirizzo -------------------------------------------
 // Nel browser non si vede mai: la pagina arriva dal server, quindi l'indirizzo
@@ -54,6 +65,7 @@ let pendenti = []; // comandi che il server non ha ancora confermato
 let ultimoTickVisto = -1;
 let memoria = null; // le caselle gia' viste, che restano disegnate spente
 let versioneMappaVista = -1;
+let eraInStallo = false;
 
 let scorso = performance.now();
 let fps = 0;
@@ -99,6 +111,18 @@ function giro(ora) {
   const centro = disegno.schermo(io.x, io.y);
   const c = comandi.leggi(centro);
 
+  // Se le fotografie non arrivano piu', si sta fermi. Camminare per due
+  // secondi mentre il server non riceve i comandi non fa avanzare di un
+  // metro: fa solo tornare indietro di colpo quando la rete si riprende.
+  const stallo = rete.inStallo();
+  if (stallo) {
+    eraInStallo = true;
+    accumulo = 0;
+  } else if (eraInStallo) {
+    eraInStallo = false;
+    risincronizza();
+  }
+
   // Passi a durata fissa. Se il telefono va a 30 fotogrammi al secondo ne fa
   // due per fotogramma, se va a 120 ne fa uno ogni due: il mondo avanza allo
   // stesso ritmo comunque, ed e' il ritmo del server.
@@ -108,9 +132,9 @@ function giro(ora) {
   const velocita =
     mioStato === STATO.MORTO ? 0 : mioStato === STATO.CRITICO ? VELOCITA_CRITICO : VELOCITA;
 
-  accumulo += dt;
+  accumulo += stallo ? 0 : dt;
   let fatti = 0;
-  while (accumulo >= SOTTOPASSO && fatti < 8) {
+  while (!stallo && accumulo >= SOTTOPASSO && fatti < 8) {
     accumulo -= SOTTOPASSO;
     fatti++;
     seq++;
@@ -124,7 +148,7 @@ function giro(ora) {
   }
   if (fatti === 8) accumulo = 0; // troppo arretrato (app tornata in primo piano)
 
-  riconcilia(mappa);
+  if (!stallo) riconcilia(mappa);
 
   // Fra un sottopasso e l'altro si interpola, altrimenti a 60 fotogrammi con
   // passi da un sessantesimo capiterebbe un fotogramma fermo e uno doppio.
@@ -173,12 +197,31 @@ function giro(ora) {
   const mio = scena.find((p) => p.i === rete.io);
   disegno.pulsanti(comandi, mio);
   disegno.cruscotto(mio, scena, VITA_MASSIMA);
+  suona(dt, scena.find((p) => p.i === rete.io), disegnato);
+
   const ob = rete.obiettivi();
   disegno.obiettivi(ob, memoria, mappa);
   disegno.missione(ob, disegnato);
   disegno.hud([`ping ${rete.ping} ms   fps ${fps.toFixed(0)}`]);
+  if (stallo) disegno.avviso('Rete interrotta — aspetto…');
 
   aggiornaDiario(dt, scena.some((p) => p.i === rete.io), fps, disegnato);
+}
+
+/**
+ * Dopo un'interruzione si riparte dalla posizione del server e si buttano i
+ * comandi non confermati: alcuni si sono persi per strada, e rieseguirli
+ * porterebbe il telefono da un'altra parte rispetto alla verita'.
+ */
+function risincronizza() {
+  const nostro = rete.ultimaNostra();
+  pendenti = [];
+  accumulo = 0;
+  ultimoTickVisto = -1;
+  if (!nostro || !io) return;
+  io.x = nostro.x;
+  io.y = nostro.y;
+  prima = { x: io.x, y: io.y };
 }
 
 /**
@@ -220,9 +263,80 @@ window.ecoNera = {
   comandi,
   disegno,
   giro, // per far avanzare il gioco a mano quando si prova senza schermo
+  suoni,
   get io() { return io; },
   get pendenti() { return pendenti; },
 };
+
+// --- Il suono --------------------------------------------------------------
+// Quello che succede si sente: i rumori del mondo con la loro direzione e la
+// loro forza (che tiene conto dei muri, la calcola il server), e quello che
+// capita a te come avvenimento senza direzione.
+const prima_ = {
+  vita: null,
+  stato: null,
+  nemici: null,
+  nuclei: null,
+  uscita: null,
+  settore: null,
+  torcia: null,
+  esaurita: null,
+  abilita: null,
+};
+
+function suona(dt, mio, dove) {
+  const ob = rete.obiettivi();
+  const nemici = rete.nemici();
+
+  // Si segnano i rumori originali, non le copie che il disegno si fa a ogni
+  // fotogramma: segnare la copia vorrebbe dire risuonare tutto sessanta volte
+  // al secondo.
+  for (const r of rete.rumoriSentiti) {
+    if (r.suonato) continue;
+    r.suonato = true;
+    const forza = r.a?.[rete.io] ?? 0;
+    if (forza <= 0) continue;
+    suoni.rumore(r.k, forza, Math.max(-1, Math.min(1, (r.x - dove.x) / 420)));
+  }
+
+  if (mio) {
+    if (prima_.vita !== null && mio.v < prima_.vita) suoni.evento('ferito');
+    if (prima_.stato !== null && mio.st !== prima_.stato) {
+      if (mio.st === STATO.CRITICO) suoni.evento('aTerra');
+      if (prima_.stato !== STATO.VIVO && mio.st === STATO.VIVO) suoni.evento('rialzato');
+    }
+    if (prima_.torcia !== null && mio.l !== prima_.torcia) {
+      suoni.evento(mio.l ? 'torciaAccesa' : 'torciaSpenta');
+    }
+    if (prima_.esaurita === 0 && mio.es === 1) suoni.evento('caricaFinita');
+    if (prima_.abilita !== null && mio.ab > prima_.abilita + 0.5 && mio.r === 'eco') {
+      suoni.evento('marchio');
+    }
+    prima_.vita = mio.v;
+    prima_.stato = mio.st;
+    prima_.torcia = mio.l;
+    prima_.esaurita = mio.es;
+    prima_.abilita = mio.ab;
+  }
+
+  if (prima_.nemici !== null && nemici.length < prima_.nemici) suoni.evento('nemicoAbbattuto');
+  prima_.nemici = nemici.length;
+
+  if (ob) {
+    const accesi = ob.nuclei.filter((n) => n.a).length;
+    if (prima_.nuclei !== null && accesi > prima_.nuclei) suoni.evento('nucleoAcceso');
+    if (prima_.uscita === 0 && ob.es.a === 1) suoni.evento('uscitaAperta');
+    if (prima_.settore !== null && ob.settore !== prima_.settore) suoni.evento('settore');
+    prima_.nuclei = accesi;
+    prima_.uscita = ob.es.a;
+    prima_.settore = ob.settore;
+  }
+
+  suoni.aggiorna(dt, {
+    cacciatori: nemici.filter((n) => n.u === UMORE.CACCIA).length,
+    critico: mio?.st === STATO.CRITICO,
+  });
+}
 
 // --- Il diario -------------------------------------------------------------
 // Il telefono racconta al server come sta andando. Serve perche' gli scatti si
@@ -282,5 +396,11 @@ async function tieniAcceso() {
 }
 tieniAcceso();
 addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') tieniAcceso();
+  if (document.visibilityState !== 'visible') return;
+  tieniAcceso();
+  // Mentre l'app era in secondo piano il disegno era fermo e i comandi non
+  // partivano: il server ci ha lasciati dov'eravamo. Si riparte da li' invece
+  // di riprendere una previsione vecchia di chissa' quanto.
+  risincronizza();
+  suoni.avvia();
 });

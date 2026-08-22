@@ -588,6 +588,18 @@ export class Disegno {
     righe.forEach((r, k) => c.fillText(r, 10, 20 + k * 15));
   }
 
+  /** Una riga di avviso in alto, senza coprire il gioco. */
+  avviso(testo) {
+    const c = this.ctx;
+    c.font = '13px system-ui, sans-serif';
+    c.textAlign = 'center';
+    const larghezza = c.measureText(testo).width + 24;
+    c.fillStyle = 'rgba(255,93,93,0.16)';
+    c.fillRect((this.w - larghezza) / 2, 34, larghezza, 24);
+    c.fillStyle = COLORI.critico;
+    c.fillText(testo, this.w / 2, 50);
+  }
+
   messaggio(testo) {
     const c = this.ctx;
     c.fillStyle = 'rgba(5,7,12,0.82)';

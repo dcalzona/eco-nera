@@ -29,7 +29,7 @@ import {
   PASSO_RUMOROSO,
   SPEDIZIONE,
 } from '../client/condiviso/regole.js';
-import { creaNemici, passoNemici, chiVede, NEMICI_IN_CAMPO } from './nemici.js';
+import { creaNemici, passoNemici, chiVede } from './nemici.js';
 import { creaColpo, passoProiettili } from './proiettili.js';
 import { campo, passoVerso, lineaLibera } from './navigazione.js';
 import { Rumori } from './suoni.js';
@@ -87,13 +87,13 @@ export class Mondo {
 
     this.estrazione = { ...centroStanza(ingresso), aperta: false, progresso: 0 };
 
-    const quantiNemici = Math.min(SPEDIZIONE.nemiciMax, SPEDIZIONE.nemiciBase + numero);
-    this.nemici = creaNemici(this.mappa, quantiNemici);
+    this.nemiciDelSettore = Math.min(SPEDIZIONE.nemiciMax, SPEDIZIONE.nemiciBase + numero);
+    this.nemici = creaNemici(this.mappa, this.nemiciDelSettore);
 
     for (const g of this.giocatori.values()) this.riportaAllIngresso(g);
     this.mappaCambiata = true;
     console.log(`
-=== Settore ${numero}: ${quanti} nuclei, ${quantiNemici} nemici ===`);
+=== Settore ${numero}: ${quanti} nuclei, ${this.nemici.length} nemici ===`);
   }
 
   riportaAllIngresso(g) {
@@ -377,7 +377,7 @@ export class Mondo {
    * saranno le spedizioni vere questo diventera' il ritmo di una missione.
    */
   ripopola(dt) {
-    if (this.nemici.length >= NEMICI_IN_CAMPO) return;
+    if (this.nemici.length >= this.nemiciDelSettore) return;
     this.attesaRinforzi -= dt;
     if (this.attesaRinforzi > 0) return;
     this.attesaRinforzi = 12;

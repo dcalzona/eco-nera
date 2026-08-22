@@ -68,6 +68,7 @@ e scrive da se' tutte le densita' dentro `android/app/src/main/res`.
 | Puntare e sparare | dito sulla meta' destra | mouse |
 | Abilita' del ruolo | pulsante in basso a destra | E |
 | Torcia | pulsante in basso a destra | L |
+| Silenziare | — | M |
 
 ## Com'e' fatto
 
@@ -268,6 +269,23 @@ rifatta. E la prova non si ferma al grafo delle caselle: fa **camminare
 davvero** un personaggio dalla partenza al centro di ogni stanza, perche' un
 corpo largo 22 px in caselle da 32 e' un'altra cosa da un puntino su un grafo.
 Su 200 mappe: 386 stanze su 386 raggiunte a piedi.
+
+## Il suono che si sente
+
+Tutto sintetizzato al momento, come la grafica: nel progetto non c'e' un file
+audio. La ragione non e' il peso, e' che qui il suono **e' una meccanica**. Il
+server calcola gia' quanto forte ogni rumore arriva a ciascun giocatore
+tenendo conto dei muri; il telefono prende quel numero e lo suona nel canale
+giusto — a sinistra se e' successo a sinistra. Uno sparo dentro una stanza
+sigillata non si sente, perche' davvero non arriva.
+
+Sotto a tutto c'e' un bordone bassissimo che non finisce mai. Da solo non si
+nota; quando qualcuno ti sta cacciando si apre il filtro e sale una quinta che
+prima non c'era. Non e' musica da canticchiare, e' il modo di dire "non sei
+solo" senza scriverlo sullo schermo. A terra si aggiunge un battito lento.
+
+Si accende al primo dito sullo schermo — i browser non fanno suonare niente
+prima di un gesto. Da PC si silenzia con `M`.
 
 ### Il diario
 

@@ -13,8 +13,17 @@ const GIRO_DI_RONDA = 7;
 /** Quanto sta lontano dalle partenze dei giocatori il posto di un nemico. */
 const DISTANZA_DALLE_PARTENZE = 9;
 
-/** Quanti nemici tiene in piedi la mappa. */
+/** Quanti nemici tiene in piedi la mappa, se nessuno dice altro. */
 export const NEMICI_IN_CAMPO = 8;
+
+/**
+ * Quanti possono sparare nello stesso momento. E' il numero che decide se una
+ * stanza piena e' una sfida o una sentenza: in cinque fanno quasi cinquanta
+ * danni al secondo e si va giu' in due secondi, senza nemmeno capire da dove.
+ * Gli altri continuano ad avvicinarsi e a starti addosso — restano una
+ * minaccia — ma aspettano il loro turno.
+ */
+const TIRATORI_INSIEME = 2;
 
 let prossimoId = 1;
 
@@ -23,6 +32,31 @@ let prossimoId = 1;
  * tenersi alla larga: un rinforzo che compare addosso a chi gioca e' sleale.
  */
 export function creaNemici(mappa, quanti = NEMICI_IN_CAMPO, lontanoDa = []) {
+  // Con una mappa a stanze si mette un nemico per stanza, girando: cosi' non
+  // si attraversano cinque stanze deserte per poi trovarne cinque insieme.
+  if (mappa.stanze?.length > 1) return unoPerStanza(mappa, quanti, lontanoDa);
+  return sparpagliati(mappa, quanti, lontanoDa);
+}
+
+/** Un nemico per stanza, saltando quella d'ingresso, poi si ricomincia il giro. */
+function unoPerStanza(mappa, quanti, lontanoDa) {
+  const nemici = [];
+  const stanze = mappa.stanze.slice(1);
+  if (!stanze.length) return sparpagliati(mappa, quanti, lontanoDa);
+
+  for (let k = 0; k < quanti; k++) {
+    const stanza = stanze[k % stanze.length];
+    // Un posto a caso dentro la stanza, non sempre il centro.
+    const tx = stanza.x + 1 + Math.floor(Math.random() * Math.max(1, stanza.w - 2));
+    const ty = stanza.y + 1 + Math.floor(Math.random() * Math.max(1, stanza.h - 2));
+    const p = centroCasella(mappa, tx, ty);
+    if (lontanoDa.some((g) => Math.hypot(g.x - p.x, g.y - p.y) < 13 * TILE)) continue;
+    nemici.push(nuovoNemico(mappa, tx, ty));
+  }
+  return nemici;
+}
+
+function sparpagliati(mappa, quanti, lontanoDa) {
   const partenze = mappa.partenze ?? PARTENZE;
   const libere = pavimenti(mappa).filter((c) => {
     if (!partenze.every((p) => Math.abs(p.tx - c.tx) + Math.abs(p.ty - c.ty) > DISTANZA_DALLE_PARTENZE))
@@ -49,27 +83,31 @@ export function creaNemici(mappa, quanti = NEMICI_IN_CAMPO, lontanoDa = []) {
       }
     }
     presi.push(miglior);
-
-    const regola = NEMICI.pattugliatore;
-    const p = centroCasella(mappa, miglior.tx, miglior.ty);
-    nemici.push({
-      id: prossimoId++,
-      tipo: 'pattugliatore',
-      x: p.x,
-      y: p.y,
-      ang: Math.random() * Math.PI * 2,
-      vita: regola.vita,
-      umore: UMORE.PATTUGLIA,
-      casa: { tx: miglior.tx, ty: miglior.ty },
-      meta: null,
-      campoMeta: null,
-      ultimaNota: null,
-      oblio: 0,
-      ricarica: 0,
-      mira: 0,
-    });
+    nemici.push(nuovoNemico(mappa, miglior.tx, miglior.ty));
   }
   return nemici;
+}
+
+function nuovoNemico(mappa, tx, ty) {
+  const regola = NEMICI.pattugliatore;
+  const p = centroCasella(mappa, tx, ty);
+  return {
+    id: prossimoId++,
+    tipo: 'pattugliatore',
+    x: p.x,
+    y: p.y,
+    ang: Math.random() * Math.PI * 2,
+    vita: regola.vita,
+    umore: UMORE.PATTUGLIA,
+    casa: { tx, ty },
+    meta: null,
+    campoMeta: null,
+    ultimaNota: null,
+    oblio: 0,
+    ricarica: 0,
+    mira: 0,
+    marcatoResta: 0,
+  };
 }
 
 /**
@@ -78,11 +116,24 @@ export function creaNemici(mappa, quanti = NEMICI_IN_CAMPO, lontanoDa = []) {
  * per tutti), `spara` la funzione che crea un proiettile.
  */
 export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara) {
+  // Prima si guarda chi vede chi, poi si decide chi ha il permesso di sparare:
+  // i piu' vicini al loro bersaglio. Senza questo giro in due tempi ognuno
+  // deciderebbe per conto suo e sparerebbero tutti.
+  const visioni = new Map();
+  const cacciatori = [];
+  for (const n of nemici) {
+    const visto = chiVede(mappa, n, NEMICI[n.tipo], bersagli);
+    visioni.set(n, visto);
+    if (visto) cacciatori.push({ n, distanza: Math.hypot(visto.x - n.x, visto.y - n.y) });
+  }
+  cacciatori.sort((a, b) => a.distanza - b.distanza);
+  const permesso = new Set(cacciatori.slice(0, TIRATORI_INSIEME).map((c) => c.n));
+
   for (const n of nemici) {
     const regola = NEMICI[n.tipo];
     n.ricarica = Math.max(0, n.ricarica - dt);
 
-    const visto = chiVede(mappa, n, regola, bersagli);
+    const visto = visioni.get(n);
 
     if (visto) {
       if (n.umore !== UMORE.CACCIA) n.mira = regola.pausaMira;
@@ -90,7 +141,7 @@ export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara) {
       n.ultimaNota = { x: visto.x, y: visto.y };
       n.oblio = OBLIO_SECONDI;
       n.campoMeta = null;
-      cacciando(mappa, n, regola, visto, campoBersagli, dt, spara);
+      cacciando(mappa, n, regola, visto, campoBersagli, dt, spara, permesso.has(n));
       continue;
     }
 
@@ -139,7 +190,7 @@ function chiVede(mappa, n, regola, bersagli) {
   return miglior;
 }
 
-function cacciando(mappa, n, regola, bersaglio, campoBersagli, dt, spara) {
+function cacciando(mappa, n, regola, bersaglio, campoBersagli, dt, spara, puoSparare) {
   const dx = bersaglio.x - n.x;
   const dy = bersaglio.y - n.y;
   const distanza = Math.hypot(dx, dy);
@@ -148,6 +199,12 @@ function cacciando(mappa, n, regola, bersaglio, campoBersagli, dt, spara) {
   if (distanza <= regola.gittata) {
     // A tiro ci si ferma e si spara: uno che corre e spara insieme non da'
     // mai il tempo di reagire.
+    if (!puoSparare) {
+      // Senza il turno si resta puntati addosso, pronti: quando tocca a lui
+      // non deve sparare all'istante, ma nemmeno ripartire da zero.
+      n.mira = Math.min(regola.pausaMira, n.mira + dt * 0.5);
+      return;
+    }
     n.mira = Math.max(0, n.mira - dt);
     if (n.mira === 0 && n.ricarica === 0) {
       spara(n, n.ang, regola);
