@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#070a11" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Eco Nera</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        height: 100%;
+        background: #070a11;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        color: #dfe6f5;
+      }
+      #wrap { position: relative; width: 100vw; height: 100vh; height: 100dvh; }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        /* il dito comanda il gioco, non fa scorrere né zoomare la pagina */
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrap"><canvas id="gioco"></canvas></div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

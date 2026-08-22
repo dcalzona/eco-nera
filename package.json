@@ -1,0 +1,13 @@
+{
+  "name": "eco-nera",
+  "version": "0.1.0",
+  "description": "Sparatutto coop al buio per due, server sul PC e client Android.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "server": "node server/server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
