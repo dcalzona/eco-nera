@@ -287,7 +287,21 @@ solo" senza scriverlo sullo schermo. A terra si aggiunge un battito lento.
 Si accende al primo dito sullo schermo — i browser non fanno suonare niente
 prima di un gesto. Da PC si silenzia con `M`.
 
-### Il diario
+### Come sono disegnati i personaggi
+
+Non pallini: omini visti dall'alto, forme vettoriali come tutto il resto.
+Spalle nettamente piu' larghe che profonde (e' quella proporzione a dire
+"visto dall'alto": quadrate leggono come una scatola, ovali come un uovo), la
+testa piccola sopra a tutto, e **l'arma impugnata da un lato solo**.
+
+L'asimmetria non e' un vezzo: con le braccia simmetriche la figura si fonde in
+un imbuto e non si capisce dove guardi. Con un braccio teso sul calcio e la
+canna che sporge oltre la sagoma, la direzione si legge senza bisogno di
+frecce. E le due armi sono diverse fra loro — corta e grossa per il Faro,
+lunga e sottile per l'Eco — cosi' i ruoli si riconoscono a colpo d'occhio,
+anche in mezzo a una sparatoria.
+
+## Il diario
 
 Ogni due secondi il telefono manda al server come sta andando (fotogramma piu'
 lungo, correzione massima, salto sullo schermo, fotografie al secondo,

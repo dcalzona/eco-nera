@@ -190,17 +190,7 @@ export class Disegno {
       c.setLineDash([]);
     }
 
-    c.fillStyle = colore;
-    c.beginPath();
-    c.arc(n.x, n.y, 11, 0, Math.PI * 2);
-    c.fill();
-
-    c.save();
-    c.translate(n.x, n.y);
-    c.rotate(n.a);
-    c.fillStyle = '#05070c';
-    c.fillRect(6, -2.5, 7, 5);
-    c.restore();
+    this.omino(n.x, n.y, n.a, { corpo: colore, arma: 'lunga' });
 
     const pieno = Math.max(0, n.v) / NEMICI.pattugliatore.vita;
     if (pieno < 1) {
@@ -284,6 +274,76 @@ export class Disegno {
     }
   }
 
+  /**
+   * Un omino visto dall'alto, alla maniera dei giochi a volo d'uccello: si
+   * vedono le spalle, la testa, e le braccia protese in avanti sull'arma. Il
+   * verso in cui punta si legge dalle braccia, che e' piu' chiaro di una
+   * tacca sul bordo e non ha bisogno di essere spiegato.
+   *
+   * Tutto disegnato con forme, come il resto: le due armi sono diverse fra
+   * loro perche' i due ruoli si riconoscano anche da lontano.
+   */
+  omino(x, y, angolo, { corpo, arma = 'corta', alpha = 1 }) {
+    const c = this.ctx;
+    c.save();
+    c.translate(x, y);
+    c.rotate(angolo);
+    c.globalAlpha = alpha;
+
+    const lunga = arma === 'lunga';
+    const scuro = 'rgba(5,7,12,0.7)';
+
+    // Le spalle: nettamente piu' larghe che profonde. E' questa proporzione a
+    // dire "visto dall'alto": quadrate leggono come una scatola, ovali come un
+    // uovo. Vengono per prime, sotto a tutto il resto.
+    c.fillStyle = corpo;
+    c.strokeStyle = scuro;
+    c.lineWidth = 1;
+    stondato(c, -4.6, -5.7, 7.2, 11.4, 2.6);
+    c.fill();
+    c.stroke();
+
+    // L'arma, impugnata da un lato solo e tesa in avanti: e' l'asimmetria a
+    // far leggere "persona che impugna qualcosa", e la canna che sporge a dire
+    // da che parte guarda. Corta e grossa per il Faro, lunga e sottile per
+    // l'Eco: le stesse gittate del gioco, in miniatura.
+    c.fillStyle = '#0e121a';
+    c.fillRect(4.2, lunga ? 1.9 : 1.4, lunga ? 11.5 : 7, lunga ? 1.8 : 2.8);
+
+    // Le braccia sopra al busto, cosi' si vedono: quella armata tesa, l'altra
+    // raccolta contro il corpo.
+    c.strokeStyle = scurisci(corpo, 0.78);
+    c.lineWidth = 2.3;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(0.5, 4.4);
+    c.lineTo(4.6, 2.9);
+    c.stroke();
+    c.beginPath();
+    c.moveTo(-0.5, -4.4);
+    c.lineTo(2.2, -3.9);
+    c.stroke();
+
+    // La mano che stringe il calcio: un puntino chiaro, ma tiene insieme
+    // braccio e arma, che altrimenti sembrano due cose staccate.
+    c.fillStyle = scurisci(corpo, 1.15);
+    c.beginPath();
+    c.arc(5, 2.7, 1.5, 0, Math.PI * 2);
+    c.fill();
+
+    // La testa, piccola e sopra a tutto: dall'alto e' la prima cosa che si vede.
+    c.fillStyle = scurisci(corpo, 0.5);
+    c.strokeStyle = scuro;
+    c.beginPath();
+    c.arc(0.4, 0, 3.4, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+
+    c.globalAlpha = 1;
+    c.lineCap = 'butt';
+    c.restore();
+  }
+
   personaggio(p, sonoIo) {
     const c = this.ctx;
     const colore = p.b ? COLORI.fantoccio : p.r === 'faro' ? COLORI.faro : COLORI.eco;
@@ -296,23 +356,13 @@ export class Disegno {
       c.beginPath();
       c.arc(p.x, p.y, 16, 0, Math.PI * 2 * Math.max(0.06, p.rn ?? 0));
       c.stroke();
-      c.globalAlpha = 0.55;
     }
 
-    c.fillStyle = colore;
-    c.beginPath();
-    c.arc(p.x, p.y, 11, 0, Math.PI * 2);
-    c.fill();
-
-    // Il verso in cui punta: una tacca sul bordo.
-    c.save();
-    c.translate(p.x, p.y);
-    c.rotate(p.a);
-    c.fillStyle = '#05070c';
-    c.fillRect(6, -2.5, 7, 5);
-    c.restore();
-
-    c.globalAlpha = 1;
+    this.omino(p.x, p.y, p.a, {
+      corpo: colore,
+      arma: p.r === 'eco' ? 'lunga' : 'corta',
+      alpha: p.st === STATO.CRITICO ? 0.55 : 1,
+    });
 
     if (sonoIo) {
       c.strokeStyle = '#ffffff';
@@ -609,6 +659,31 @@ export class Disegno {
     c.textAlign = 'center';
     c.fillText(testo, this.w / 2, this.h / 2);
   }
+}
+
+/** Un rettangolo con gli angoli stondati, gia' pronto da riempire o contornare. */
+function stondato(c, x, y, larghezza, altezza, raggio) {
+  c.beginPath();
+  c.moveTo(x + raggio, y);
+  c.arcTo(x + larghezza, y, x + larghezza, y + altezza, raggio);
+  c.arcTo(x + larghezza, y + altezza, x, y + altezza, raggio);
+  c.arcTo(x, y + altezza, x, y, raggio);
+  c.arcTo(x, y, x + larghezza, y, raggio);
+  c.closePath();
+}
+
+/** Un'ellisse piena, che serve di continuo per i corpi visti dall'alto. */
+function ellisse(c, x, y, rx, ry) {
+  c.beginPath();
+  c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+  c.fill();
+}
+
+/** Lo stesso colore, piu' scuro: ombre e dettagli restano in tinta. */
+function scurisci(hex, quanto) {
+  const n = parseInt(hex.slice(1), 16);
+  const limita = (v) => Math.max(0, Math.min(255, Math.round(v * quanto)));
+  return `rgb(${limita((n >> 16) & 255)},${limita((n >> 8) & 255)},${limita(n & 255)})`;
 }
 
 function cerchio(c, p, riempimento) {
