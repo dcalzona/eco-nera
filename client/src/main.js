@@ -395,12 +395,21 @@ async function tieniAcceso() {
   }
 }
 tieniAcceso();
-addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible') return;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    suoni.sospendi();
+    return;
+  }
   tieniAcceso();
   // Mentre l'app era in secondo piano il disegno era fermo e i comandi non
   // partivano: il server ci ha lasciati dov'eravamo. Si riparte da li' invece
   // di riprendere una previsione vecchia di chissa' quanto.
   risincronizza();
-  suoni.avvia();
+  suoni.riprendi();
+});
+
+// Su alcuni telefoni, uscendo dall'app, arriva questo e non l'altro.
+addEventListener('pagehide', () => suoni.sospendi());
+addEventListener('blur', () => {
+  if (document.hidden) suoni.sospendi();
 });
