@@ -109,7 +109,8 @@ export class Mondo {
     g.carica = 1;
     g.esaurita = false;
     g.meta = null;
-    g.coda.length = 0;
+    // Il fantoccio non ha una coda di comandi: non li manda, li decide.
+    if (g.coda) g.coda.length = 0;
   }
 
   entra(sessione, nome) {
@@ -677,13 +678,38 @@ export class Mondo {
       return;
     }
 
-    // Poi: se vede un nemico, gli spara.
-    const preda = chiVede(this.mappa, g, { vista: 330, cono: Math.PI * 2 }, this.nemici);
-    if (preda) {
-      g.ang = Math.atan2(preda.y - g.y, preda.x - g.x);
-      if (g.ricarica === 0) this.sparaGiocatore(g);
+    // Poi la missione, perche' un compagno che ignora l'obiettivo non e' un
+    // compagno. Con l'uscita aperta si va all'uscita: se restasse a girare,
+    // chi gioca da solo non potrebbe estrarsi mai, visto che si esce insieme.
+    if (this.estrazione.aperta) {
+      const distanza = Math.hypot(this.estrazione.x - g.x, this.estrazione.y - g.y);
+      if (distanza > SPEDIZIONE.raggioEstrazione * 0.5) {
+        this.trascina(g, this.estrazione, 155, dt);
+        return;
+      }
+      // Arrivato: resta nel cerchio e si limita a coprire.
+      this.copri(g);
       return;
     }
+
+    // E se il compagno sta accendendo un nucleo, gli da' una mano: in due ci
+    // vuole meta' tempo, ed e' proprio il momento in cui si e' scoperti.
+    const daAccendere = umano
+      ? this.nuclei.find(
+          (n) => !n.attivo && Math.hypot(umano.x - n.x, umano.y - n.y) <= SPEDIZIONE.raggioNucleo,
+        )
+      : null;
+    if (daAccendere) {
+      if (Math.hypot(daAccendere.x - g.x, daAccendere.y - g.y) > SPEDIZIONE.raggioNucleo * 0.6) {
+        this.trascina(g, daAccendere, 155, dt);
+        return;
+      }
+      this.copri(g);
+      return;
+    }
+
+    // Poi: se vede un nemico, gli spara.
+    if (this.copri(g)) return;
 
     // Altrimenti gira nei paraggi, come prima.
     if (!g.meta || Math.hypot(g.meta.x - g.x, g.meta.y - g.y) < 12) {
@@ -700,6 +726,15 @@ export class Mondo {
     muovi(g, dx / len, dy / len, dt, this.mappa);
     if (Math.hypot(g.x - primaX, g.y - primaY) < 0.4) g.meta = null;
     g.ang = Math.atan2(dy, dx);
+  }
+
+  /** Guarda se c'e' un nemico in vista e gli spara. Torna vero se ne ha trovato uno. */
+  copri(g) {
+    const preda = chiVede(this.mappa, g, { vista: 330, cono: Math.PI * 2 }, this.nemici);
+    if (!preda) return false;
+    g.ang = Math.atan2(preda.y - g.y, preda.x - g.x);
+    if (g.ricarica === 0) this.sparaGiocatore(g);
+    return true;
   }
 
   /** Va verso qualcuno aggirando i muri, con il campo di distanze. */
