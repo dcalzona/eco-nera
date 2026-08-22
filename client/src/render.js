@@ -2,7 +2,7 @@
 // la propria o quella del compagno — piu' quello che si e' gia' visto prima,
 // che resta disegnato spento, come un ricordo.
 
-import { TILE, CASELLA } from '../condiviso/regole.js';
+import { TILE, CASELLA, STATO, UMORE, NEMICI } from '../condiviso/regole.js';
 import { giaVisto } from './visione.js';
 import { RAGGIO_STICK } from './input.js';
 
@@ -20,6 +20,13 @@ const COLORI = {
   faro: '#ffc65c',
   eco: '#4ecdc4',
   fantoccio: '#8b95b3',
+  nemico: '#e05a5a',
+  nemicoAllerta: '#ffa03c',
+  colpo: '#ffe9a8',
+  colpoNemico: '#ff7a6a',
+  vita: '#5fd08a',
+  vitaVuota: '#2a3142',
+  critico: '#ff5d5d',
   testo: '#dfe6f5',
   testoSpento: '#78849f',
 };
@@ -81,7 +88,7 @@ export class Disegno {
     return { x: this.cam.x - mezzaW, y: this.cam.y - mezzaH, w: mezzaW * 2, h: mezzaH * 2 };
   }
 
-  scena(mappa, personaggi, io, luci, memoria) {
+  scena(mappa, personaggi, io, luci, memoria, nemici = [], coni = [], colpi = []) {
     const c = this.ctx;
     c.fillStyle = COLORI.fondo;
     c.fillRect(0, 0, this.w, this.h);
@@ -115,11 +122,62 @@ export class Disegno {
       }
     }
 
-    // 3. I personaggi. I compagni si vedono sempre: si sa dov'e' il proprio,
-    //    anche al buio. I nemici, quando ci saranno, solo dentro la luce.
+    // 3. Cosa vedono i nemici che stiamo guardando. Si disegna prima di loro,
+    //    sotto, come una macchia sul pavimento.
+    for (const cono of coni) this.conoNemico(cono);
+
+    // 4. I personaggi. I compagni si vedono sempre: si sa dov'e' il proprio,
+    //    anche al buio. I nemici solo quando qualcuno li illumina.
+    for (const n of nemici) this.nemico(n);
     for (const p of personaggi) this.personaggio(p, p.i === io);
 
+    // 5. I colpi in volo si vedono sempre, anche al buio: una scia nel nero e'
+    //    il modo piu' onesto di dire "ti stanno sparando, e da quella parte".
+    for (const colpo of colpi) this.colpo(colpo);
+
     c.restore();
+  }
+
+  conoNemico(cono) {
+    const c = this.ctx;
+    c.save();
+    c.beginPath();
+    this.contorno(cono);
+    c.fillStyle = cono.umore === UMORE.PATTUGLIA ? 'rgba(224,90,90,0.07)' : 'rgba(255,160,60,0.13)';
+    c.fill();
+    c.restore();
+  }
+
+  nemico(n) {
+    const c = this.ctx;
+    const colore = n.u === UMORE.PATTUGLIA ? COLORI.nemico : COLORI.nemicoAllerta;
+    c.fillStyle = colore;
+    c.beginPath();
+    c.arc(n.x, n.y, 11, 0, Math.PI * 2);
+    c.fill();
+
+    c.save();
+    c.translate(n.x, n.y);
+    c.rotate(n.a);
+    c.fillStyle = '#05070c';
+    c.fillRect(6, -2.5, 7, 5);
+    c.restore();
+
+    const pieno = Math.max(0, n.v) / NEMICI.pattugliatore.vita;
+    if (pieno < 1) {
+      c.fillStyle = COLORI.vitaVuota;
+      c.fillRect(n.x - 11, n.y - 18, 22, 3);
+      c.fillStyle = COLORI.nemico;
+      c.fillRect(n.x - 11, n.y - 18, 22 * pieno, 3);
+    }
+  }
+
+  colpo(p) {
+    const c = this.ctx;
+    c.fillStyle = p.e ? COLORI.colpoNemico : COLORI.colpo;
+    c.beginPath();
+    c.arc(p.x, p.y, p.e ? 3 : 2.4, 0, Math.PI * 2);
+    c.fill();
   }
 
   contorno(luce) {
@@ -191,6 +249,17 @@ export class Disegno {
     const c = this.ctx;
     const colore = p.b ? COLORI.fantoccio : p.r === 'faro' ? COLORI.faro : COLORI.eco;
 
+    if (p.st === STATO.CRITICO) {
+      // A terra: un cerchio spezzato che si richiude man mano che il compagno
+      // lo rianima. Si legge da lontano senza bisogno di scritte.
+      c.strokeStyle = COLORI.critico;
+      c.lineWidth = 3;
+      c.beginPath();
+      c.arc(p.x, p.y, 16, 0, Math.PI * 2 * Math.max(0.06, p.rn ?? 0));
+      c.stroke();
+      c.globalAlpha = 0.55;
+    }
+
     c.fillStyle = colore;
     c.beginPath();
     c.arc(p.x, p.y, 11, 0, Math.PI * 2);
@@ -203,6 +272,8 @@ export class Disegno {
     c.fillStyle = '#05070c';
     c.fillRect(6, -2.5, 7, 5);
     c.restore();
+
+    c.globalAlpha = 1;
 
     if (sonoIo) {
       c.strokeStyle = '#ffffff';
@@ -239,6 +310,70 @@ export class Disegno {
     }
   }
 
+  /**
+   * Vita propria, stato del compagno, e — quando si e' a terra — il tempo che
+   * resta. Sta in basso a sinistra, lontano dai pollici.
+   */
+  cruscotto(mio, tutti, vitaMassima) {
+    if (!mio) return;
+    const c = this.ctx;
+    const y = this.h - 26;
+
+    barra(c, 12, y, 140, 9, Math.max(0, mio.v) / vitaMassima, COLORI.vita);
+    c.fillStyle = COLORI.testo;
+    c.font = '11px ui-monospace, Consolas, monospace';
+    c.textAlign = 'left';
+    c.fillText(`${Math.max(0, mio.v)}`, 158, y + 9);
+
+    // Il compagno: come sta e se ha bisogno.
+    const compagno = tutti.find((p) => p.i !== mio.i);
+    if (compagno) {
+      const yc = y - 16;
+      barra(c, 12, yc, 90, 6, Math.max(0, compagno.v) / vitaMassima,
+            compagno.st === STATO.VIVO ? COLORI.eco : COLORI.critico);
+      c.fillStyle = compagno.st === STATO.CRITICO ? COLORI.critico : COLORI.testoSpento;
+      c.fillText(
+        compagno.st === STATO.CRITICO
+          ? `${compagno.n} e' a terra — ${compagno.tc}s`
+          : compagno.st === STATO.MORTO
+            ? `${compagno.n} rientra fra ${compagno.tc}s`
+            : compagno.n,
+        108,
+        yc + 6,
+      );
+    }
+
+    if (mio.st === STATO.CRITICO) {
+      // Bordo rosso che pulsa: si capisce che e' grave senza leggere niente.
+      const battito = 0.18 + 0.12 * Math.sin(performance.now() / 260);
+      const bordo = c.createRadialGradient(
+        this.w / 2, this.h / 2, Math.min(this.w, this.h) * 0.22,
+        this.w / 2, this.h / 2, Math.max(this.w, this.h) * 0.62,
+      );
+      bordo.addColorStop(0, 'rgba(255,93,93,0)');
+      bordo.addColorStop(1, `rgba(255,93,93,${battito.toFixed(3)})`);
+      c.fillStyle = bordo;
+      c.fillRect(0, 0, this.w, this.h);
+
+      c.textAlign = 'center';
+      c.fillStyle = COLORI.critico;
+      c.font = '15px system-ui, sans-serif';
+      c.fillText(`A TERRA — ${mio.tc}s`, this.w / 2, 34);
+      if ((mio.rn ?? 0) > 0) {
+        c.fillStyle = COLORI.testo;
+        c.font = '11px system-ui, sans-serif';
+        c.fillText('ti stanno rialzando…', this.w / 2, 52);
+      }
+    } else if (mio.st === STATO.MORTO) {
+      c.fillStyle = 'rgba(5,7,12,0.6)';
+      c.fillRect(0, 0, this.w, this.h);
+      c.textAlign = 'center';
+      c.fillStyle = COLORI.testo;
+      c.font = '17px system-ui, sans-serif';
+      c.fillText(`Fuori gioco — rientri fra ${mio.tc}s`, this.w / 2, this.h / 2);
+    }
+  }
+
   hud(righe) {
     const c = this.ctx;
     c.font = '12px ui-monospace, Consolas, monospace';
@@ -256,6 +391,13 @@ export class Disegno {
     c.textAlign = 'center';
     c.fillText(testo, this.w / 2, this.h / 2);
   }
+}
+
+function barra(c, x, y, larghezza, altezza, quanto, colore) {
+  c.fillStyle = COLORI.vitaVuota;
+  c.fillRect(x, y, larghezza, altezza);
+  c.fillStyle = colore;
+  c.fillRect(x, y, larghezza * Math.max(0, Math.min(1, quanto)), altezza);
 }
 
 function tinta(hex, a) {

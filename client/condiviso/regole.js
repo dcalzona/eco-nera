@@ -66,3 +66,51 @@ export const CONSAPEVOLEZZA = 56;
  * ugualmente lisci, e sprecarne su quello corto costa e non si vede.
  */
 export const SPAZIATURA_RAGGI = 3;
+
+// --- Combattimento ---------------------------------------------------------
+
+export const VITA_MASSIMA = 100;
+
+/**
+ * Le due armi, in tinta con i due modi di vedere. Il Faro spara una rosa corta
+ * e larga: devastante addosso, inutile lontano, cioe' esattamente dove arriva
+ * la sua torcia. L'Eco un colpo solo, lento e preciso, che arriva fin dove
+ * arriva il suo fascio. Nessuno dei due copre il lavoro dell'altro.
+ */
+export const ARMI = {
+  faro: { cadenza: 0.42, colpi: 5, dispersione: 0.34, gittata: 190, danno: 9, velocita: 640 },
+  eco: { cadenza: 0.9, colpi: 1, dispersione: 0.015, gittata: 430, danno: 36, velocita: 940 },
+};
+
+/** Quanto si resta a terra prima di morire davvero, e cosa serve per rialzarsi. */
+export const CRITICO_SECONDI = 30;
+export const RIANIMA_SECONDI = 3;
+export const RIANIMA_DISTANZA = 36;
+export const VITA_DOPO_RIANIMA = 45;
+export const RIENTRO_SECONDI = 10;
+
+/** A terra ci si trascina, non si corre. */
+export const VELOCITA_CRITICO = 38;
+
+// --- Nemici ----------------------------------------------------------------
+
+export const NEMICI = {
+  pattugliatore: {
+    vita: 46,
+    velocita: 94,
+    cono: (68 * Math.PI) / 180,
+    vista: 258,
+    cadenza: 1.15,
+    pausaMira: 0.5,
+    danno: 11,
+    gittata: 240,
+    velocitaColpo: 470,
+    colore: '#e05a5a',
+  },
+};
+
+/** Quanto continua a cercarti dopo averti perso di vista. */
+export const OBLIO_SECONDI = 6;
+
+export const STATO = { VIVO: 0, CRITICO: 1, MORTO: 2 };
+export const UMORE = { PATTUGLIA: 0, CERCA: 1, CACCIA: 2 };

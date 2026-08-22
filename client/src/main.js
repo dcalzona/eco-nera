@@ -1,11 +1,11 @@
 // Avvio del client e giro di rendering.
 
 import { muovi, angolo } from '../condiviso/fisica.js';
-import { SOTTOPASSO } from '../condiviso/regole.js';
+import { SOTTOPASSO, STATO, VELOCITA, VELOCITA_CRITICO, NEMICI, VITA_MASSIMA } from '../condiviso/regole.js';
 import { Rete } from './rete.js';
 import { Comandi } from './input.js';
 import { Disegno } from './render.js';
-import { calcolaVisione, nuovaMemoria } from './visione.js';
+import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
 
 const canvas = document.getElementById('gioco');
 const disegno = new Disegno(canvas);
@@ -59,6 +59,12 @@ function giro(ora) {
   // Passi a durata fissa. Se il telefono va a 30 fotogrammi al secondo ne fa
   // due per fotogramma, se va a 120 ne fa uno ogni due: il mondo avanza allo
   // stesso ritmo comunque, ed e' il ritmo del server.
+  // A terra ci si trascina, da morti non ci si muove. Il telefono applica la
+  // stessa regola del server, altrimenti prevederebbe una corsa che non c'e'.
+  const mioStato = nostro?.st ?? STATO.VIVO;
+  const velocita =
+    mioStato === STATO.MORTO ? 0 : mioStato === STATO.CRITICO ? VELOCITA_CRITICO : VELOCITA;
+
   accumulo += dt;
   let fatti = 0;
   while (accumulo >= SOTTOPASSO && fatti < 8) {
@@ -66,10 +72,10 @@ function giro(ora) {
     fatti++;
     seq++;
     prima = { x: io.x, y: io.y };
-    muovi(io, c.mx, c.my, SOTTOPASSO, mappa);
+    muovi(io, c.mx, c.my, SOTTOPASSO, mappa, velocita);
     const mira = angolo(c.ax, c.ay) ?? angolo(c.mx, c.my);
     if (mira !== null) io.ang = mira;
-    pendenti.push({ seq, mx: c.mx, my: c.my });
+    pendenti.push({ seq, mx: c.mx, my: c.my, vel: velocita });
     if (pendenti.length > 300) pendenti.shift();
     rete.mandaPasso(seq, c);
   }
@@ -94,11 +100,23 @@ function giro(ora) {
   // Le torce di tutti finiscono nella stessa lista: quello che si vede e'
   // la loro unione, e il compagno illumina anche per te.
   const luci = calcolaVisione(mappa, scena, memoria);
-  disegno.scena(mappa, scena, rete.io, luci, memoria);
+
+  // I nemici esistono anche al buio, ma si vedono solo se qualcuno li
+  // illumina. E di quelli che si vedono si vede anche dove stanno guardando:
+  // sapere cosa vede la sentinella e' meta' del gioco.
+  const regolaNemico = NEMICI.pattugliatore;
+  const nemiciVisti = rete.nemici().filter((n) => illuminato(luci, n.x, n.y));
+  const coni = nemiciVisti.map((n) => ({
+    punti: ventaglio(mappa, n.x, n.y, n.a, regolaNemico.cono, regolaNemico.vista, null),
+    umore: n.u,
+  }));
+
+  disegno.scena(mappa, scena, rete.io, luci, memoria, nemiciVisti, coni, rete.colpi());
   disegno.stick(comandi);
+  disegno.cruscotto(scena.find((p) => p.i === rete.io), scena, VITA_MASSIMA);
   disegno.hud([
     `ping ${rete.ping} ms   fps ${fps.toFixed(0)}`,
-    `in gioco: ${scena.map((p) => p.n).join(', ')}`,
+    `nemici in vista: ${nemiciVisti.length}`,
   ]);
 
   aggiornaDiario(dt, scena.some((p) => p.i === rete.io), fps, disegnato);
@@ -117,7 +135,7 @@ function riconcilia(mappa) {
 
   const rifatto = { x: foto.p.x, y: foto.p.y };
   pendenti = pendenti.filter((c) => c.seq > (foto.p.s ?? 0));
-  for (const c of pendenti) muovi(rifatto, c.mx, c.my, SOTTOPASSO, mappa);
+  for (const c of pendenti) muovi(rifatto, c.mx, c.my, SOTTOPASSO, mappa, c.vel ?? VELOCITA);
 
   const dx = rifatto.x - io.x;
   const dy = rifatto.y - io.y;

@@ -122,6 +122,7 @@ export class Rete {
         my: Math.round(io.my * 1000) / 1000,
         ax: Math.round(io.ax * 1000) / 1000,
         ay: Math.round(io.ay * 1000) / 1000,
+        f: io.spara ? 1 : 0,
       }),
     );
   }
@@ -133,6 +134,25 @@ export class Rete {
 
   /** Dove stanno tutti, 100 ms nel passato, con le posizioni interpolate. */
   personaggi() {
+    return this.interpolati('g', true);
+  }
+
+  /** I nemici, interpolati allo stesso modo. */
+  nemici() {
+    return this.interpolati('n', true);
+  }
+
+  /** I colpi in volo. Corrono: senza interpolarli si vedrebbero a scatti. */
+  colpi() {
+    return this.interpolati('c', false);
+  }
+
+  /**
+   * Il lavoro comune: si trovano le due fotografie a cavallo dell'istante da
+   * disegnare e si mescolano. Chi compare solo nella piu' recente (un colpo
+   * appena partito) si disegna dov'e', senza mescolare niente.
+   */
+  interpolati(chiave, conAngolo) {
     if (this.fotografie.length === 0 || this.scarto === null) return [];
     const T = performance.now() + this.scarto - RITARDO_INTERP;
 
@@ -145,18 +165,22 @@ export class Rete {
         break;
       }
     }
-    if (!dopo) return prima.g.map((p) => ({ ...p }));
+
+    const listaDopo = dopo?.[chiave] ?? [];
+    const listaPrima = prima[chiave] ?? [];
+    if (!dopo) return listaPrima.map((p) => ({ ...p }));
 
     const q = (T - prima.ms) / (dopo.ms - prima.ms || 1);
-    return dopo.g.map((b) => {
-      const a = prima.g.find((p) => p.i === b.i);
+    return listaDopo.map((b) => {
+      const a = listaPrima.find((p) => p.i === b.i);
       if (!a) return { ...b };
-      return {
+      const fuso = {
         ...b,
         x: a.x + (b.x - a.x) * q,
         y: a.y + (b.y - a.y) * q,
-        a: a.a + differenzaAngolo(b.a, a.a) * q,
       };
+      if (conAngolo) fuso.a = a.a + differenzaAngolo(b.a, a.a) * q;
+      return fuso;
     });
   }
 

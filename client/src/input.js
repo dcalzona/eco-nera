@@ -12,6 +12,7 @@ export class Comandi {
     this.my = 0;
     this.ax = 0;
     this.ay = 0;
+    this.spara = false;
 
     this.stickSx = null; // { origine:{x,y}, dito:{x,y} } in pixel CSS
     this.stickDx = null;
@@ -105,6 +106,10 @@ export class Comandi {
       this.my = ky;
     }
 
+    // Si spara tenendo premuto lo stick destro: su un telefono un pulsante
+    // separato costringe a un terzo dito che non c'e'. Mirare e' sparare.
+    this.spara = Math.hypot(this.ax, this.ay) > 0.45;
+
     if (this.ax === 0 && this.ay === 0 && this.mouse && centro) {
       const vx = this.mouse.x - centro.x;
       const vy = this.mouse.y - centro.y;
@@ -112,6 +117,7 @@ export class Comandi {
       if (len > 12) {
         this.ax = vx / len;
         this.ay = vy / len;
+        this.spara = this.mouseGiu;
       }
     }
 

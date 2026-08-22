@@ -69,7 +69,7 @@ function ricorda(memoria, mappa, tx, ty) {
 }
 
 /** Il poligono illuminato da una sorgente: il centro, poi le punte dei raggi. */
-function ventaglio(mappa, x, y, direzione, apertura, raggio, memoria) {
+export function ventaglio(mappa, x, y, direzione, apertura, raggio, memoria) {
   // Tanti raggi quanti ne servono perche' le punte distino pochi pixel: il
   // costo va dove si vede, cioe' sui fasci lunghi.
   const quanti = Math.min(256, Math.max(10, Math.ceil((apertura * raggio) / SPAZIATURA_RAGGI)));

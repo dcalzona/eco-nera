@@ -35,8 +35,11 @@ si prova con un cellulare solo. Appena entra una seconda persona, sparisce.
 
 ```
 server/     la simulazione, gira solo sul PC
-  server.js   serve il gioco ai telefoni + ciclo a 20 passi al secondo
-  mondo.js    personaggi, movimento, fantoccio
+  server.js      serve il gioco ai telefoni + ciclo a 20 passi al secondo
+  mondo.js       personaggi, movimento, combattimento, fantoccio
+  nemici.js      i tre umori: pattuglia, cerca, caccia
+  navigazione.js come si aggirano i muri, e chi vede chi
+  proiettili.js  i colpi in volo
 client/     quello che finisce sui telefoni (e nell'APK)
   condiviso/  regole, mappa e fisica: le usano sia server sia client
   src/        rete, comandi, visione, disegno
@@ -99,6 +102,51 @@ spigolo di striscio riemergerebbe nel pavimento dall'altra parte (succedeva
 all'1,1% dei raggi). E il cerchietto ravvicinato non sfuma sui bordi: sfumando
 lasciava un anello scuro attorno al personaggio, proprio dentro al cono.
 
+## Il conflitto
+
+Si spara tenendo premuto lo stick destro: su un telefono un pulsante separato
+vorrebbe un terzo dito che non c'e'. Mirare e' sparare.
+
+| | **Faro** | **Eco** |
+| --- | --- | --- |
+| Arma | rosa di 5 pallini, corta e larga | un colpo solo, lento e preciso |
+| Gittata | 190 px | 430 px |
+
+Le gittate seguono le torce: ognuno colpisce fin dove vede. E siccome i nemici
+vedono a 258 px, il Faro **viene visto prima di vedere** — da solo e' in
+svantaggio, con l'Eco che gli indica la stanza non lo e' piu'. E' il motivo per
+cui i due ruoli esistono.
+
+### I nemici
+
+Tre umori, e si distinguono a colpo d'occhio dal colore: **pattuglia** (rosso
+spento, gira per conto suo), **cerca** (arancione, sa che c'e' qualcuno e va a
+controllare), **caccia** (arancione, ti ha visto e spara). Un nemico incassato
+un colpo alle spalle passa a cercare: sparare di sorpresa funziona una volta
+sola.
+
+Quando li illumini vedi anche **il loro cono di vista**, disegnato sul
+pavimento. Sapere cosa vede la sentinella e' meta' del gioco.
+
+Non inseguono a vista — chi punta dritto al giocatore si incastra nel primo
+muro. Si calcola un campo di distanze all'indietro dal bersaglio (una visita in
+ampiezza della griglia) e ognuno scende lungo la discesa piu' ripida. Con piu'
+sorgenti insieme ognuno insegue il piu' vicino senza doverlo decidere.
+
+### A terra, non morti
+
+A zero vita non si muore: si finisce **a terra**, e da li' ci si trascina piano
+sperando che il compagno arrivi. Trenta secondi. Chi soccorre deve restare
+vicino tre secondi buoni, e se si allontana il lavoro fatto non svanisce di
+colpo ma nemmeno resta li' per sempre.
+
+E' la meccanica per cui si dice "aspetta, arrivo" invece di giocare a due
+giochi in parallelo sullo stesso schermo. Senza, sono due partite in solitaria.
+
+Il fantoccio, quando si prova da soli, fa la sua parte: spara ai nemici che
+vede e ti viene a rialzare. Cosi' il giro completo — sparare, cadere, essere
+rimessi in piedi — si prova con un telefono solo.
+
 ### Il diario
 
 Ogni due secondi il telefono manda al server come sta andando (fotogramma piu'
@@ -110,7 +158,7 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 
 - [x] **1. Due puntini** — server, due telefoni, movimento, muri, riconnessione
 - [x] **2. Il buio** — coni di luce, visione condivisa, memoria della mappa
-- [ ] 3. Il conflitto — sparare, nemici, danni, stato critico e rianimazione
+- [x] **3. Il conflitto** — sparare, nemici, danni, stato critico e rianimazione
 - [ ] 4. L'orecchio — propagazione del suono, allerta, ping, batteria, i due ruoli
 - [ ] 5. La spedizione — mappe generate, obiettivi, estrazione
 - [ ] 6. L'app — APK con Capacitor

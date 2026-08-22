@@ -18,10 +18,10 @@ export function limita(x, y) {
  * struscia contro un muro in diagonale continua a scivolare invece di
  * incastrarsi, che e' meta' della sensazione di un gioco che risponde bene.
  */
-export function muovi(ent, mx, my, dt, mappa) {
+export function muovi(ent, mx, my, dt, mappa, velocita = VELOCITA) {
   const dir = limita(mx, my);
   if (dir.x === 0 && dir.y === 0) return;
-  scorri(ent, dir.x * VELOCITA * dt, dir.y * VELOCITA * dt, mappa);
+  scorri(ent, dir.x * velocita * dt, dir.y * velocita * dt, mappa);
 }
 
 /**
