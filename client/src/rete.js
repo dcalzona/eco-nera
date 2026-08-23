@@ -6,7 +6,7 @@
 // giocatori scatterebbero. Allora si disegna sempre 100 ms nel passato, dove
 // le fotografie sono gia' arrivate tutte e due, e si interpola fra loro.
 
-import { RITARDO_INTERP } from '../condiviso/regole.js';
+import { RITARDO_INTERP, VERSIONE } from '../condiviso/regole.js';
 
 function sessione() {
   let s = localStorage.getItem('ecoNera.sessione');
@@ -74,6 +74,21 @@ export class Rete {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     this.stato = 'collego';
     this.ws.send(JSON.stringify({ t: 'entra', sessione: sessione(), classe, solo }));
+  }
+
+  /**
+   * Si smette di giocare e si torna al menu. Si avvisa il server invece di
+   * sparire e basta: cosi' il personaggio non resta in piedi in mezzo alla
+   * mappa per mezzo minuto, e il compagno non aspetta uno che non torna.
+   */
+  lascia() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ t: 'esci' }));
+    }
+    this.stato = 'menu';
+    this.classe = null;
+    this.io = null;
+    this.fotografie.length = 0;
   }
 
   /** Cambia server e riparte. Il telefono se lo ricorda per la volta dopo. */
@@ -148,10 +163,21 @@ export class Rete {
 
   ricevi(msg) {
     if (msg.t === 'benvenuto') {
+      // Un server rimasto acceso da prima fa sparire in silenzio meta' del
+      // gioco: meglio dirlo che lasciare credere che sia rotto.
+      this.versioneServer = msg.versione ?? 'sconosciuta';
+      this.disallineato = this.versioneServer !== VERSIONE;
       this.io = msg.id;
       this.mappa = msg.mappa;
       this.ruolo = msg.ruolo;
       this.stato = 'dentro';
+      return;
+    }
+
+    if (msg.t === 'ciao') {
+      this.versioneServer = msg.versione ?? 'sconosciuta';
+      this.disallineato = this.versioneServer !== VERSIONE;
+      this.alSaluto?.();
       return;
     }
 

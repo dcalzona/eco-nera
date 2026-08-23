@@ -9,7 +9,7 @@ import { Disegno } from './render.js';
 import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
 import { Suoni } from './audio.js';
 import { disegnaOmino, coloreDi, armaDi } from './render.js';
-import { CLASSI, ABILITA } from '../condiviso/regole.js';
+import { CLASSI, ABILITA, VERSIONE } from '../condiviso/regole.js';
 
 const canvas = document.getElementById('gioco');
 const disegno = new Disegno(canvas);
@@ -131,20 +131,36 @@ bottoneAvvio.addEventListener('click', () => {
   rete.entra(classeScelta, spuntaSolo.checked);
   pannelloMenu.hidden = true;
   pannelloFine.hidden = true;
+  pannelloPausa.hidden = true;
+  bottonePausa.hidden = false;
 });
+
+// --- Pausa e uscita --------------------------------------------------------
+// Il gioco non si ferma davvero — il server va avanti — ma si puo' smettere.
+const pannelloPausa = document.getElementById('pausa');
+const bottonePausa = document.getElementById('apriPausa');
+
+function tornaAlMenu() {
+  pannelloPausa.hidden = true;
+  pannelloFine.hidden = true;
+  bottonePausa.hidden = true;
+  pannelloMenu.hidden = false;
+  rete.lascia();
+  suoni.sirena(false);
+}
+
+bottonePausa.addEventListener('click', () => {
+  pannelloPausa.hidden = false;
+});
+document.getElementById('riprendi').addEventListener('click', () => {
+  pannelloPausa.hidden = true;
+});
+document.getElementById('esciAlMenu').addEventListener('click', tornaAlMenu);
 
 // --- Fine partita ----------------------------------------------------------
 const pannelloFine = document.getElementById('fine');
 const fineDettaglio = document.getElementById('fineDettaglio');
-document.getElementById('tornaAlMenu').addEventListener('click', () => {
-  pannelloFine.hidden = true;
-  pannelloMenu.hidden = false;
-  // Si torna a scegliere: il collegamento resta aperto, ma non si rientra
-  // finche' non si preme Entra — e rientrando la spedizione riparte dal primo.
-  rete.stato = 'menu';
-  rete.classe = null;
-  suoni.sirena(false);
-});
+document.getElementById('tornaAlMenu').addEventListener('click', tornaAlMenu);
 document.getElementById('apriGuida').addEventListener('click', () => {
   pannelloGuida.hidden = false;
 });
@@ -155,7 +171,29 @@ document.getElementById('chiudiGuida').addEventListener('click', () => {
 costruisciMenu();
 rete.chiediClasse = () => {
   pannelloMenu.hidden = false;
+  avvisaSeDisallineato();
 };
+
+// Il saluto del server puo' arrivare prima o dopo l'apertura del menu.
+rete.alSaluto = () => avvisaSeDisallineato();
+
+/**
+ * Un server rimasto acceso da prima parla una lingua piu' vecchia e fa
+ * sparire in silenzio tutto quello che sta dalla sua parte. Meglio dirlo che
+ * lasciar credere che il gioco sia rotto.
+ */
+function avvisaSeDisallineato() {
+  const avviso = document.getElementById('avvisoVersione');
+  if (!rete.disallineato) {
+    avviso.hidden = true;
+    return;
+  }
+  avviso.hidden = false;
+  avviso.textContent =
+    `Attenzione: il server e' alla versione ${rete.versioneServer}, l'app alla ${VERSIONE}. ` +
+    'Riavvia il server sul PC, altrimenti mancheranno pezzi di gioco.';
+  document.getElementById('menuDentro').append(avviso);
+}
 rete.avvia();
 
 // --- La previsione locale --------------------------------------------------
@@ -186,6 +224,7 @@ function giro(ora) {
 
   if (rete.stato === 'menu') {
     if (pannelloMenu.hidden) pannelloMenu.hidden = false;
+    if (!bottonePausa.hidden) bottonePausa.hidden = true;
     return; // parla il menu
   }
 

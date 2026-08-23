@@ -1,3 +1,13 @@
+/**
+ * La versione del gioco. Serve a una cosa sola ma importante: il client
+ * dentro l'APK e' impacchettato, il server gira sul PC, e i due possono
+ * finire disallineati senza che nulla lo dica — un server lasciato acceso
+ * dalla sera prima fa sparire in silenzio tutto quello che sta dalla sua
+ * parte (mira assistita, allarme, modalita' in solitaria) e sembra che il
+ * gioco sia rotto. Se i numeri non coincidono, ora lo si legge a schermo.
+ */
+export const VERSIONE = '0.7';
+
 // Numeri che server e client devono conoscere allo stesso modo.
 // Questa cartella e' condivisa: il server la importa da ../client/condiviso/,
 // il browser la scarica come modulo ES. Un solo posto da modificare.

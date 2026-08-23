@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 
 import { Mondo } from './mondo.js';
-import { TICK_HZ } from '../client/condiviso/regole.js';
+import { TICK_HZ, VERSIONE } from '../client/condiviso/regole.js';
 
 const QUI = path.dirname(fileURLToPath(import.meta.url));
 const RADICE = path.join(QUI, '..', 'client');
@@ -72,6 +72,11 @@ wss.on('connection', (ws, req) => {
   ws.gioco = null;
   const da = req.socket.remoteAddress?.replace('::ffff:', '') ?? '?';
 
+  // La versione si dice subito, prima ancora che scelgano la classe: se il
+  // server e' rimasto acceso da ieri, chi gioca deve saperlo PRIMA di
+  // giocare, non dopo aver scoperto che meta' del gioco non c'e'.
+  manda(ws, { t: 'ciao', versione: VERSIONE });
+
   ws.on('message', (grezzo) => {
     let msg;
     try {
@@ -98,6 +103,7 @@ wss.on('connection', (ws, req) => {
       ws.gioco = g.id;
       manda(ws, {
         t: 'benvenuto',
+        versione: VERSIONE,
         id: g.id,
         ruolo: g.ruolo,
         nome: g.nome,
@@ -129,6 +135,15 @@ wss.on('connection', (ws, req) => {
       if (guai.length) {
         console.log(`! ${nome}: ${guai.join(', ')}  [${msg.fps} fps, ping ${msg.ping} ms]`);
       }
+      return;
+    }
+
+    if (msg.t === 'esci' && ws.gioco) {
+      const g = mondo.giocatori.get(ws.gioco);
+      mondo.esce(ws.gioco);
+      padroni.delete(ws.gioco);
+      ws.gioco = null;
+      if (g) console.log(`- ${g.nome} ha lasciato la partita`);
       return;
     }
 

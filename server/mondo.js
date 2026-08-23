@@ -900,21 +900,22 @@ export class Mondo {
     // Poi: se vede un nemico, gli spara.
     if (this.copri(g)) return;
 
-    // Altrimenti gira nei paraggi, come prima.
-    if (!g.meta || Math.hypot(g.meta.x - g.x, g.meta.y - g.y) < 12) {
+    // Altrimenti gira nei paraggi — aggirando i muri come per le missioni.
+    // Puntando dritto si incastrava contro gli spigoli e restava li' a
+    // sbattere finche' non cambiava idea, che da fuori sembra un compagno
+    // scemo o addirittura fermo.
+    if (!g.meta || Math.hypot(g.meta.x - g.x, g.meta.y - g.y) < 16) {
       const c =
         this.casellaLiberaVicino(umano, 8) ??
         this.caselleLibere[(Math.random() * this.caselleLibere.length) | 0];
       g.meta = centroCasella(this.mappa, c.tx, c.ty);
     }
-    const dx = g.meta.x - g.x;
-    const dy = g.meta.y - g.y;
-    const len = Math.hypot(dx, dy) || 1;
     const primaX = g.x;
     const primaY = g.y;
-    muovi(g, dx / len, dy / len, dt, this.mappa);
+    this.trascina(g, g.meta, 155, dt);
+    // Se comunque non si e' mosso, la meta' era irraggiungibile: se ne sceglie
+    // un'altra invece di insistere.
     if (Math.hypot(g.x - primaX, g.y - primaY) < 0.4) g.meta = null;
-    g.ang = Math.atan2(dy, dx);
   }
 
   /** Guarda se c'e' un nemico in vista e gli spara. Torna vero se ne ha trovato uno. */

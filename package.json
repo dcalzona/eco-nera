@@ -8,7 +8,8 @@
     "server": "node server/server.js",
     "sync": "cap sync android",
     "apk": "cap sync android && cd android && gradlew.bat assembleDebug",
-    "apri-android": "cap open android"
+    "apri-android": "cap open android",
+    "sviluppo": "node --watch server/server.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

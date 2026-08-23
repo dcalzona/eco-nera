@@ -14,6 +14,19 @@ Wi-Fi di casa. Come Dragon Tower: JavaScript puro, moduli ES nativi, Canvas 2D,
 node server/server.js
 ```
 
+Mentre ci si lavora conviene questo, che si riavvia da solo a ogni modifica:
+
+```bash
+npm run sviluppo
+```
+
+**Il server va riavviato quando cambia il suo codice.** Sembra ovvio e non lo
+e': mira assistita, allarme, classi e modalita' in solitaria stanno tutte dalla
+sua parte, e un server lasciato acceso dalla sessione prima le fa sparire tutte
+insieme in silenzio — sembra che il gioco sia rotto. Per questo client e server
+si dicono la versione appena si collegano, e se non coincidono il menu lo
+scrive.
+
 Il terminale stampa l'indirizzo da aprire dal telefono, tipo
 `http://192.168.2.46:5190`. Nessuna app da installare per ora: l'APK arriva
 alla fine, quando il gioco c'e'.

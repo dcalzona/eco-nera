@@ -31,7 +31,18 @@
          Sono pensate per uno schermo BASSO — il gioco e' bloccato in
          orizzontale, quindi in verticale ci sono si e no 360 punti, e una
          scheda alta manda i nomi sotto il bordo. */
-      #menu, #guida, #collegamento, #fine {
+      #apriPausa {
+        position: absolute;
+        top: calc(6px + env(safe-area-inset-top, 0px));
+        right: calc(6px + env(safe-area-inset-right, 0px));
+        width: 38px; height: 38px;
+        border: 0; border-radius: 9px;
+        background: rgba(12,16,23,0.72); color: #98a3bd;
+        font-size: 17px; line-height: 1; cursor: pointer;
+      }
+      #apriPausa[hidden] { display: none; }
+
+      #menu, #guida, #collegamento, #fine, #pausa {
         position: absolute;
         inset: 0;
         background: #05070c;
@@ -42,7 +53,13 @@
                  calc(10px + env(safe-area-inset-bottom, 0px))
                  calc(14px + env(safe-area-inset-left, 0px));
       }
-      #menu[hidden], #guida[hidden], #fine[hidden] { display: none; }
+      #menu[hidden], #guida[hidden], #fine[hidden], #pausa[hidden] { display: none; }
+      #pausa { display: flex; align-items: center; justify-content: center;
+               background: rgba(5,7,12,0.93); }
+      #pausaDentro { text-align: center; }
+      #pausaDentro h1 { font-size: 22px; letter-spacing: 0.05em; }
+      .avvisoPausa { color: #98a3bd; font-size: 12px; margin: 6px 0 14px; }
+      #pausaDentro .pulsantiera { justify-content: center; }
       #fine { display: flex; align-items: center; justify-content: center; }
       #fineDentro { text-align: center; max-width: 460px; }
       #fineDentro h1 { font-size: 24px; color: #ff5d5d; letter-spacing: 0.05em; }
@@ -152,7 +169,12 @@
     </style>
   </head>
   <body>
-    <div id="wrap"><canvas id="gioco"></canvas></div>
+    <div id="wrap">
+      <canvas id="gioco"></canvas>
+      <!-- Il solo pezzo di interfaccia in HTML sopra al gioco: un pulsante
+           piccolo in alto a destra, lontano dai pollici. -->
+      <button id="apriPausa" type="button" hidden aria-label="Menu">☰</button>
+    </div>
 
     <!-- Il menu: si sceglie la classe e si parte. Sta in HTML e non nel
          canvas perche' un elenco di schede con del testo lo sa fare meglio il
@@ -173,10 +195,22 @@
       </div>
     </div>
 
+    <div id="pausa" hidden>
+      <div id="pausaDentro">
+        <h1>Pausa</h1>
+        <p class="avvisoPausa">La partita non si ferma: il server va avanti e il compagno anche.</p>
+        <div class="pulsantiera">
+          <button id="riprendi" type="button">Riprendi</button>
+          <button id="esciAlMenu" type="button" class="secondario">Esci al menu</button>
+        </div>
+      </div>
+    </div>
+
     <div id="fine" hidden>
       <div id="fineDentro">
         <h1>Spedizione perduta</h1>
         <p id="fineDettaglio"></p>
+        <p id="avvisoVersione" class="avvisoPausa" hidden></p>
         <button id="tornaAlMenu" type="button">Torna al menu</button>
       </div>
     </div>
