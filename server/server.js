@@ -110,6 +110,10 @@ wss.on('connection', (ws, req) => {
         tickHz: TICK_HZ,
         mappa: mondo.mappa,
       });
+      // La pianta subito dopo il benvenuto: la prima fotografia parla per
+      // posizioni che solo la pianta conosce, e senza di lei chi entra
+      // vedrebbe un settore senza obiettivi per un cinquantesimo di secondo.
+      manda(ws, mondo.pianta());
       console.log(`+ ${g.nome} (${g.ruolo}) da ${da}`);
       return;
     }
@@ -224,6 +228,18 @@ setInterval(() => {
       });
       for (const ws of wss.clients) {
         if (ws.gioco && ws.readyState === ws.OPEN) ws.send(annuncio);
+      }
+    }
+
+    // Quello che nel settore non si muove si manda solo quando cambia: le
+    // posizioni degli obiettivi, le casse rimaste, chi c'e' in campo. Prima
+    // ripartivano venti volte al secondo ed erano piu' di un quarto del
+    // traffico, speso per ripetere cose gia' dette.
+    if (mondo.piantaCambiata) {
+      mondo.piantaCambiata = false;
+      const pianta = JSON.stringify(mondo.pianta());
+      for (const ws of wss.clients) {
+        if (ws.gioco && ws.readyState === ws.OPEN) ws.send(pianta);
       }
     }
 

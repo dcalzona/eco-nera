@@ -245,11 +245,43 @@ scatta. Allora il server conta i tick in cui la coda dei comandi era vuota, e
 quando sono piu' di otto ogni due secondi lo scrive nel terminale insieme al
 resto del diario.
 
-**Il traffico**, misurato: ~75 MB per ora di gioco, per telefono. La salita e'
-poca cosa; e' la discesa a pesare — venti fotografie al secondo da ~670 byte
-l'una. Dentro una fotografia: 36% nemici, 26% giocatori, 19% obiettivi, 9%
-casse. Obiettivi e casse dentro un settore non cambiano quasi mai, quindi
-rispedirli venti volte al secondo e' il prossimo spreco da togliere.
+### La pianta e la fotografia
+
+A pesare non era la salita, era la discesa: venti fotografie al secondo. E
+dentro ogni fotografia c'era un mucchio di roba gia' detta — le posizioni degli
+obiettivi, quelle delle casse, i nomi dei giocatori. Cose che dentro un settore
+non si muovono di un pixel, rispedite venti volte al secondo.
+
+Adesso il protocollo e' diviso in due.
+
+**La pianta** dice dov'e' cosa: la modalita', le posizioni dei server da
+spegnere e il loro verso, il punto dell'uscita, il sito della bomba, la
+geometria della zona, le casse rimaste, e chi e' in campo con nome e ruolo.
+Parte all'ingresso e poi solo quando qualcosa cambia davvero — una cassa presa,
+un giocatore che entra, la bomba dopo. Se ne accorge un campanello
+(`piantaCambiata`), come gia' faceva la mappa.
+
+**La fotografia** dice come stanno le cose, e solo quelle che si muovono. In
+piu' tace ogni campo che vale il solito: un nemico intero, in ronda e non
+marcato manda tre campi in meno; un giocatore in piedi, non ferito e senza
+bomba in mano ne manda cinque in meno. E' `rete.js` a rimettere i valori di
+riposo, una volta sola negli accessi — chi disegna riceve la stessa forma di
+sempre e non sa niente di tutto questo.
+
+| scena di riferimento (2 giocatori, 7 nemici) | prima | adesso |
+| --- | --- | --- |
+| una fotografia | 1086 B | **545 B** |
+| in discesa | 21,2 kB/s | **10,6 kB/s** |
+| pianta | — | 330 B, di rado |
+
+Sommato ai comandi raggruppati: da ~75 MB l'ora a **~45**.
+
+Il pezzo delicato e' che il telefono deve rimontare i due pezzi esattamente
+com'erano. Lo controlla una prova che confronta quello che il telefono ricostruisce
+con quello che c'e' davvero nel mondo, in tutte e tre le modalita' e con
+personaggi a terra, nemici feriti, bombe in mano e casse raccolte: se il
+rimontaggio sbagliasse un campo si vedrebbe come un nemico sempre intero o un
+compagno senza nome, cose che in partita si notano tardi e si spiegano peggio.
 
 ## Le lingue
 

@@ -63,6 +63,8 @@ export class ReteLocale extends Rete {
     this.oraSim = performance.now();
     this.ultimoOrologio = performance.now();
     this.arretrato = 0;
+    this.ricevi(this.mondo.pianta()); // com'e' fatto il settore, prima di tutto
+    this.mondo.piantaCambiata = false;
     this.accendiOrologio();
     return true;
   }
@@ -118,6 +120,13 @@ export class ReteLocale extends Rete {
         this.settore = this.mondo.settore;
         this.fotografie.length = 0;
         this.versioneMappa++;
+      }
+
+      // La pianta prima della fotografia, come fa il server vero: la
+      // fotografia parla per posizioni che solo la pianta conosce.
+      if (this.mondo.piantaCambiata) {
+        this.mondo.piantaCambiata = false;
+        this.ricevi(this.mondo.pianta());
       }
 
       this.ricevi(this.mondo.istantanea(this.oraSim));

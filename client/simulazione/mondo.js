@@ -65,6 +65,10 @@ export class Mondo {
     this.attesaRinforzi = 0;
     this.settore = 0;
     this.mappaCambiata = false;
+    // Suona quando cambia qualcosa nella pianta — le posizioni degli
+    // obiettivi, le casse rimaste, chi c'e' in campo. Chi spedisce se ne
+    // accorge e rimanda la pianta, che se no resterebbe quella di prima.
+    this.piantaCambiata = true;
     this.tuttiGiu = 0;
     this.disfatta = false;
     this.pronti = new Set();
@@ -130,13 +134,23 @@ export class Mondo {
       // nessuno — passandoci sopra si raccoglievano tutte e due insieme e una
       // delle due era regalata al nulla. Si prova qualche posto e ci si
       // accontenta solo alla fine.
+      // Si prova qualche posto e si tiene il piu' lontano da quelle gia' messe.
+      // Non si rinuncia mai a una cassa: meglio due un po' vicine che una in
+      // meno, e con poche stanze capitava di perderla per strada.
       let scelta = null;
-      for (let tentativo = 0; tentativo < 12 && !scelta; tentativo++) {
+      let migliorDistanza = -1;
+      for (let tentativo = 0; tentativo < 12; tentativo++) {
         const tx = stanza.x + 1 + ((k * 3 + tentativo) % Math.max(1, stanza.w - 2));
         const ty = stanza.y + 1 + ((k * 2 + tentativo) % Math.max(1, stanza.h - 2));
         const p = centroCasella(this.mappa, tx, ty);
-        const minimo = tentativo < 8 ? 3 * TILE : RIFORNIMENTI.raggio * 2;
-        if (this.rifornimenti.every((r) => Math.hypot(r.x - p.x, r.y - p.y) > minimo)) scelta = p;
+        const distanza = this.rifornimenti.length
+          ? Math.min(...this.rifornimenti.map((r) => Math.hypot(r.x - p.x, r.y - p.y)))
+          : Infinity;
+        if (distanza > migliorDistanza) {
+          migliorDistanza = distanza;
+          scelta = p;
+        }
+        if (distanza > 3 * TILE) break; // abbastanza lontana: va bene cosi'
       }
       if (scelta) this.rifornimenti.push({ ...scelta, usatoDa: [] });
     }
@@ -151,6 +165,7 @@ export class Mondo {
 
     for (const g of this.giocatori.values()) this.riportaAllIngresso(g);
     this.mappaCambiata = true;
+    this.piantaCambiata = true;
     console.log(`
 === Settore ${numero} — ${this.modalita} — ${this.nemici.length} nemici ===`);
   }
@@ -240,6 +255,7 @@ export class Mondo {
     b.portata = null;
     b.tempo = 0;
     b.posa = 0;
+    this.piantaCambiata = true; // il punto dove va piazzata e' un altro
   }
 
   /** Dominio: una zona sola, in fondo, da tenere mentre arrivano. */
@@ -285,6 +301,7 @@ export class Mondo {
         g.online = true;
         g.scollegatoDa = null;
         g.soloVoluto = solo;
+        this.piantaCambiata = true; // torna in campo, e il nome va ridetto
 
         // Rientrando si puo' cambiare classe. Prima no: il personaggio si
         // ritrovava dalla sessione e la classe chiesta veniva ignorata, quindi
@@ -331,12 +348,14 @@ export class Mondo {
       ...statoIniziale(),
     };
     this.giocatori.set(id, g);
+    this.piantaCambiata = true;
     return g;
   }
 
   esce(id) {
     const g = this.giocatori.get(id);
     if (!g) return;
+    this.piantaCambiata = true;
     g.online = false;
     g.scollegatoDa = Date.now();
     g.coda.length = 0;
@@ -599,12 +618,14 @@ export class Mondo {
         g.armatura = Math.min(ARMATURA_MASSIMA, g.armatura + RIFORNIMENTI.armatura);
         g.vita = Math.min(VITA_MASSIMA, g.vita + RIFORNIMENTI.salute);
         cassa.usatoDa.push(g.id);
+        this.piantaCambiata = true;
         console.log(`${g.nome} si e' rifornito: ${Math.round(g.armatura)} di armatura.`);
       }
 
       // Sparisce quando l'hanno presa tutti quelli che c'erano.
       if (presenti.length && presenti.every((g) => cassa.usatoDa.includes(g.id))) {
         this.rifornimenti.splice(k, 1);
+        this.piantaCambiata = true;
       }
     }
   }
@@ -1279,6 +1300,7 @@ export class Mondo {
     if (umani >= 2 && this.fantoccio) {
       this.giocatori.delete(this.fantoccio.id);
       this.fantoccio = null;
+      this.piantaCambiata = true;
       console.log('Il fantoccio si fa da parte: siete in due.');
       return;
     }
@@ -1288,6 +1310,7 @@ export class Mondo {
       if (this.fantoccio) {
         this.giocatori.delete(this.fantoccio.id);
         this.fantoccio = null;
+        this.piantaCambiata = true;
         console.log('Partita in solitaria: niente fantoccio.');
       }
       return;
@@ -1316,6 +1339,7 @@ export class Mondo {
         ...statoIniziale(),
       };
       this.giocatori.set(id, this.fantoccio);
+      this.piantaCambiata = true;
       console.log('Entra il fantoccio, cosi hai qualcuno da guardare.');
     }
   }
@@ -1471,12 +1495,61 @@ export class Mondo {
     g.ang = Math.atan2(dir.y, dir.x);
   }
 
-  /** La fotografia da spedire ai client. Nomi corti: viaggia 20 volte al secondo. */
+  /**
+   * La PIANTA: tutto quello che dentro un settore non cambia mai, o cambia
+   * una volta ogni tanto. Si manda quando serve e non venti volte al secondo.
+   *
+   * Prima ci stava dentro la fotografia, e ogni cinquantesimo di secondo
+   * partivano di nuovo le posizioni dei server da spegnere, quelle delle casse
+   * e i nomi dei giocatori — roba che non si era mossa di un pixel. Erano piu'
+   * di un quarto del traffico, speso per ripetere cose gia' dette.
+   */
+  pianta() {
+    const identita = [];
+    for (const p of this.giocatori.values()) {
+      if (!p.online) continue;
+      identita.push({ i: p.id, n: p.nome, r: p.ruolo, b: p.bot ? 1 : 0 });
+    }
+
+    return {
+      t: 'pianta',
+      settore: this.settore,
+      md: this.modalita,
+      g: identita,
+      nuclei: this.nuclei.map((k) => ({
+        x: Math.round(k.x),
+        y: Math.round(k.y),
+        o: Math.round((k.ang ?? 0) * 100) / 100,
+      })),
+      es: { x: Math.round(this.estrazione.x), y: Math.round(this.estrazione.y) },
+      bo: this.bomba
+        ? { sx: Math.round(this.bomba.sito.x), sy: Math.round(this.bomba.sito.y), q: this.bomba.quante }
+        : null,
+      zo: this.zona
+        ? { x: Math.round(this.zona.x), y: Math.round(this.zona.y), r: this.zona.raggio }
+        : null,
+      ri: this.rifornimenti.map((r, i) => ({
+        i,
+        x: Math.round(r.x),
+        y: Math.round(r.y),
+        u: r.usatoDa,
+      })),
+    };
+  }
+
+  /**
+   * La fotografia: solo quello che si muove. Nomi corti e campi taciuti quando
+   * valgono il solito — un nemico intero, in ronda e non marcato manda tre
+   * campi in meno, e i nemici sono la parte piu' grossa del pacchetto.
+   *
+   * Chi legge deve mettere i valori di riposo al posto di quelli che mancano:
+   * lo fa `rete.js` una volta sola, negli accessi.
+   */
   istantanea(ora = Date.now()) {
     const g = [];
     for (const p of this.giocatori.values()) {
       if (!p.online) continue;
-      g.push({
+      const uno = {
         i: p.id,
         // Due decimali, non uno: il telefono riparte da questo numero per
         // rifare i conti, e vicino a un muro un decimo di pixel basta a
@@ -1484,32 +1557,37 @@ export class Mondo {
         x: Math.round(p.x * 100) / 100,
         y: Math.round(p.y * 100) / 100,
         a: Math.round(p.ang * 100) / 100,
-        n: p.nome,
-        r: p.ruolo,
-        b: p.bot ? 1 : 0,
-        s: p.ultimoSeq ?? 0, // ultimo comando eseguito: serve al telefono per rifare i conti
+        s: p.ultimoSeq ?? 0, // ultimo comando eseguito: serve a rifare i conti
         v: Math.round(p.vita),
         ar: Math.round(p.armatura),
-        st: p.stato,
-        rn: Math.round(p.rianima * 100) / 100,
-        tc: Math.round(p.stato === STATO.CRITICO ? p.criticoRimasto : p.rientroRimasto),
         l: p.torcia ? 1 : 0,
         ca: Math.round(p.carica * 100) / 100,
-        es: p.esaurita ? 1 : 0,
-        ab: Math.round(p.abilitaRicarica * 10) / 10,
-        bo: this.portaLaBomba(p) ? 1 : 0, // ha la bomba in mano
-      });
+      };
+      // Tutto il resto solo quando c'e' davvero qualcosa da dire.
+      if (p.stato !== STATO.VIVO) {
+        uno.st = p.stato;
+        uno.tc = Math.round(p.stato === STATO.CRITICO ? p.criticoRimasto : p.rientroRimasto);
+      }
+      if (p.rianima > 0) uno.rn = Math.round(p.rianima * 100) / 100;
+      if (p.esaurita) uno.es = 1;
+      if (p.abilitaRicarica > 0) uno.ab = Math.round(p.abilitaRicarica * 10) / 10;
+      if (this.portaLaBomba(p)) uno.bo = 1;
+      g.push(uno);
     }
 
-    const n = this.nemici.map((e) => ({
-      i: e.id,
-      x: Math.round(e.x * 10) / 10,
-      y: Math.round(e.y * 10) / 10,
-      a: Math.round(e.ang * 100) / 100,
-      v: Math.round(e.vita),
-      u: e.umore,
-      m: e.marcatoResta > 0 ? 1 : 0,
-    }));
+    const vitaPiena = NEMICI.pattugliatore.vita;
+    const n = this.nemici.map((e) => {
+      const uno = {
+        i: e.id,
+        x: Math.round(e.x * 10) / 10,
+        y: Math.round(e.y * 10) / 10,
+        a: Math.round(e.ang * 100) / 100,
+      };
+      if (e.vita < vitaPiena) uno.v = Math.round(e.vita);
+      if (e.umore !== UMORE.PATTUGLIA) uno.u = e.umore;
+      if (e.marcatoResta > 0) uno.m = 1;
+      return uno;
+    });
 
     const c = this.proiettili.map((p) => ({
       i: p.id,
@@ -1555,64 +1633,42 @@ export class Mondo {
       resta: Math.round(e.resta * 100) / 100,
     }));
 
-    const ob = {
-      settore: this.settore,
-      md: this.modalita,
-      pr: Math.round(this.preparazione * 10) / 10,
-      fatto: this.missioneFatta ? 1 : 0,
-      nuclei: this.nuclei.map((k) => ({
-        x: Math.round(k.x),
-        y: Math.round(k.y),
-        o: Math.round((k.ang ?? 0) * 100) / 100,
-        a: k.attivo ? 1 : 0,
-        p: Math.round(k.progresso * 100) / 100,
-      })),
-      bo: this.bomba
-        ? {
-            st: this.bomba.stato,
-            x: Math.round(this.bomba.x),
-            y: Math.round(this.bomba.y),
-            sx: Math.round(this.bomba.sito.x),
-            sy: Math.round(this.bomba.sito.y),
-            t: Math.max(0, Math.round(this.bomba.tempo)),
-            p: Math.round(this.bomba.posa * 100) / 100,
-            da: this.bomba.portata ?? 0,
-            c: this.bomba.contesa ? 1 : 0,
-            n: this.bomba.fatte,
-            q: this.bomba.quante,
-          }
-        : null,
-      zo: this.zona
-        ? {
-            x: Math.round(this.zona.x),
-            y: Math.round(this.zona.y),
-            r: this.zona.raggio,
-            p: Math.round(this.zona.progresso * 100) / 100,
-            c: this.zona.contesa ? 1 : 0,
-          }
-        : null,
-      al: this.allarme ? 1 : 0,
-      fine: this.disfatta ? 1 : 0,
-      es: {
-        x: Math.round(this.estrazione.x),
-        y: Math.round(this.estrazione.y),
-        a: this.estrazione.aperta ? 1 : 0,
-        p: Math.round(this.estrazione.progresso * 100) / 100,
-      },
-    };
-
-    const ri = this.rifornimenti.map((r, i) => ({
-      i,
-      x: Math.round(r.x),
-      y: Math.round(r.y),
-      u: r.usatoDa,
-    }));
+    // Gli obiettivi, solo per la parte che si muove. Dove stanno le cose lo
+    // dice la pianta; qui si dice come stanno.
+    const ob = {};
+    if (this.preparazione > 0) ob.pr = Math.round(this.preparazione * 10) / 10;
+    if (this.allarme) ob.al = 1;
+    if (this.disfatta) ob.fine = 1;
+    if (this.missioneFatta) ob.fatto = 1;
+    if (this.nuclei.length) {
+      // Due numeri per nucleo, in fila: l'abbinamento con la pianta e' per
+      // posizione, e dentro un settore l'ordine non cambia mai.
+      ob.nu = this.nuclei.map((k) => [k.attivo ? 1 : 0, Math.round(k.progresso * 100) / 100]);
+    }
+    if (this.estrazione.aperta) ob.ea = 1;
+    if (this.estrazione.progresso > 0) ob.ep = Math.round(this.estrazione.progresso * 100) / 100;
+    if (this.bomba) {
+      ob.bo = {
+        st: this.bomba.stato,
+        x: Math.round(this.bomba.x),
+        y: Math.round(this.bomba.y),
+        t: Math.max(0, Math.round(this.bomba.tempo)),
+        n: this.bomba.fatte,
+      };
+      if (this.bomba.posa > 0) ob.bo.p = Math.round(this.bomba.posa * 100) / 100;
+      if (this.bomba.portata) ob.bo.da = this.bomba.portata;
+      if (this.bomba.contesa) ob.bo.c = 1;
+    }
+    if (this.zona) {
+      ob.zo = { p: Math.round(this.zona.progresso * 100) / 100 };
+      if (this.zona.contesa) ob.zo.c = 1;
+    }
 
     return {
       t: 'stato',
       tick: this.tick,
       ms: ora,
-      g, n, c, fu, so, ri, rp, sp, ob,
+      g, n, c, fu, so, rp, sp, ob,
       su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)),
     };
   }

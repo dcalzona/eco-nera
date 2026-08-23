@@ -15,6 +15,9 @@ import {
   ATTESA_MASSIMA_COMANDI,
   TICK_HZ,
   VERSIONE,
+  STATO,
+  UMORE,
+  NEMICI,
 } from '../condiviso/regole.js';
 
 /** Ogni quanto arriva una fotografia, se tutto va bene. */
@@ -78,6 +81,9 @@ export class Rete {
     this.riconnessioni = 0;
     this.rumoriSentiti = []; // rumori appena arrivati, con l'ora locale
     this.rumoriVisti = new Set();
+    // La pianta del settore: dove stanno le cose che non si muovono, e chi e'
+    // in campo. Arriva quando cambia, non venti volte al secondo.
+    this.pianta = null;
     this.versioneMappa = 0; // cambia a ogni settore nuovo
     this.ultimaFotografiaOra = 0;
     this.classe = null;
@@ -258,6 +264,11 @@ export class Rete {
       return;
     }
 
+    if (msg.t === 'pianta') {
+      this.pianta = msg;
+      return;
+    }
+
     if (msg.t === 'pong') {
       this.ping = Math.round(performance.now() - msg.c);
       return;
@@ -386,14 +397,43 @@ export class Rete {
     this.ws.send(JSON.stringify({ t: 'diario', ...dati }));
   }
 
-  /** Dove stanno tutti, 100 ms nel passato, con le posizioni interpolate. */
+  /**
+   * Dove stanno tutti, 100 ms nel passato, con le posizioni interpolate — e
+   * con nome, ruolo e stato rimessi al loro posto.
+   *
+   * La fotografia porta solo quello che si muove: il nome e il ruolo stanno
+   * nella pianta, e i campi che valgono il solito (in piedi, non ferito, senza
+   * bomba in mano) non viaggiano affatto. Qui si rimettono i valori di riposo,
+   * una volta sola, cosi' chi disegna trova sempre un personaggio completo e
+   * non deve sapere niente di tutto questo.
+   */
   personaggi() {
-    return this.interpolati('g', true);
+    const identita = this.pianta?.g ?? [];
+    return this.interpolati('g', true).map((p) => {
+      const chi = identita.find((q) => q.i === p.i);
+      return {
+        n: chi?.n ?? '',
+        r: chi?.r ?? 'faro',
+        b: chi?.b ?? 0,
+        st: STATO.VIVO,
+        rn: 0,
+        tc: 0,
+        es: 0,
+        ab: 0,
+        bo: 0,
+        ...p,
+      };
+    });
   }
 
-  /** I nemici, interpolati allo stesso modo. */
+  /** I nemici, interpolati allo stesso modo, con i valori di riposo rimessi. */
   nemici() {
-    return this.interpolati('n', true);
+    return this.interpolati('n', true).map((n) => ({
+      v: NEMICI.pattugliatore.vita,
+      u: UMORE.PATTUGLIA,
+      m: 0,
+      ...n,
+    }));
   }
 
   /**
@@ -408,9 +448,50 @@ export class Rete {
     return performance.now() - this.ultimaFotografiaOra > 400;
   }
 
-  /** Lo stato degli obiettivi del settore. */
+  /**
+   * Lo stato degli obiettivi, rimesso insieme: dove stanno le cose lo dice la
+   * pianta, come stanno lo dice la fotografia. Chi disegna riceve la stessa
+   * forma di sempre e non si accorge di niente.
+   */
   obiettivi() {
-    return this.fotografie.at(-1)?.ob ?? null;
+    const d = this.fotografie.at(-1)?.ob;
+    const s = this.pianta;
+    if (!d || !s) return null;
+
+    return {
+      settore: s.settore,
+      md: s.md,
+      pr: d.pr ?? 0,
+      al: d.al ?? 0,
+      fine: d.fine ?? 0,
+      fatto: d.fatto ?? 0,
+      nuclei: (s.nuclei ?? []).map((k, i) => ({
+        x: k.x,
+        y: k.y,
+        o: k.o,
+        a: d.nu?.[i]?.[0] ?? 0,
+        p: d.nu?.[i]?.[1] ?? 0,
+      })),
+      es: { x: s.es.x, y: s.es.y, a: d.ea ?? 0, p: d.ep ?? 0 },
+      bo: d.bo
+        ? {
+            st: d.bo.st,
+            x: d.bo.x,
+            y: d.bo.y,
+            t: d.bo.t,
+            n: d.bo.n,
+            p: d.bo.p ?? 0,
+            da: d.bo.da ?? 0,
+            c: d.bo.c ?? 0,
+            sx: s.bo?.sx ?? 0,
+            sy: s.bo?.sy ?? 0,
+            q: s.bo?.q ?? 1,
+          }
+        : null,
+      zo: d.zo && s.zo
+        ? { x: s.zo.x, y: s.zo.y, r: s.zo.r, p: d.zo.p ?? 0, c: d.zo.c ?? 0 }
+        : null,
+    };
   }
 
   /** I kit a terra: fanno anche un po' di luce, cosi' si trovano al buio. */
@@ -418,9 +499,9 @@ export class Rete {
     return this.fotografie.at(-1)?.fu ?? [];
   }
 
-  /** Le casse di rifornimento ancora in piedi. */
+  /** Le casse di rifornimento ancora in piedi. Stanno ferme: le dice la pianta. */
   rifornimenti() {
-    return this.fotografie.at(-1)?.ri ?? [];
+    return this.pianta?.ri ?? [];
   }
 
   /** I sonar posati dall'Eco. */
