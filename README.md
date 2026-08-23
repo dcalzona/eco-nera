@@ -170,6 +170,13 @@ scoprire che due Eco non aprono le porte da soli fa parte dell'imparare.
 
 ## Il conflitto
 
+Il colpo si **raddrizza da solo** verso il nemico piu' centrato, ma solo entro
+tredici gradi dal mirino e solo se non c'e' un muro in mezzo. Su un telefono il
+pollice non ha la precisione di un mouse, e questo e' un gioco contro il
+computer: pretendere la mira al pixel toglierebbe divertimento senza aggiungere
+niente. Tredici gradi perdonano un pollice impreciso, non permettono di sparare
+a caso e colpire.
+
 Si spara tenendo premuto lo stick destro: su un telefono un pulsante separato
 vorrebbe un terzo dito che non c'e'. Mirare e' sparare.
 
@@ -291,8 +298,14 @@ schermo indica dove tornare — aperta l'uscita il problema non e' piu' trovarla
 A ogni settore nuovo si riparte in piedi e con la vita piena: la tensione sta
 dentro il settore, non fra un settore e l'altro.
 
-Se non resta nessuno in piedi per quattro secondi la spedizione e' perduta e si
-ricomincia dal primo settore.
+Se non resta nessuno in piedi per quattro secondi la spedizione e' **perduta**:
+lo dice una schermata con il settore a cui siete arrivati, e da li' si torna al
+menu. Non riparte di nascosto dal primo settore — ritrovarcisi di colpo senza
+aver capito cosa e' successo e' peggio che perdere.
+
+Si puo' giocare **da soli**, spuntandolo nel menu: niente compagno automatico e
+qualche nemico in meno. Il gioco non cambia — cambia che non c'e' nessuno a
+rimetterti in piedi.
 
 ### Le mappe si generano
 

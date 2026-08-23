@@ -85,6 +85,7 @@ wss.on('connection', (ws, req) => {
         String(msg.sessione || ''),
         String(msg.nome || '').slice(0, 16),
         String(msg.classe || ''),
+        msg.solo === true,
       );
 
       const vecchio = padroni.get(g.id);

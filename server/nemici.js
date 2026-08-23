@@ -2,7 +2,8 @@
 // pattuglia, cerca, caccia. Un nemico che si capisce e' un nemico con cui si
 // puo' giocare — se non si intuisce cosa sta per fare, morire sembra ingiusto.
 
-import { NEMICI, OBLIO_SECONDI, UMORE, TILE, SCONTO_AL_BUIO } from '../client/condiviso/regole.js';
+import { NEMICI, OBLIO_SECONDI, UMORE, TILE, SCONTO_AL_BUIO, ALLARME }
+  from '../client/condiviso/regole.js';
 import { PARTENZE, pavimenti, centroCasella } from '../client/condiviso/mappa.js';
 import { scorri } from '../client/condiviso/fisica.js';
 import { campo, passoVerso, lineaLibera } from './navigazione.js';
@@ -115,7 +116,10 @@ function nuovoNemico(mappa, tx, ty) {
  * `campoBersagli` il campo di distanze verso di loro (calcolato una volta sola
  * per tutti), `spara` la funzione che crea un proiettile.
  */
-export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara) {
+export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara, allarme = false) {
+  // Con l'allarme corrono. Da fermi sono piu' lenti di chi gioca, e
+  // inseguendo da dietro non raggiungerebbero mai nessuno.
+  const passo = allarme ? dt * ALLARME.velocita : dt;
   // Prima si guarda chi vede chi, poi si decide chi ha il permesso di sparare:
   // i piu' vicini al loro bersaglio. Senza questo giro in due tempi ognuno
   // deciderebbe per conto suo e sparerebbero tutti.
@@ -141,7 +145,7 @@ export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara) {
       n.ultimaNota = { x: visto.x, y: visto.y };
       n.oblio = OBLIO_SECONDI;
       n.campoMeta = null;
-      cacciando(mappa, n, regola, visto, campoBersagli, dt, spara, permesso.has(n));
+      cacciando(mappa, n, regola, visto, campoBersagli, passo, dt, spara, permesso.has(n));
       continue;
     }
 
@@ -160,7 +164,7 @@ export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara) {
         n.meta = null;
         n.campoMeta = null;
       } else {
-        cammina(mappa, n, regola, n.campoMeta, dt);
+        cammina(mappa, n, regola, n.campoMeta, passo);
       }
       continue;
     }
@@ -190,7 +194,7 @@ function chiVede(mappa, n, regola, bersagli) {
   return miglior;
 }
 
-function cacciando(mappa, n, regola, bersaglio, campoBersagli, dt, spara, puoSparare) {
+function cacciando(mappa, n, regola, bersaglio, campoBersagli, passo, dt, spara, puoSparare) {
   const dx = bersaglio.x - n.x;
   const dy = bersaglio.y - n.y;
   const distanza = Math.hypot(dx, dy);
@@ -216,7 +220,7 @@ function cacciando(mappa, n, regola, bersaglio, campoBersagli, dt, spara, puoSpa
   n.mira = regola.pausaMira;
   const verso = campoBersagli ? passoVerso(mappa, campoBersagli, n.x, n.y) : null;
   const dir = verso ?? { x: dx / (distanza || 1), y: dy / (distanza || 1) };
-  scorri(n, dir.x * regola.velocita * dt, dir.y * regola.velocita * dt, mappa);
+  scorri(n, dir.x * regola.velocita * passo, dir.y * regola.velocita * passo, mappa);
 }
 
 function pattugliando(mappa, n, regola, dt) {

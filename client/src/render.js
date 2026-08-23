@@ -460,16 +460,33 @@ export class Disegno {
    */
   allarme(intensita = 1) {
     const c = this.ctx;
-    const battito = 0.5 + 0.5 * Math.sin(performance.now() / 260);
-    const forza = (0.16 + 0.26 * battito) * intensita;
+    const battito = 0.5 + 0.5 * Math.sin(performance.now() / 240);
+    const forza = (0.30 + 0.34 * battito) * intensita;
 
+    // Parte quasi dal centro e arriva ai bordi: cosi' si vede sul serio.
+    // Resta un alone e non una lastra rossa perche' il gioco si vede gia'
+    // poco di suo, e proprio in quel momento serve vedere.
     const bordo = c.createRadialGradient(
-      this.w / 2, this.h / 2, Math.min(this.w, this.h) * 0.18,
-      this.w / 2, this.h / 2, Math.max(this.w, this.h) * 0.66,
+      this.w / 2, this.h / 2, Math.min(this.w, this.h) * 0.08,
+      this.w / 2, this.h / 2, Math.max(this.w, this.h) * 0.62,
     );
     bordo.addColorStop(0, 'rgba(255,40,40,0)');
+    bordo.addColorStop(0.55, `rgba(255,40,40,${(forza * 0.35).toFixed(3)})`);
     bordo.addColorStop(1, `rgba(255,40,40,${forza.toFixed(3)})`);
     c.fillStyle = bordo;
+    c.fillRect(0, 0, this.w, this.h);
+
+    // Una riga rossa lungo il bordo, che non lascia dubbi.
+    c.strokeStyle = `rgba(255,60,60,${(0.35 + 0.45 * battito).toFixed(3)})`;
+    c.lineWidth = 4;
+    c.strokeRect(2, 2, this.w - 4, this.h - 4);
+  }
+
+  /** Il lampo del momento in cui l'allarme scatta: mezzo secondo, poi passa. */
+  lampoAllarme(quanto) {
+    if (quanto <= 0) return;
+    const c = this.ctx;
+    c.fillStyle = `rgba(255,60,60,${(quanto * 0.45).toFixed(3)})`;
     c.fillRect(0, 0, this.w, this.h);
   }
 

@@ -221,10 +221,33 @@ export const IMPULSO_SONAR = 1.6;
  * inciampa. La fretta la mette la sirena, non un numero.
  */
 export const ALLARME = {
-  richiamo: 3.2, // ogni quanto i nemici si aggiornano su dove siete
-  rinforzi: 6, // secondi fra un rinforzo e l'altro, invece di dodici
-  memoria: 8, // quanto a lungo continuano a cercarvi dopo il richiamo
+  richiamo: 2.4, // ogni quanto i nemici si aggiornano su dove siete
+  rinforzi: 5, // secondi fra un rinforzo e l'altro, invece di dodici
+  memoria: 10, // quanto a lungo continuano a cercarvi dopo il richiamo
+  // Con l'allarme corrono: da fermi sono piu' lenti di voi, e inseguendovi da
+  // dietro non vi raggiungerebbero mai. Il ritorno dev'essere una fuga, e per
+  // esserlo qualcuno vi deve tagliare la strada.
+  velocita: 1.3,
+  // I rinforzi arrivano DAVANTI, verso l'uscita, non alle spalle: e' quello
+  // che rende il ritorno un attraversamento invece di una passeggiata con
+  // qualcuno che arranca dietro.
+  davanti: true,
 };
+
+/**
+ * L'assistenza alla mira. Su un telefono il pollice non ha la precisione di un
+ * mouse, e questo e' un gioco contro il computer: pretendere la mira al pixel
+ * toglierebbe divertimento senza aggiungere niente. Il colpo si raddrizza
+ * verso il nemico piu' centrato, ma solo entro pochi gradi — abbastanza da
+ * perdonare un pollice impreciso, non abbastanza da sparare a caso e colpire.
+ */
+export const ASSISTENZA = {
+  angolo: (13 * Math.PI) / 180, // quanto lontano dal mirino puo' stare il bersaglio
+  correzione: 0.85, // quanta parte dello scarto si raddrizza
+};
+
+/** Quanti nemici in meno quando si gioca da soli. */
+export const SCONTO_DA_SOLI = 0.65;
 
 export const SPEDIZIONE = {
   nucleiBase: 2,

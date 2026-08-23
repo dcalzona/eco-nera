@@ -67,12 +67,13 @@ export class Rete {
   }
 
   /** Entra in partita con la classe scelta. */
-  entra(classe) {
+  entra(classe, solo = false) {
     this.classe = classe;
+    this.solo = solo;
     localStorage.setItem('ecoNera.classe', classe);
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     this.stato = 'collego';
-    this.ws.send(JSON.stringify({ t: 'entra', sessione: sessione(), classe }));
+    this.ws.send(JSON.stringify({ t: 'entra', sessione: sessione(), classe, solo }));
   }
 
   /** Cambia server e riparte. Il telefono se lo ricorda per la volta dopo. */
@@ -109,7 +110,7 @@ export class Rete {
       // classe dal menu. Se pero' si era gia' dentro (e questa e' una
       // riconnessione), si rientra da soli con la stessa scelta di prima.
       if (this.classe) {
-        this.entra(this.classe);
+        this.entra(this.classe, this.solo);
       } else {
         // Il menu si mostra da qui e non dal giro di rendering: se la pagina
         // e' in secondo piano il rendering non gira, e resterebbe una

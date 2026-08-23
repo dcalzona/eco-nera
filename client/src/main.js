@@ -121,11 +121,29 @@ function nomeAbilita(tipo) {
   return 'scatto';
 }
 
+const spuntaSolo = document.getElementById('daSolo');
+spuntaSolo.checked = localStorage.getItem('ecoNera.solo') === '1';
+
 bottoneAvvio.addEventListener('click', () => {
   if (!classeScelta) return;
   suoni.avvia();
-  rete.entra(classeScelta);
+  localStorage.setItem('ecoNera.solo', spuntaSolo.checked ? '1' : '0');
+  rete.entra(classeScelta, spuntaSolo.checked);
   pannelloMenu.hidden = true;
+  pannelloFine.hidden = true;
+});
+
+// --- Fine partita ----------------------------------------------------------
+const pannelloFine = document.getElementById('fine');
+const fineDettaglio = document.getElementById('fineDettaglio');
+document.getElementById('tornaAlMenu').addEventListener('click', () => {
+  pannelloFine.hidden = true;
+  pannelloMenu.hidden = false;
+  // Si torna a scegliere: il collegamento resta aperto, ma non si rientra
+  // finche' non si preme Entra — e rientrando la spedizione riparte dal primo.
+  rete.stato = 'menu';
+  rete.classe = null;
+  suoni.sirena(false);
 });
 document.getElementById('apriGuida').addEventListener('click', () => {
   pannelloGuida.hidden = false;
@@ -155,6 +173,7 @@ let ultimoTickVisto = -1;
 let memoria = null; // le caselle gia' viste, che restano disegnate spente
 let versioneMappaVista = -1;
 let eraInStallo = false;
+let lampo = 0; // il lampo rosso quando l'allarme scatta
 
 let scorso = performance.now();
 let fps = 0;
@@ -304,8 +323,22 @@ function giro(ora) {
   suona(dt, scena.find((p) => p.i === rete.io), disegnato);
 
   const ob = rete.obiettivi();
+
+  // Spedizione perduta: lo dice una schermata, non un ritorno improvviso al
+  // primo settore senza aver capito cosa e' successo.
+  if (ob?.fine && pannelloFine.hidden) {
+    fineDettaglio.textContent = `Siete arrivati al settore ${ob.settore}. Nessuno e' rimasto in piedi.`;
+    pannelloFine.hidden = false;
+    suoni.sirena(false);
+    suoni.evento('aTerra');
+  }
+
   disegno.obiettivi(ob, memoria, mappa);
-  if (ob?.al) disegno.allarme();
+  if (ob?.al) {
+    disegno.allarme();
+    lampo = Math.max(0, lampo - dt * 2);
+    disegno.lampoAllarme(lampo);
+  }
   disegno.missione(ob, disegnato);
   disegno.hud([`ping ${rete.ping} ms   fps ${fps.toFixed(0)}`]);
   if (stallo) disegno.avviso('Rete interrotta — aspetto…');
@@ -434,7 +467,10 @@ function suona(dt, mio, dove) {
     if (prima_.uscita === 0 && ob.es.a === 1) suoni.evento('uscitaAperta');
     // La sirena non e' un effetto che parte e finisce: e' uno stato, e si
     // accende e si spegne insieme all'allarme.
-    if (prima_.allarme !== ob.al) suoni.sirena(ob.al === 1);
+    if (prima_.allarme !== ob.al) {
+      suoni.sirena(ob.al === 1);
+      if (ob.al === 1) lampo = 1;
+    }
     prima_.allarme = ob.al;
     if (prima_.settore !== null && ob.settore !== prima_.settore) suoni.evento('settore');
     prima_.nuclei = accesi;

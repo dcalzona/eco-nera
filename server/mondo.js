@@ -30,6 +30,8 @@ import {
   PASSO_RUMOROSO,
   SPEDIZIONE,
   ALLARME,
+  ASSISTENZA,
+  SCONTO_DA_SOLI,
   CLASSI,
   CLASSE_PREDEFINITA,
   IMPULSO_SONAR,
@@ -56,6 +58,7 @@ export class Mondo {
     this.settore = 0;
     this.mappaCambiata = false;
     this.tuttiGiu = 0;
+    this.disfatta = false;
     this.nuovoSettore(1);
   }
 
@@ -93,8 +96,8 @@ export class Mondo {
     this.allarme = false;
     this.prossimoRichiamo = 0;
 
-    this.nemiciDelSettore = Math.min(SPEDIZIONE.nemiciMax, SPEDIZIONE.nemiciBase + numero);
-    this.nemici = creaNemici(this.mappa, this.nemiciDelSettore);
+    this.nemiciBase = Math.min(SPEDIZIONE.nemiciMax, SPEDIZIONE.nemiciBase + numero);
+    this.nemici = creaNemici(this.mappa, this.tettoNemici());
 
     for (const g of this.giocatori.values()) this.riportaAllIngresso(g);
     this.mappaCambiata = true;
@@ -119,13 +122,20 @@ export class Mondo {
     if (g.coda) g.coda.length = 0;
   }
 
-  entra(sessione, nome, classe) {
+  entra(sessione, nome, classe, solo = false) {
+    // Chi rientra dopo una spedizione perduta la fa ricominciare da capo.
+    if (this.disfatta) {
+      this.disfatta = false;
+      this.tuttiGiu = 0;
+      this.nuovoSettore(1);
+    }
     // Stessa sessione = stesso personaggio: un ricaricamento della pagina o
     // lo schermo che si spegne non fanno ricominciare da capo.
     for (const g of this.giocatori.values()) {
       if (g.sessione === sessione) {
         g.online = true;
         g.scollegatoDa = null;
+        g.soloVoluto = solo;
         return g;
       }
     }
@@ -154,6 +164,7 @@ export class Mondo {
       // che rende i due percorsi identici.
       coda: [],
       ultimoSeq: 0,
+      soloVoluto: solo,
       ...statoIniziale(),
     };
     this.giocatori.set(id, g);
@@ -222,7 +233,7 @@ export class Mondo {
       );
       // Anche i loro spari si sentono, e chiamano i compagni.
       this.rumori.emetti('sparoNemico', n.x, n.y, -n.id);
-    });
+    }, this.allarme);
 
     passoProiettili(this.mappa, this.proiettili, dt, (c) => this.chiHoColpito(c));
 
@@ -447,9 +458,12 @@ export class Mondo {
       return;
     }
     this.tuttiGiu += dt;
-    if (this.tuttiGiu > 4) {
-      console.log('Spedizione perduta: si riparte dal primo settore.');
-      this.nuovoSettore(1);
+    if (this.tuttiGiu > 4 && !this.disfatta) {
+      // Non si riparte da soli: si dice che e' finita e si aspetta. Ritrovarsi
+      // di colpo al primo settore senza aver capito cosa e' successo e' peggio
+      // che perdere.
+      this.disfatta = true;
+      console.log(`Spedizione perduta al settore ${this.settore}.`);
     }
   }
 
@@ -466,14 +480,55 @@ export class Mondo {
    * saranno le spedizioni vere questo diventera' il ritmo di una missione.
    */
   ripopola(dt) {
-    if (this.nemici.length >= this.nemiciDelSettore) return;
+    if (this.nemici.length >= this.tettoNemici()) return;
     this.attesaRinforzi -= dt;
     if (this.attesaRinforzi > 0) return;
     this.attesaRinforzi = this.allarme ? ALLARME.rinforzi : 12;
 
     const lontanoDa = [...this.giocatori.values()].filter((g) => g.online || g.bot);
-    const nuovo = creaNemici(this.mappa, 1, lontanoDa)[0];
-    if (nuovo) this.nemici.push(nuovo);
+    // Con l'allarme il posto lo scegliamo noi (vicino all'uscita), quindi il
+    // filtro "lontano da chi gioca" qui scarterebbe stanze per niente — e
+    // quando si e' vicini all'uscita finiva per non nascere nessuno, proprio
+    // nel momento in cui i rinforzi servono.
+    const nuovo = creaNemici(this.mappa, 1, this.allarme ? [] : lontanoDa)[0];
+    if (!nuovo) return;
+
+    // Con l'allarme i rinforzi si presentano dalla parte dell'uscita, non
+    // alle spalle: cosi' il ritorno e' un attraversamento e non una fuga con
+    // qualcuno che arranca dietro. Mai addosso a chi gioca, pero'.
+    if (this.allarme && ALLARME.davanti) {
+      const vicinoAllUscita = this.caselleLibere
+        .map((c) => ({ c, d: Math.hypot((c.tx + 0.5) * TILE - this.estrazione.x, (c.ty + 0.5) * TILE - this.estrazione.y) }))
+        .filter(({ c }) =>
+          lontanoDa.every(
+            (g) => Math.hypot(g.x - (c.tx + 0.5) * TILE, g.y - (c.ty + 0.5) * TILE) > 7 * TILE,
+          ),
+        )
+        .sort((a, b) => a.d - b.d)[0];
+      if (vicinoAllUscita) {
+        const p = centroCasella(this.mappa, vicinoAllUscita.c.tx, vicinoAllUscita.c.ty);
+        nuovo.x = p.x;
+        nuovo.y = p.y;
+        nuovo.casa = { tx: vicinoAllUscita.c.tx, ty: vicinoAllUscita.c.ty };
+      }
+    }
+    this.nemici.push(nuovo);
+  }
+
+  /**
+   * Si sta giocando da soli per scelta? Non e' la stessa cosa di "c'e' un solo
+   * giocatore": chi entra da solo puo' volere il compagno automatico oppure no,
+   * e la differenza cambia sia il fantoccio sia quanti nemici ci sono.
+   */
+  daSoli() {
+    const umani = [...this.giocatori.values()].filter((g) => !g.bot && g.online);
+    return umani.length === 1 && umani[0].soloVoluto === true;
+  }
+
+  /** Quanti nemici tiene in piedi questo settore, con lo sconto per chi e' solo. */
+  tettoNemici() {
+    const base = this.nemiciBase ?? SPEDIZIONE.nemiciBase;
+    return Math.max(3, Math.round(base * (this.daSoli() ? SCONTO_DA_SOLI : 1)));
   }
 
   /** I giocatori ancora in piedi: bersagli per i nemici, sorgenti per il campo. */
@@ -533,10 +588,36 @@ export class Mondo {
     }
   }
 
+  /**
+   * Il nemico verso cui vale la pena raddrizzare il colpo: il piu' centrato
+   * rispetto a dove sta gia' puntando, non il piu' vicino. Chi mira a destra
+   * e ha un nemico a sinistra non deve vedersi il colpo curvare.
+   */
+  bersaglioAssistito(g, arma) {
+    let miglior = null;
+    let migliorScarto = ASSISTENZA.angolo;
+    for (const n of this.nemici) {
+      const dx = n.x - g.x;
+      const dy = n.y - g.y;
+      if (Math.hypot(dx, dy) > arma.gittata) continue;
+      const scarto = Math.abs(differenzaAngolo(Math.atan2(dy, dx), g.ang));
+      if (scarto >= migliorScarto) continue;
+      if (!lineaLibera(this.mappa, g.x, g.y, n.x, n.y)) continue;
+      migliorScarto = scarto;
+      miglior = { n, scarto: differenzaAngolo(Math.atan2(dy, dx), g.ang) };
+    }
+    return miglior;
+  }
+
   sparaGiocatore(g) {
     if (g.ricarica > 0) return;
     const arma = ARMI[g.ruolo] ?? ARMI.faro;
     g.ricarica = arma.cadenza;
+
+    // Il pollice non e' un mouse: il colpo si raddrizza di qualche grado verso
+    // il nemico piu' centrato. Poco, e solo se c'e' gia' quasi la mira.
+    const assistito = this.bersaglioAssistito(g, arma);
+    const mira = g.ang + (assistito ? assistito.scarto * ASSISTENZA.correzione : 0);
     // Ogni arma si sente per quanto e' rumorosa: il fucile a canne mozze
     // sveglia mezzo settore, quello di precisione molto meno. E' un pezzo di
     // identita' della classe che non si vede ma si sente.
@@ -551,7 +632,7 @@ export class Mondo {
           g.id,
           g.x,
           g.y,
-          g.ang + centro + sbandata,
+          mira + centro + sbandata,
           arma.danno,
           arma.gittata,
           arma.velocita,
@@ -700,6 +781,16 @@ export class Mondo {
       this.giocatori.delete(this.fantoccio.id);
       this.fantoccio = null;
       console.log('Il fantoccio si fa da parte: siete in due.');
+      return;
+    }
+
+    // Chi ha scelto di giocare da solo, gioca da solo.
+    if (umani === 1 && this.daSoli()) {
+      if (this.fantoccio) {
+        this.giocatori.delete(this.fantoccio.id);
+        this.fantoccio = null;
+        console.log('Partita in solitaria: niente fantoccio.');
+      }
       return;
     }
 
@@ -921,6 +1012,7 @@ export class Mondo {
         p: Math.round(k.progresso * 100) / 100,
       })),
       al: this.allarme ? 1 : 0,
+      fine: this.disfatta ? 1 : 0,
       es: {
         x: Math.round(this.estrazione.x),
         y: Math.round(this.estrazione.y),
@@ -931,6 +1023,14 @@ export class Mondo {
 
     return { t: 'stato', tick: this.tick, ms: ora, g, n, c, fu, so, ob, su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)) };
   }
+}
+
+/** Differenza fra due angoli, riportata fra -pi greco e +pi greco. */
+function differenzaAngolo(a, b) {
+  let d = (a - b) % (Math.PI * 2);
+  if (d > Math.PI) d -= Math.PI * 2;
+  if (d < -Math.PI) d += Math.PI * 2;
+  return d;
 }
 
 function statoIniziale() {
