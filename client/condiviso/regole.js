@@ -6,7 +6,7 @@
  * parte (mira assistita, allarme, modalita' in solitaria) e sembra che il
  * gioco sia rotto. Se i numeri non coincidono, ora lo si legge a schermo.
  */
-export const VERSIONE = '1.2';
+export const VERSIONE = '1.3';
 
 // Numeri che server e client devono conoscere allo stesso modo.
 // Questa cartella e' condivisa: il server la importa da ../client/condiviso/,
@@ -29,11 +29,46 @@ export const RAGGIO = 11;
 export const VELOCITA = 155;
 
 /**
- * Di quanto il client resta indietro rispetto al server per interpolare
- * i movimenti altrui. Due tick abbondanti: se il Wi-Fi perde un pacchetto
- * il movimento resta liscio invece di scattare.
+ * Di quanto il client resta indietro rispetto al server per interpolare i
+ * movimenti altrui. Due tick abbondanti: se il Wi-Fi perde un pacchetto il
+ * movimento resta liscio invece di scattare.
+ *
+ * Non e' piu' un numero fisso, ed e' il motivo per cui ce ne sono tre. In casa
+ * le fotografie arrivano puntuali e cento millisecondi bastano e avanzano;
+ * fuori, su una rete mobile, un pacchetto ogni tanto arriva con ottanta
+ * millisecondi di ritardo, e con un cuscino da cento il compagno si congela
+ * per un istante ogni volta. Allora il cuscino si misura: si guarda quanto
+ * tardano davvero le fotografie e ci si tiene quel tanto piu' indietro.
+ *
+ * Il minimo e' proprio cento — cioe' quello di sempre. Cosi' in casa il
+ * comportamento e' identico a prima, al millisecondo: il cuscino si allunga
+ * solo quando la rete lo chiede davvero.
  */
-export const RITARDO_INTERP = 100;
+export const RITARDO_MINIMO = 100;
+export const RITARDO_MASSIMO = 320;
+
+/**
+ * Quanto si sta larghi oltre al ritardo misurato. Un po' di margine sopra il
+ * pacchetto piu' tardivo visto di recente: senza, si sta sempre sul filo e
+ * basta un pacchetto un filo peggiore degli altri per restare a secco.
+ */
+export const MARGINE_RITARDO = 15;
+
+/**
+ * I comandi in salita. Il telefono ne produce uno per sottopasso, sessanta al
+ * secondo: in casa si spediscono uno per uno e va benissimo. Su rete mobile
+ * sessanta pacchettini al secondo arrivano peggio di venti pacchetti pieni —
+ * la radio deve chiedere il permesso di trasmettere a ogni giro, e i permessi
+ * costano decine di millisecondi.
+ *
+ * Quindi si raggruppano, ma solo quando serve: sotto la soglia di ping si
+ * continua a mandarli uno alla volta, esattamente come prima. Raggruppare
+ * aggiunge un filo di ritardo, e su una rete che non ne ha bisogno sarebbe
+ * ritardo regalato via.
+ */
+export const COMANDI_PER_PACCHETTO = 3;
+export const SOGLIA_PING_RAGGRUPPA = 15; // ms
+export const ATTESA_MASSIMA_COMANDI = 25; // ms: non si trattiene un comando oltre
 
 /**
  * Il passo elementare con cui si muove il mondo, uguale per il server e per il

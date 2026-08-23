@@ -204,6 +204,53 @@ passi che il telefono non ha fatto.
 `client/condiviso/` e' importata da tutti e due: mappa, regole e fisica sono un
 codice solo.
 
+### Quando il server non e' in casa
+
+Due cose sono tarate sul Wi-Fi di casa e su internet vanno strette. Tutte e due
+adesso si adattano, e **tutte e due lasciano il caso di casa esattamente
+com'era** — non si ritocca quello che funziona.
+
+**I comandi si raggruppano.** Il telefono ne produce uno per sottopasso,
+sessanta al secondo. In casa partono uno per uno, come sempre. Ma sopra i
+quindici millisecondi di ping se ne mandano tre per pacchetto (e mai
+trattenendone uno oltre venticinque millisecondi): su rete mobile la radio deve
+chiedere il permesso di trasmettere a ogni giro, e i permessi costano decine di
+millisecondi. Con un comando solo nel pacchetto si usa la forma di sempre, byte
+per byte, cosi' anche un server rimasto indietro di una versione capisce.
+
+| | uno per uno | raggruppati |
+| --- | --- | --- |
+| pacchetti in salita | 60/s | **20/s** |
+| salita | 7,6 kB/s | 5,6 kB/s |
+
+**Il cuscino di interpolazione si misura.** Gli altri si disegnano indietro nel
+tempo, e quel ritardo era fisso a cento millisecondi. Adesso si guarda di quanto
+tardano davvero le fotografie — il peggio degli ultimi tre secondi, non la media,
+perche' e' il pacchetto tardivo quello che si vede — e ci si tiene quel tanto
+piu' indietro, fra 100 e 320 ms.
+
+Si allunga di sei millisecondi per fotografia e si accorcia di quattro decimi:
+sedici volte piu' in fretta in salita che in discesa. Restare corti vuol dire
+vedere il compagno congelarsi; restare lunghi vuol dire vederlo un filo piu'
+indietro, che non se ne accorge nessuno. Fra i due sbagli si sceglie sempre il
+secondo. E il minimo e' proprio cento, quello di sempre: in casa il cuscino non
+si muove di un millimetro.
+
+Niente di tutto questo tocca il proprio personaggio, che si prevede in locale e
+si disegna sempre adesso.
+
+**La spia.** Se i comandi arrivassero troppo a singhiozzo il personaggio
+resterebbe fermo per un tick, e da fuori si vedrebbe solo un compagno che
+scatta. Allora il server conta i tick in cui la coda dei comandi era vuota, e
+quando sono piu' di otto ogni due secondi lo scrive nel terminale insieme al
+resto del diario.
+
+**Il traffico**, misurato: ~75 MB per ora di gioco, per telefono. La salita e'
+poca cosa; e' la discesa a pesare — venti fotografie al secondo da ~670 byte
+l'una. Dentro una fotografia: 36% nemici, 26% giocatori, 19% obiettivi, 9%
+casse. Obiettivi e casse dentro un settore non cambiano quasi mai, quindi
+rispedirli venti volte al secondo e' il prossimo spreco da togliere.
+
 ## Le lingue
 
 Italiano, inglese, francese, spagnolo, russo e olandese. Si scelgono dal menu e

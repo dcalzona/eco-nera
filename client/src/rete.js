@@ -6,7 +6,19 @@
 // giocatori scatterebbero. Allora si disegna sempre 100 ms nel passato, dove
 // le fotografie sono gia' arrivate tutte e due, e si interpola fra loro.
 
-import { RITARDO_INTERP, VERSIONE } from '../condiviso/regole.js';
+import {
+  RITARDO_MINIMO,
+  RITARDO_MASSIMO,
+  MARGINE_RITARDO,
+  COMANDI_PER_PACCHETTO,
+  SOGLIA_PING_RAGGRUPPA,
+  ATTESA_MASSIMA_COMANDI,
+  TICK_HZ,
+  VERSIONE,
+} from '../condiviso/regole.js';
+
+/** Ogni quanto arriva una fotografia, se tutto va bene. */
+const INTERVALLO_FOTOGRAFIE = 1000 / TICK_HZ;
 
 function sessione() {
   let s = localStorage.getItem('ecoNera.sessione');
@@ -69,6 +81,14 @@ export class Rete {
     this.versioneMappa = 0; // cambia a ogni settore nuovo
     this.ultimaFotografiaOra = 0;
     this.classe = null;
+
+    // Il cuscino di interpolazione, che si allunga se la rete lo chiede.
+    this.ritardo = RITARDO_MINIMO;
+    this.ritardiRecenti = []; // di quanto e' arrivata tardi ogni fotografia
+
+    // I comandi in attesa di partire, quando si raggruppano.
+    this.daMandare = [];
+    this.primoInAttesa = 0;
   }
 
   /**
@@ -106,6 +126,7 @@ export class Rete {
    * mappa per mezzo minuto, e il compagno non aspetta uno che non torna.
    */
   lascia() {
+    this.svuotaComandi();
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ t: 'esci' }));
     }
@@ -250,6 +271,13 @@ export class Rete {
       if (this.scarto === null || scarto > this.scarto) this.scarto = scarto;
       else this.scarto += (scarto - this.scarto) * 0.01;
 
+      // Quanto e' arrivata in ritardo rispetto alla piu' puntuale che si sia
+      // vista: zero per quella buona, tanto per quella che ha preso traffico
+      // per strada. E' questa la misura che allunga il cuscino.
+      this.ritardiRecenti.push(Math.max(0, this.scarto - scarto));
+      while (this.ritardiRecenti.length > 60) this.ritardiRecenti.shift();
+      this.regolaRitardo();
+
       this.contaFotografie++;
       this.ultimaFotografiaOra = arrivo;
 
@@ -272,25 +300,79 @@ export class Rete {
   }
 
   /**
+   * Quanto tenersi indietro per interpolare. Si guarda il PEGGIO degli ultimi
+   * tre secondi e non la media: la media va benissimo finche' non arriva il
+   * pacchetto tardivo, ed e' esattamente quello che si vede a schermo.
+   *
+   * Si allunga in fretta e si accorcia piano. Restare corti vuol dire vedere
+   * il compagno congelarsi; restare lunghi vuol dire solo vederlo un filo piu'
+   * indietro, che non se ne accorge nessuno. Fra i due sbagli si sceglie
+   * sempre il secondo.
+   */
+  regolaRitardo() {
+    if (!this.ritardiRecenti.length) return;
+    let peggiore = 0;
+    for (const r of this.ritardiRecenti) if (r > peggiore) peggiore = r;
+
+    const voluto = Math.min(
+      RITARDO_MASSIMO,
+      Math.max(RITARDO_MINIMO, INTERVALLO_FOTOGRAFIE + peggiore + MARGINE_RITARDO),
+    );
+    // A passi, non di colpo: spostare il cuscino sposta l'istante che si sta
+    // disegnando, e farlo in un fotogramma solo si vede come uno strappo su
+    // tutto quello che non e' il proprio personaggio.
+    const passo = voluto > this.ritardo ? 6 : 0.4;
+    this.ritardo += Math.max(-passo, Math.min(passo, voluto - this.ritardo));
+  }
+
+  /**
    * Un comando per ogni sottopasso, numerato. Il numero e' la chiave di tutto:
    * il server rimanda indietro l'ultimo che ha eseguito, e il telefono sa
    * esattamente da dove rifare i conti.
+   *
+   * In casa parte subito, uno per uno, come si e' sempre fatto. Fuori si
+   * raggruppa: aspettare venticinque millisecondi per mandarne tre insieme
+   * costa meno di quanto costi alla radio del telefono chiedere il permesso di
+   * trasmettere sessanta volte al secondo.
    */
   mandaPasso(seq, io) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    this.ws.send(
-      JSON.stringify({
-        t: 'input',
-        q: seq,
-        mx: Math.round(io.mx * 1000) / 1000,
-        my: Math.round(io.my * 1000) / 1000,
-        ax: Math.round(io.ax * 1000) / 1000,
-        ay: Math.round(io.ay * 1000) / 1000,
-        f: io.spara ? 1 : 0,
-        l: io.torcia ? 1 : 0,
-        b: io.abilita ? 1 : 0,
-      }),
-    );
+    const tondo = (v) => Math.round(v * 1000) / 1000;
+    if (!this.daMandare.length) this.primoInAttesa = performance.now();
+    this.daMandare.push({
+      q: seq,
+      mx: tondo(io.mx),
+      my: tondo(io.my),
+      ax: tondo(io.ax),
+      ay: tondo(io.ay),
+      f: io.spara ? 1 : 0,
+      l: io.torcia ? 1 : 0,
+      b: io.abilita ? 1 : 0,
+    });
+
+    const quanti = this.ping > SOGLIA_PING_RAGGRUPPA ? COMANDI_PER_PACCHETTO : 1;
+    const pieno = this.daMandare.length >= quanti;
+    const inAttesaDaTroppo = performance.now() - this.primoInAttesa >= ATTESA_MASSIMA_COMANDI;
+    if (pieno || inAttesaDaTroppo) this.svuotaComandi();
+  }
+
+  /** Manda via i comandi in attesa, in un pacchetto solo e nell'ordine giusto. */
+  svuotaComandi() {
+    if (!this.daMandare.length) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      this.daMandare.length = 0;
+      return;
+    }
+    // Un comando solo si manda con la forma di sempre: cosi' in casa non cambia
+    // nemmeno un byte, e un server rimasto indietro di una versione continua a
+    // capire — che e' il caso che capita davvero, quando si aggiorna il
+    // telefono e ci si dimentica il PC.
+    const pacchetto =
+      this.daMandare.length === 1
+        ? { t: 'input', ...this.daMandare[0] }
+        : { t: 'input', c: this.daMandare };
+    this.ws.send(JSON.stringify(pacchetto));
+    this.daMandare = [];
   }
 
   /** Briefing letto: si puo' cominciare. */
@@ -372,7 +454,7 @@ export class Rete {
    */
   interpolati(chiave, conAngolo) {
     if (this.fotografie.length === 0 || this.scarto === null) return [];
-    const T = performance.now() + this.scarto - RITARDO_INTERP;
+    const T = performance.now() + this.scarto - this.ritardo;
 
     let prima = this.fotografie[0];
     let dopo = null;

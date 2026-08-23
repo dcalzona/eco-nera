@@ -115,7 +115,14 @@ wss.on('connection', (ws, req) => {
     }
 
     if (msg.t === 'input' && ws.gioco) {
-      mondo.input(ws.gioco, msg);
+      // Due forme: un comando solo (com'e' sempre stato) oppure un gruppo. Si
+      // accettano tutte e due, cosi' un telefono con l'app vecchia continua a
+      // giocare invece di muoversi a scatti senza che nessuno capisca perche'.
+      if (Array.isArray(msg.c)) {
+        for (const c of msg.c) mondo.input(ws.gioco, c);
+      } else {
+        mondo.input(ws.gioco, msg);
+      }
       return;
     }
 
@@ -132,6 +139,11 @@ wss.on('connection', (ws, req) => {
       if (msg.riconnessioni > 0) guai.push(`${msg.riconnessioni} riconnessioni`);
       if (msg.fotografie < 15) guai.push(`solo ${msg.fotografie} fotografie al secondo`);
       if (msg.arretrati > 12) guai.push(`${msg.arretrati} comandi non confermati`);
+      // Quante volte il personaggio e' rimasto fermo perche' i comandi non
+      // erano ancora arrivati. Su quaranta tick in due secondi, otto vuol dire
+      // che un quinto della partita e' stato a singhiozzo.
+      if (g && g.codaVuota > 8) guai.push(`${g.codaVuota} tick senza comandi`);
+      if (g) g.codaVuota = 0;
       if (guai.length) {
         console.log(`! ${nome}: ${guai.join(', ')}  [${msg.fps} fps, ping ${msg.ping} ms]`);
       }

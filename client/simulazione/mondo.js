@@ -125,9 +125,20 @@ export class Mondo {
     this.rifornimenti = [];
     for (let k = 0; k < Math.min(casseDelSettore(numero), perLeCasse.length); k++) {
       const stanza = perLeCasse[(k * 2 + 1) % perLeCasse.length];
-      const tx = stanza.x + 1 + ((k * 3) % Math.max(1, stanza.w - 2));
-      const ty = stanza.y + 1 + ((k * 2) % Math.max(1, stanza.h - 2));
-      this.rifornimenti.push({ ...centroCasella(this.mappa, tx, ty), usatoDa: [] });
+      // Non addosso a una cassa gia' messa: con poche stanze capitava che due
+      // finissero sulla stessa casella, e allora la seconda non la prendeva
+      // nessuno — passandoci sopra si raccoglievano tutte e due insieme e una
+      // delle due era regalata al nulla. Si prova qualche posto e ci si
+      // accontenta solo alla fine.
+      let scelta = null;
+      for (let tentativo = 0; tentativo < 12 && !scelta; tentativo++) {
+        const tx = stanza.x + 1 + ((k * 3 + tentativo) % Math.max(1, stanza.w - 2));
+        const ty = stanza.y + 1 + ((k * 2 + tentativo) % Math.max(1, stanza.h - 2));
+        const p = centroCasella(this.mappa, tx, ty);
+        const minimo = tentativo < 8 ? 3 * TILE : RIFORNIMENTI.raggio * 2;
+        if (this.rifornimenti.every((r) => Math.hypot(r.x - p.x, r.y - p.y) > minimo)) scelta = p;
+      }
+      if (scelta) this.rifornimenti.push({ ...scelta, usatoDa: [] });
     }
 
     this.estrazione = { ...centroStanza(ingresso), aperta: false, progresso: 0 };
@@ -1008,9 +1019,18 @@ export class Mondo {
     const quanti =
       g.coda.length > SOTTOPASSI_PER_TICK * 3 ? SOTTOPASSI_PER_TICK * 2 : SOTTOPASSI_PER_TICK;
 
+    let eseguiti = 0;
     for (let k = 0; k < quanti; k++) {
       const c = g.coda.shift();
-      if (!c) break;
+      if (!c) {
+        // Coda a secco: il telefono non ha mandato in tempo. Sul Wi-Fi di casa
+        // non succede mai; su internet e' la spia che dice se i comandi
+        // raggruppati stanno arrivando troppo a singhiozzo — e senza una spia
+        // si vedrebbe solo un compagno che scatta, senza sapere perche'.
+        if (g.stato !== STATO.MORTO) g.codaVuota = (g.codaVuota ?? 0) + 1;
+        break;
+      }
+      eseguiti++;
       g.ultimoSeq = c.seq;
       if (g.stato === STATO.MORTO) continue;
 
@@ -1048,6 +1068,7 @@ export class Mondo {
       if (c.f && g.stato === STATO.VIVO) this.sparaGiocatore(g);
       if (c.b && g.stato === STATO.VIVO) this.usaAbilita(g);
     }
+    void eseguiti;
   }
 
   /**
@@ -1619,5 +1640,6 @@ function statoIniziale() {
     esaurita: false,
     abilitaRicarica: 0,
     passoRumore: 0,
+    codaVuota: 0,
   };
 }
