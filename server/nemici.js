@@ -2,10 +2,10 @@
 // pattuglia, cerca, caccia. Un nemico che si capisce e' un nemico con cui si
 // puo' giocare — se non si intuisce cosa sta per fare, morire sembra ingiusto.
 
-import { NEMICI, OBLIO_SECONDI, UMORE, TILE, SCONTO_AL_BUIO, ALLARME }
+import { NEMICI, OBLIO_SECONDI, UMORE, TILE, SCONTO_AL_BUIO, ALLARME, RIPARO }
   from '../client/condiviso/regole.js';
 import { PARTENZE, pavimenti, centroCasella } from '../client/condiviso/mappa.js';
-import { scorri } from '../client/condiviso/fisica.js';
+import { scorri, suUnRiparo } from '../client/condiviso/fisica.js';
 import { campo, passoVerso, lineaLibera } from './navigazione.js';
 
 /** Quanto si allontana dal proprio posto quando pattuglia, in caselle. */
@@ -116,7 +116,7 @@ function nuovoNemico(mappa, tx, ty) {
  * `campoBersagli` il campo di distanze verso di loro (calcolato una volta sola
  * per tutti), `spara` la funzione che crea un proiettile.
  */
-export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara, allarme = false) {
+export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara, allarme = false, ripari = []) {
   // Con l'allarme corrono. Da fermi sono piu' lenti di chi gioca, e
   // inseguendo da dietro non raggiungerebbero mai nessuno.
   const passo = allarme ? dt * ALLARME.velocita : dt;
@@ -137,6 +137,13 @@ export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara, a
     const regola = NEMICI[n.tipo];
     n.ricarica = Math.max(0, n.ricarica - dt);
 
+    // Anche loro scavalcano i ripari, e anche loro ci mettono un po'. E'
+    // meta' del senso della barriera: non e' invalicabile, ma chi la valica
+    // resta scoperto lassu' abbastanza a lungo da pagarla.
+    const suRiparo = suUnRiparo(ripari, n.x, n.y);
+    const suo = suRiparo ? passo * RIPARO.rallenta : passo;
+    const suoDt = suRiparo ? dt * RIPARO.rallenta : dt;
+
     const visto = visioni.get(n);
 
     if (visto) {
@@ -145,7 +152,7 @@ export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara, a
       n.ultimaNota = { x: visto.x, y: visto.y };
       n.oblio = OBLIO_SECONDI;
       n.campoMeta = null;
-      cacciando(mappa, n, regola, visto, campoBersagli, passo, dt, spara, permesso.has(n));
+      cacciando(mappa, n, regola, visto, campoBersagli, suo, dt, spara, permesso.has(n));
       continue;
     }
 
@@ -164,12 +171,12 @@ export function passoNemici(mappa, nemici, bersagli, campoBersagli, dt, spara, a
         n.meta = null;
         n.campoMeta = null;
       } else {
-        cammina(mappa, n, regola, n.campoMeta, passo);
+        cammina(mappa, n, regola, n.campoMeta, suo);
       }
       continue;
     }
 
-    pattugliando(mappa, n, regola, dt);
+    pattugliando(mappa, n, regola, suoDt);
   }
 }
 

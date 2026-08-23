@@ -182,7 +182,7 @@ Si scelgono dal menu, e ognuna e' un modo diverso di stare nel buio.
 | Arma | canne mozze, 5 pallini | precisione, un colpo | raffica |
 | Gittata | 190 px | 430 px | 300 px |
 | Rumore dello sparo | 15 caselle | 9 caselle | 12 caselle |
-| Abilita' | **kit medico** a terra | **sonar** a terra | **scatto** |
+| Abilita' | **kit medico** a terra | **sonar** a terra | **riparo** piantato |
 
 Le gittate seguono le viste: ognuno colpisce fin dove vede. Anche il baccano e'
 diverso — il fucile a canne mozze sveglia mezzo settore, quello di precisione
@@ -192,8 +192,8 @@ Il **kit** resta per terra e vale per tutti e due, una volta a testa, e cura
 fino al 70% e non oltre: chi e' malmesso torna in condizione di combattere, non
 torna nuovo. Il **sonar** continua a battere da terra e segna i nemici che gli
 passano vicino, anche oltre i muri: chi lo posa puo' andarsene e sapere lo
-stesso cosa si muove in quella stanza. Lo **scatto** fa attraversare una stanza
-scoperta prima che se ne accorgano.
+stesso cosa si muove in quella stanza. Il **riparo** e' una barriera piantata
+davanti a se': ferma i loro colpi e non i vostri.
 
 Due giocatori possono scegliere la stessa classe: e' una scelta loro, e
 scoprire che due Eco non aprono le porte da soli fa parte dell'imparare.
@@ -211,8 +211,11 @@ inutile il Faro — che resta l'unico a rimettere in sesto davvero, con il suo
 kit. Ogni cassa vale una volta per ciascuno e sparisce quando l'hanno presa
 tutti: in due se ne puo' lasciare una al compagno che sta peggio.
 
-Si vedono solo dove si e' gia' stati, come i nuclei: trovarle fa parte del
-girare.
+Si vedono solo dove si e' gia' stati, come i server: trovarle fa parte del
+girare. E **piu' si scende, meno se ne trovano** — tre nei primi due settori,
+due nei due dopo, poi una sola. E' il modo piu' semplice di alzare la
+difficolta' senza toccare i nemici: non ti fanno piu' male, sei tu che hai meno
+margine.
 
 ## Il conflitto
 
@@ -301,32 +304,83 @@ Finita la carica non basta un istante di ricarica per riaccendere: serve
 risalire a un terzo. Senza quella soglia la torcia sfarfalla — si spegne, si
 ricarica un briciolo, si riaccende — ed e' insopportabile da guardare.
 
-## Le abilita' dei due ruoli
+## Le tre abilita'
 
-**L'Eco marca**: i nemici che sta vedendo diventano visibili a tutti e due per
-sei secondi, anche attraverso i muri. E' il "vede prima e indica" scritto in
-codice. Se non c'e' niente da marcare non spreca la ricarica.
+Ognuna fa una cosa che le altre due non sanno fare, cosi' due scelte uguali si
+sentono subito piu' povere di due diverse.
 
-**Il Faro pianta un fuoco**: una luce a terra che illumina tutt'intorno per
-diciotto secondi e continua a farlo mentre lui va avanti. Gli permette di
-lasciarsi una stanza illuminata alle spalle invece di portarsi dietro tutta la
-luce — ma piantarlo fa rumore.
+**Il Faro lascia un kit medico** per terra. Non una cura addosso a se stesso:
+resta li' e vale per tutti e due, una volta a testa. Il medico che si cura da
+solo non e' un medico.
+
+**L'Eco posa un sonar**, che continua a battere anche dopo che lui se n'e'
+andato e marca i nemici che gli passano vicino, muri compresi.
+
+**L'Assalto pianta un riparo**: una barriera larga due caselle, davanti a se'.
+Ferma i colpi dei **nemici** e non i vostri — da dietro si spara senza essere
+colpiti, ed e' quello che trasforma una stanza aperta in una posizione da
+tenere. Ma non e' un muro: i corpi ci passano sopra, i vostri e i loro, al
+trenta per cento della velocita', ed e' li' che si e' scoperti. Se fosse
+invalicabile basterebbe tappare un corridoio e la serata finirebbe li'.
+
+La barriera protegge solo di fronte: chi gira attorno spara come se non ci
+fosse. E sotto le fucilate cede — centocinquanta punti, cioe' una decina di
+colpi.
+
+Il rallentamento nello scavalcare lo calcolano **il server e il telefono con la
+stessa funzione**, `suUnRiparo()` in `condiviso/fisica.js`. Non e' un dettaglio:
+se i due calcolassero velocita' diverse, il personaggio verrebbe strattonato
+indietro proprio mentre e' sopra la barriera.
 
 Si comandano con i due pulsanti in basso a destra (o `L` e `E` da tastiera).
 
 ## La spedizione
 
-Un **settore** per volta: si entra, si accendono i nuclei sparsi nelle stanze
-piu' lontane, si torna al punto di ingresso e si esce. Poi il settore dopo, un
-po' piu' affollato — dal primo al sesto si passa da due nuclei e sette nemici a
-quattro e dodici.
+Un **settore** per volta: si entra, si fa quello che c'e' da fare, si torna al
+punto di ingresso e si esce. Poi il settore dopo, un po' piu' affollato — dal
+primo al sesto i nemici passano da sette a dodici.
 
-Accendere un nucleo vuole tre secondi fermi accanto, ed e' il momento in cui si
-e' piu' scoperti: per questo conviene essere in due, uno accende e l'altro
-guarda le spalle. In due si accende in meta' tempo. Allontanandosi il lavoro si
-perde, piano.
+### Il briefing
 
-Acceso l'ultimo nucleo scatta **l'allarme**: il settore si sveglia, i nemici
+Prima di ogni missione c'e' una schermata che dice cosa si va a fare, con un
+disegno accanto che lo spiega senza parole: le stesse forme e gli stessi colori
+che poi si ritrovano sul pavimento. Per quei dodici secondi **il settore resta
+addormentato** — nessuno si sveglia e nessuno spara. Si puo' chiudere prima
+premendo "sono pronto"; in due si parte quando l'hanno detto tutti e due.
+
+Il conto scende solo se c'e' qualcuno collegato. Senza, si accende il server sul
+PC, si prende il telefono, ci si siede — e la presentazione era gia' finita.
+
+### Le tre missioni
+
+Si susseguono a turno: primo settore sabotaggio, secondo bomba, terzo dominio,
+poi si ricomincia il giro.
+
+**Sabotaggio.** Nelle stanze piu' lontane ci sono dei **server appoggiati alle
+pareti**. Restargli accanto tre secondi li spegne — in due meta' tempo, ed e' il
+momento in cui si e' piu' scoperti: uno lavora, l'altro guarda le spalle.
+Allontanandosi il lavoro si perde, piano. Si vedono solo dove si e' gia' stati:
+trovarli e' meta' del settore.
+
+**Bomba.** Si ritira l'ordigno dove e' segnato, e da quel momento ci sono
+cinquanta secondi per portarlo sul punto arancione. In due **chi la porta non
+spara**: ha le mani occupate, e il compagno diventa la sua scorta — e' il
+momento piu' cooperativo del gioco. Da soli invece si spara, perche' altrimenti
+sarebbe solo una passeggiata a occhi chiusi. Piazzata, va difesa: la miccia
+scende **solo se non c'e' nessuno di loro li' intorno**, e loro la sentono e
+vengono. Non basta piazzarla e scappare. Se il tempo scade mentre ce l'hai in
+mano, ti scoppia addosso e se ne ritrova un'altra al punto di ritiro.
+
+**Dominio.** In fondo al settore c'e' una zona segnata. Entrarci e restarci: la
+conquista sale finche' ci sei tu e non ci sono loro, si ferma se sono entrati, e
+cala piano se te ne vai — cosi' non la si puo' sbocconcellare nascondendosi ogni
+volta che si scalda. Intanto i rinforzi arrivano ogni sei secondi invece che
+ogni dodici. Non e' una missione in cui ci si nasconde, e' una in cui ci si
+pianta.
+
+### E poi si torna indietro
+
+Qualunque fosse la missione, finita quella scatta **l'allarme**: il settore si sveglia, i nemici
 smettono di pattugliare e vengono verso di voi, i rinforzi arrivano al doppio
 del ritmo. Non e' onniscienza — sanno dove *eravate*, e ogni tre secondi si
 aggiornano: spezzare la linea di vista e cambiare strada funziona ancora. Ma
@@ -338,7 +392,7 @@ momento serve vedere.
 Non c'e' un conto alla rovescia: non si perde per il tempo, si perde se si
 inciampa. La fretta la mette la sirena, non un numero.
 
-L'uscita si apre solo a nuclei finiti, e si esce **insieme**: se uno solo e'
+L'uscita si apre solo a missione finita, e si esce **insieme**: se uno solo e'
 fuori dal cerchio non si parte. Da quel momento una freccia sul bordo dello
 schermo indica dove tornare — aperta l'uscita il problema non e' piu' trovarla.
 A ogni settore nuovo si riparte in piedi e con la vita piena: la tensione sta
@@ -413,3 +467,4 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **4. L'orecchio** — propagazione del suono, allerta, ping, batteria, i due ruoli
 - [x] **5. La spedizione** — mappe generate, obiettivi, estrazione
 - [x] **6. L'app** — APK con Capacitor
+- [x] **7. Le missioni** — tre modalita' con briefing, e il riparo dell'Assalto

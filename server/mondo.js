@@ -5,7 +5,7 @@
 
 import { centroCasella, pavimenti, muro } from '../client/condiviso/mappa.js';
 import { generaMappa, centroStanza } from '../client/condiviso/generatore.js';
-import { muovi, limita, angolo, scorri } from '../client/condiviso/fisica.js';
+import { muovi, limita, angolo, scorri, velocitaFraIRipari } from '../client/condiviso/fisica.js';
 import {
   TILE,
   SOTTOPASSO,
@@ -14,6 +14,11 @@ import {
   ARMATURA_MASSIMA,
   ARMATURA_INIZIALE,
   RIFORNIMENTI,
+  casseDelSettore,
+  RIPARO,
+  BOMBA,
+  DOMINIO,
+  modalitaDelSettore,
   ARMI,
   NEMICI,
   STATO,
@@ -62,6 +67,8 @@ export class Mondo {
     this.mappaCambiata = false;
     this.tuttiGiu = 0;
     this.disfatta = false;
+    this.pronti = new Set();
+    this.prossimoRiparo = 1;
     this.nuovoSettore(1);
   }
 
@@ -71,36 +78,52 @@ export class Mondo {
    * accendere e si torna indietro — e tornare indietro non e' una formalita',
    * perche' nel frattempo la mappa si e' svegliata.
    */
-  nuovoSettore(numero) {
+  nuovoSettore(numero, modalita = null) {
     this.settore = numero;
+    // La modalita' si puo' imporre — serve alle prove, che devono poter
+    // guardare una missione per volta senza aspettare il suo turno.
+    this.modalita = modalita ?? modalitaDelSettore(numero);
     this.mappa = generaMappa(Date.now() + numero * 7717, numero);
     this.caselleLibere = pavimenti(this.mappa);
     this.rumori = new Rumori(this.mappa);
     this.proiettili = [];
     this.kit = [];
     this.sonar = [];
+    this.ripari = [];
+    this.scoppi = [];
     this.tuttiGiu = 0;
+    this.missioneFatta = false;
 
-    // I nuclei vanno nelle stanze piu' lontane dall'ingresso: vicini
-    // renderebbero il settore una formalita'.
+    // Il briefing: per questi secondi il settore resta addormentato e si
+    // legge cosa c'e' da fare. Si puo' chiudere prima, e in due si parte
+    // quando hanno detto "pronto" tutti e due.
+    this.preparazione = SPEDIZIONE.preparazione;
+    this.pronti = new Set();
+
+    // Le stanze in ordine di lontananza dall'ingresso: le missioni ci
+    // pescano dentro, ognuna a modo suo, ma tutte vogliono la stessa cosa —
+    // che l'obiettivo non sia dietro l'angolo.
     const ingresso = this.mappa.stanze[0];
     const lontane = this.mappa.stanze
       .slice(1)
       .map((s) => ({ s, d: Math.hypot(s.x - ingresso.x, s.y - ingresso.y) }))
-      .sort((a, b) => b.d - a.d);
-    const quanti = Math.min(SPEDIZIONE.nucleiMax, SPEDIZIONE.nucleiBase + Math.floor(numero / 2));
-    this.nuclei = lontane.slice(0, quanti).map(({ s }) => ({
-      ...centroStanza(s),
-      attivo: false,
-      progresso: 0,
-    }));
+      .sort((a, b) => b.d - a.d)
+      .map(({ s }) => s);
+
+    this.nuclei = [];
+    this.bomba = null;
+    this.zona = null;
+    if (this.modalita === 'bomba') this.preparaBomba(numero, lontane);
+    else if (this.modalita === 'dominio') this.preparaDominio(numero, lontane);
+    else this.preparaSabotaggio(numero, lontane);
 
     // Le casse vanno nelle stanze di mezzo: non all'ingresso, dove non
-    // servono, e non tutte addosso ai nuclei, o basterebbe il giro degli
-    // obiettivi per raccoglierle tutte.
+    // servono, e non tutte addosso agli obiettivi, o basterebbe il giro della
+    // missione per raccoglierle tutte. Quante siano dipende dal settore: piu'
+    // si scende, meno se ne trovano.
     const perLeCasse = this.mappa.stanze.slice(1);
     this.rifornimenti = [];
-    for (let k = 0; k < Math.min(RIFORNIMENTI.quante, perLeCasse.length); k++) {
+    for (let k = 0; k < Math.min(casseDelSettore(numero), perLeCasse.length); k++) {
       const stanza = perLeCasse[(k * 2 + 1) % perLeCasse.length];
       const tx = stanza.x + 1 + ((k * 3) % Math.max(1, stanza.w - 2));
       const ty = stanza.y + 1 + ((k * 2) % Math.max(1, stanza.h - 2));
@@ -110,6 +133,7 @@ export class Mondo {
     this.estrazione = { ...centroStanza(ingresso), aperta: false, progresso: 0 };
     this.allarme = false;
     this.prossimoRichiamo = 0;
+    this.prossimaChiamata = 0;
 
     this.nemiciBase = Math.min(SPEDIZIONE.nemiciMax, SPEDIZIONE.nemiciBase + numero);
     this.nemici = creaNemici(this.mappa, this.tettoNemici());
@@ -117,7 +141,105 @@ export class Mondo {
     for (const g of this.giocatori.values()) this.riportaAllIngresso(g);
     this.mappaCambiata = true;
     console.log(`
-=== Settore ${numero}: ${quanti} nuclei, ${this.nemici.length} nemici ===`);
+=== Settore ${numero} — ${this.modalita} — ${this.nemici.length} nemici ===`);
+  }
+
+  /**
+   * Sabotaggio: i server da spegnere. Stanno appoggiati alle pareti e non in
+   * mezzo alla stanza — sembrano una cosa installata li' invece di un
+   * lampadario, e obbligano a rasentare i muri, che al buio e' tutta un'altra
+   * sensazione rispetto a stare in mezzo al pavimento.
+   */
+  preparaSabotaggio(numero, lontane) {
+    const quanti = Math.min(SPEDIZIONE.nucleiMax, SPEDIZIONE.nucleiBase + Math.floor(numero / 2));
+    this.nuclei = lontane.slice(0, quanti).map((stanza, k) => {
+      const posto = this.postoAlMuro(stanza, k) ?? { ...centroStanza(stanza), ang: 0 };
+      return { x: posto.x, y: posto.y, ang: posto.ang, attivo: false, progresso: 0 };
+    });
+  }
+
+  /**
+   * Una casella del bordo interno della stanza che ha un muro accanto, con
+   * l'angolo verso cui guarda quello che ci si appoggia (cioe' verso il
+   * centro della stanza, di spalle alla parete).
+   */
+  postoAlMuro(stanza, quale = 0) {
+    const bordo = [];
+    for (let ty = stanza.y; ty < stanza.y + stanza.h; ty++) {
+      for (let tx = stanza.x; tx < stanza.x + stanza.w; tx++) {
+        const suRiga = ty === stanza.y || ty === stanza.y + stanza.h - 1;
+        const suColonna = tx === stanza.x || tx === stanza.x + stanza.w - 1;
+        if (!suRiga && !suColonna) continue;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          if (!muro(this.mappa, tx + dx, ty + dy)) continue;
+          bordo.push({ tx, ty, dx, dy });
+          break;
+        }
+      }
+    }
+    if (!bordo.length) return null;
+    // Sempre la stessa scelta per lo stesso indice: due server nella stessa
+    // stanza non devono finire l'uno sull'altro.
+    const scelto = bordo[(quale * 5 + 2) % bordo.length];
+    const p = centroCasella(this.mappa, scelto.tx, scelto.ty);
+    return {
+      // Accostato alla parete, non al centro della casella: si appoggia.
+      x: p.x + scelto.dx * 9,
+      y: p.y + scelto.dy * 9,
+      ang: Math.atan2(-scelto.dy, -scelto.dx),
+    };
+  }
+
+  /**
+   * Bomba: si ritira in una stanza di mezzo e si porta in fondo. Il punto di
+   * ritiro non e' all'ingresso di proposito — il viaggio comincia quando ce
+   * l'hai gia' in mano, cioe' quando non puoi piu' sparare.
+   */
+  preparaBomba(numero, lontane) {
+    const quante = numero >= 3 ? 2 : 1;
+    this.bomba = {
+      quante,
+      fatte: 0,
+      stato: 'aTerra',
+      portata: null,
+      tempo: 0,
+      posa: 0,
+      x: 0,
+      y: 0,
+      origine: { x: 0, y: 0 },
+      sito: { x: 0, y: 0 },
+      lontane,
+    };
+    this.preparaLaProssimaBomba();
+  }
+
+  preparaLaProssimaBomba() {
+    const b = this.bomba;
+    const lontane = b.lontane;
+    // Il sito e' fra le piu' lontane, il ritiro fra quelle di mezzo.
+    const sito = centroStanza(lontane[Math.min(b.fatte, lontane.length - 1)]);
+    const ritiro = centroStanza(
+      lontane[Math.min(Math.floor(lontane.length / 2) + b.fatte, lontane.length - 1)],
+    );
+    b.sito = sito;
+    b.origine = ritiro;
+    b.x = ritiro.x;
+    b.y = ritiro.y;
+    b.stato = 'aTerra';
+    b.portata = null;
+    b.tempo = 0;
+    b.posa = 0;
+  }
+
+  /** Dominio: una zona sola, in fondo, da tenere mentre arrivano. */
+  preparaDominio(numero, lontane) {
+    this.zona = {
+      ...centroStanza(lontane[0]),
+      raggio: DOMINIO.raggio,
+      progresso: 0,
+      durata: DOMINIO.durata + (numero - 1) * DOMINIO.perSettore,
+      contesa: false,
+    };
   }
 
   riportaAllIngresso(g) {
@@ -164,7 +286,6 @@ export class Mondo {
           if (nomeAutomatico) g.nome = CLASSI[voluta].nome;
           g.ricarica = 0;
           g.abilitaRicarica = 0;
-          g.scattoResta = 0;
           console.log(`${g.nome} cambia classe: ora e' ${CLASSI[voluta].nome}.`);
         }
         return g;
@@ -235,6 +356,19 @@ export class Mondo {
     const ora = Date.now();
     this.rumori.giroNuovo();
 
+    // Il briefing: si legge cosa c'e' da fare mentre il settore dorme. Ci si
+    // puo' muovere e guardarsi intorno — non si toglie il controllo a chi
+    // gioca — ma nessuno si sveglia e nessuno spara.
+    //
+    // Il conto scende solo se c'e' qualcuno collegato. Senza questa riga il
+    // briefing scorreva a vuoto: si accende il server sul PC, si prende il
+    // telefono, ci si siede — e quando finalmente si entra la presentazione
+    // della missione era gia' finita da un pezzo, senza che nessuno l'avesse
+    // letta. Il settore aspetta chi lo deve giocare.
+    const dorme = this.preparazione > 0;
+    const umani = [...this.giocatori.values()].filter((g) => !g.bot && g.online).length;
+    if (dorme && umani > 0) this.preparazione = Math.max(0, this.preparazione - dt);
+
     for (const g of this.giocatori.values()) {
       if (g.bot) {
         this.guidaFantoccio(g, dt);
@@ -252,29 +386,50 @@ export class Mondo {
     this.curaConIKit(dt);
     this.raccogliRifornimenti();
     this.battonoISonar(dt);
+    this.consumaRipari(dt);
     this.consumaTorce(dt);
+    this.sbiadisciScoppi(dt);
 
     // Un solo campo di distanze per tutti i nemici: chi insegue scende lungo
     // la discesa piu' ripida e finisce naturalmente sul giocatore piu' vicino.
     const inPiedi = this.inPiedi();
     this.campoGiocatori = inPiedi.length ? campo(this.mappa, inPiedi) : null;
 
-    passoNemici(this.mappa, this.nemici, inPiedi, this.campoGiocatori, dt, (n, ang, regola) => {
-      this.proiettili.push(
-        creaColpo(n.id, n.x, n.y, ang, regola.danno, regola.gittata, regola.velocitaColpo, true),
-      );
-      // Anche i loro spari si sentono, e chiamano i compagni.
-      this.rumori.emetti('sparoNemico', n.x, n.y, -n.id);
-    }, this.allarme);
+    if (!dorme) {
+      passoNemici(this.mappa, this.nemici, inPiedi, this.campoGiocatori, dt, (n, ang, regola) => {
+        this.proiettili.push(
+          creaColpo(n.id, n.x, n.y, ang, regola.danno, regola.gittata, regola.velocitaColpo, true),
+        );
+        // Anche i loro spari si sentono, e chiamano i compagni.
+        this.rumori.emetti('sparoNemico', n.x, n.y, -n.id);
+      }, this.allarme, this.ripari);
+    }
 
-    passoProiettili(this.mappa, this.proiettili, dt, (c) => this.chiHoColpito(c));
+    passoProiettili(
+      this.mappa,
+      this.proiettili,
+      dt,
+      (c) => this.chiHoColpito(c),
+      (c) => this.fermatoDaUnRiparo(c),
+    );
 
-    this.ascoltano();
+    if (!dorme) this.ascoltano();
     this.sbiadisciMarchi(dt);
     this.obiettivi(dt);
     this.controllaDisfatta(dt);
-    this.ripopola(dt);
+    if (!dorme) this.ripopola(dt);
     this.regolaFantoccio();
+  }
+
+  /**
+   * "Sono pronto": chiude il briefing. Si parte quando l'hanno detto tutti
+   * quelli che stanno giocando — se bastasse uno, l'altro si ritroverebbe in
+   * missione a meta' della lettura.
+   */
+  pronto(id) {
+    this.pronti.add(id);
+    const umani = [...this.giocatori.values()].filter((g) => !g.bot && g.online);
+    if (umani.length && umani.every((g) => this.pronti.has(g.id))) this.preparazione = 0;
   }
 
   /**
@@ -318,12 +473,71 @@ export class Mondo {
       // e sapere lo stesso cosa si muove in quella stanza.
       this.sonar.push({ x: g.x, y: g.y, resta: regola.durata, raggio: regola.raggio, battito: 0 });
       console.log(`${g.nome} ha posato un sonar.`);
-    } else if (regola.tipo === 'scatto') {
-      g.scattoResta = regola.durata;
-      console.log(`${g.nome} scatta.`);
+    } else if (regola.tipo === 'riparo') {
+      // Il riparo si pianta davanti, di traverso rispetto a dove si guarda.
+      // Se davanti c'e' un muro non si pianta e non si consuma la ricarica:
+      // sprecare l'abilita' per un pollice storto sarebbe punitivo per niente.
+      const x = g.x + Math.cos(g.ang) * RIPARO.distanza;
+      const y = g.y + Math.sin(g.ang) * RIPARO.distanza;
+      if (muro(this.mappa, Math.floor(x / TILE), Math.floor(y / TILE))) return;
+      this.ripari.push({
+        id: this.prossimoRiparo++,
+        x,
+        y,
+        ang: g.ang,
+        vita: RIPARO.vita,
+        resta: regola.durata,
+        padrone: g.id,
+      });
+      this.rumori.emetti('passi', g.x, g.y, g.id);
+      console.log(`${g.nome} ha piantato un riparo.`);
     }
 
     g.abilitaRicarica = regola.ricarica;
+  }
+
+  /**
+   * I ripari a terra: durano un po' e poi cadono da soli, oppure li buttano
+   * giu' a fucilate. Non si consumano contro i vostri colpi — quelli passano
+   * sopra, ed e' tutto il punto della barriera.
+   */
+  consumaRipari(dt) {
+    for (let k = this.ripari.length - 1; k >= 0; k--) {
+      const r = this.ripari[k];
+      r.resta -= dt;
+      if (r.resta <= 0 || r.vita <= 0) {
+        this.ripari.splice(k, 1);
+        if (r.vita <= 0) console.log('Un riparo e andato in pezzi.');
+      }
+    }
+  }
+
+  /**
+   * Un colpo NEMICO che sbatte contro un riparo. I vostri passano: si spara da
+   * dietro senza essere colpiti, che e' esattamente quello che chi lo pianta
+   * si aspetta di ottenere.
+   */
+  fermatoDaUnRiparo(c) {
+    if (!c.daNemico || !this.ripari.length) return false;
+    for (const r of this.ripari) {
+      const dx = c.x - r.x;
+      const dy = c.y - r.y;
+      const co = Math.cos(r.ang);
+      const si = Math.sin(r.ang);
+      if (Math.abs(dx * co + dy * si) > RIPARO.spessore / 2) continue;
+      if (Math.abs(-dx * si + dy * co) > RIPARO.mezzaLunghezza) continue;
+      r.vita -= c.danno;
+      return true;
+    }
+    return false;
+  }
+
+  /** I lampi degli scoppi: durano il tempo di vedersi e spariscono. */
+  sbiadisciScoppi(dt) {
+    for (let k = this.scoppi.length - 1; k >= 0; k--) {
+      this.scoppi[k].resta -= dt;
+      if (this.scoppi[k].resta <= 0) this.scoppi.splice(k, 1);
+    }
   }
 
   /**
@@ -424,35 +638,24 @@ export class Mondo {
   }
 
   /**
-   * Gli obiettivi del settore. Accendere un nucleo vuole qualche secondo fermi
-   * accanto: e' il momento in cui si e' scoperti, e per questo conviene essere
-   * in due — uno accende, l'altro guarda le spalle.
+   * Gli obiettivi del settore. Ogni modalita' ha la sua strada, ma il finale e'
+   * sempre lo stesso: quando la missione e' fatta si accende l'allarme e si
+   * torna all'uscita con tutto il settore sveglio. E' la coda in comune a
+   * tenere insieme tre missioni diverse invece di farle sembrare tre giochi.
    */
   obiettivi(dt) {
+    if (this.preparazione > 0) return; // si sta ancora leggendo il briefing
     const vivi = this.inPiedi();
 
-    for (const nucleo of this.nuclei) {
-      if (nucleo.attivo) continue;
-      const quanti = vivi.filter(
-        (g) => Math.hypot(g.x - nucleo.x, g.y - nucleo.y) <= SPEDIZIONE.raggioNucleo,
-      ).length;
-      if (quanti === 0) {
-        nucleo.progresso = Math.max(0, nucleo.progresso - dt / SPEDIZIONE.durataNucleo);
-        continue;
-      }
-      // In due si fa il doppio piu' in fretta: premia stare insieme.
-      nucleo.progresso += (dt * quanti) / SPEDIZIONE.durataNucleo;
-      if (nucleo.progresso >= 1) {
-        nucleo.progresso = 1;
-        nucleo.attivo = true;
-        const restano = this.nuclei.filter((n) => !n.attivo).length;
-        console.log(restano ? `Nucleo acceso, ne restano ${restano}.` : 'Tutti i nuclei accesi: si torna indietro.');
-      }
+    if (!this.missioneFatta) {
+      if (this.modalita === 'bomba') this.passoBomba(dt, vivi);
+      else if (this.modalita === 'dominio') this.passoDominio(dt, vivi);
+      else this.passoSabotaggio(dt, vivi);
     }
 
-    const eranoTutti = this.estrazione.aperta;
-    this.estrazione.aperta = this.nuclei.every((n) => n.attivo);
-    if (this.estrazione.aperta && !eranoTutti) {
+    const eraAperta = this.estrazione.aperta;
+    this.estrazione.aperta = this.missioneFatta;
+    if (this.estrazione.aperta && !eraAperta) {
       this.allarme = true;
       this.prossimoRichiamo = 0;
       console.log('ALLARME: il settore si e svegliato. Tornate indietro.');
@@ -473,6 +676,193 @@ export class Mondo {
     }
     this.estrazione.progresso += dt / SPEDIZIONE.durataEstrazione;
     if (this.estrazione.progresso >= 1) this.nuovoSettore(this.settore + 1);
+  }
+
+  /**
+   * Sabotaggio. Spegnere un server vuole qualche secondo fermi accanto: e' il
+   * momento in cui si e' scoperti, e per questo conviene essere in due — uno
+   * lavora, l'altro guarda le spalle.
+   */
+  passoSabotaggio(dt, vivi) {
+    for (const nucleo of this.nuclei) {
+      if (nucleo.attivo) continue;
+      const quanti = vivi.filter(
+        (g) => Math.hypot(g.x - nucleo.x, g.y - nucleo.y) <= SPEDIZIONE.raggioNucleo,
+      ).length;
+      if (quanti === 0) {
+        nucleo.progresso = Math.max(0, nucleo.progresso - dt / SPEDIZIONE.durataNucleo);
+        continue;
+      }
+      // In due si fa il doppio piu' in fretta: premia stare insieme.
+      nucleo.progresso += (dt * quanti) / SPEDIZIONE.durataNucleo;
+      if (nucleo.progresso >= 1) {
+        nucleo.progresso = 1;
+        nucleo.attivo = true;
+        const restano = this.nuclei.filter((n) => !n.attivo).length;
+        console.log(restano ? `Server spento, ne restano ${restano}.` : 'Tutti i server spenti.');
+      }
+    }
+    this.missioneFatta = this.nuclei.length > 0 && this.nuclei.every((n) => n.attivo);
+  }
+
+  /**
+   * La bomba, in quattro tempi: sta a terra, la porti, la posi, la difendi.
+   * Il pezzo che conta e' l'ultimo — piazzata, la miccia scende solo se non
+   * c'e' nessuno di loro li' intorno, e quindi non basta scappare.
+   */
+  passoBomba(dt, vivi) {
+    const b = this.bomba;
+    if (!b) return;
+
+    if (b.stato === 'aTerra') {
+      const chi = vivi.find(
+        (g) => !g.bot && Math.hypot(g.x - b.x, g.y - b.y) <= BOMBA.raggioRitiro,
+      );
+      if (chi) {
+        b.stato = 'inMano';
+        b.portata = chi.id;
+        b.tempo = BOMBA.perPiazzare;
+        b.posa = 0;
+        console.log(`${chi.nome} ha preso la bomba: ${BOMBA.perPiazzare} secondi per piazzarla.`);
+      }
+      return;
+    }
+
+    if (b.stato === 'inMano') {
+      const chi = this.giocatori.get(b.portata);
+      // Se chi la porta cade, la bomba resta li' dov'e' caduto.
+      if (!chi || chi.stato !== STATO.VIVO || (!chi.online && !chi.bot)) {
+        b.stato = 'aTerra';
+        b.portata = null;
+        b.posa = 0;
+        console.log('La bomba e caduta a terra.');
+        return;
+      }
+      b.x = chi.x;
+      b.y = chi.y;
+      b.tempo -= dt;
+
+      // Sul punto segnato: qualche secondo fermi e va giu'.
+      if (Math.hypot(chi.x - b.sito.x, chi.y - b.sito.y) <= BOMBA.raggioPunto) {
+        b.posa += dt / BOMBA.piazzamento;
+        if (b.posa >= 1) {
+          b.stato = 'piazzata';
+          b.x = b.sito.x;
+          b.y = b.sito.y;
+          b.portata = null;
+          b.posa = 1;
+          b.tempo = BOMBA.miccia;
+          this.prossimaChiamata = 0;
+          console.log('Bomba piazzata. Difendetela.');
+          return;
+        }
+      } else {
+        b.posa = Math.max(0, b.posa - dt / BOMBA.piazzamento);
+      }
+
+      // Tempo scaduto con la bomba in mano: scoppia addosso e se ne prepara
+      // un'altra al punto di ritiro. Il tempo e' largo e il posto e' segnato
+      // fin dall'inizio: se scade, si e' fatto altro.
+      if (b.tempo <= 0) {
+        console.log(`La bomba e scoppiata in mano a ${chi.nome}.`);
+        this.scoppi.push({ x: chi.x, y: chi.y, resta: 0.8 });
+        this.rumori.emetti('sparo', chi.x, chi.y, chi.id, 18);
+        this.ferisci(chi, BOMBA.dannoSeScoppia);
+        this.preparaLaProssimaBomba();
+      }
+      return;
+    }
+
+    if (b.stato === 'piazzata') {
+      // I nemici la sentono e vengono: finche' ce n'e' uno addosso, la miccia
+      // sta ferma. E' questo a trasformare "piazza e scappa" in "resta li'".
+      const vicino = this.nemici.some(
+        (n) => Math.hypot(n.x - b.x, n.y - b.y) <= BOMBA.raggioDifesa,
+      );
+      b.contesa = vicino;
+      this.richiamaSu(b, dt);
+      if (!vicino) b.tempo -= dt;
+      if (b.tempo > 0) return;
+
+      // Scoppia: chi e' li' intorno se ne accorge, nemici compresi.
+      this.scoppi.push({ x: b.x, y: b.y, resta: 1.2 });
+      this.rumori.emetti('sparo', b.x, b.y, 0, 20);
+      for (let k = this.nemici.length - 1; k >= 0; k--) {
+        const n = this.nemici[k];
+        if (Math.hypot(n.x - b.x, n.y - b.y) > BOMBA.raggioScoppio) continue;
+        n.vita -= BOMBA.dannoScoppio;
+        if (n.vita <= 0) this.nemici.splice(k, 1);
+      }
+      // A voi arriva solo qualche scheggia, e solo se siete proprio sopra:
+      // la missione vi chiede di restare li', e non puo' poi punirvi per
+      // averlo fatto.
+      for (const g of this.giocatori.values()) {
+        if (g.stato !== STATO.VIVO) continue;
+        if (Math.hypot(g.x - b.x, g.y - b.y) > BOMBA.raggioSchegge) continue;
+        this.ferisci(g, BOMBA.dannoSchegge);
+      }
+
+      b.fatte++;
+      console.log(`Bomba ${b.fatte} di ${b.quante}: esplosa.`);
+      if (b.fatte >= b.quante) {
+        b.stato = 'finita';
+        this.missioneFatta = true;
+      } else {
+        this.preparaLaProssimaBomba();
+      }
+    }
+  }
+
+  /**
+   * Il dominio: una zona da tenere. Sale se ci sei dentro e non ci sono loro,
+   * si ferma se sono entrati, e cala piano se te ne vai — cosi' non la si puo'
+   * sbocconcellare nascondendosi ogni volta che si scalda.
+   */
+  passoDominio(dt, vivi) {
+    const z = this.zona;
+    if (!z) return;
+
+    const dentroNostri = vivi.filter((g) => Math.hypot(g.x - z.x, g.y - z.y) <= z.raggio).length;
+    const dentroLoro = this.nemici.some((n) => Math.hypot(n.x - z.x, n.y - z.y) <= z.raggio);
+    z.contesa = dentroNostri > 0 && dentroLoro;
+
+    // Finche' la zona e' attiva, i nemici sanno dove siete: e' una missione in
+    // cui non ci si nasconde, ci si tiene.
+    this.richiamaSu(z, dt);
+
+    if (dentroNostri > 0 && !dentroLoro) z.progresso += dt / z.durata;
+    else if (dentroNostri === 0) {
+      z.progresso = Math.max(0, z.progresso - (dt * DOMINIO.perdita) / z.durata);
+    }
+
+    if (z.progresso >= 1) {
+      z.progresso = 1;
+      this.missioneFatta = true;
+      console.log('Zona conquistata.');
+    }
+  }
+
+  /**
+   * Richiama i nemici su un punto — la bomba piazzata, la zona da tenere. E'
+   * lo stesso meccanismo dell'allarme, ma puntato su una cosa invece che su
+   * di voi: vengono li', e sta a voi essere li' quando arrivano.
+   */
+  richiamaSu(punto, dt) {
+    this.prossimaChiamata -= dt;
+    if (this.prossimaChiamata > 0) return;
+    this.prossimaChiamata = BOMBA.richiamo;
+    for (const n of this.nemici) {
+      if (n.umore === UMORE.CACCIA) continue;
+      n.umore = UMORE.CERCA;
+      n.ultimaNota = { x: punto.x, y: punto.y };
+      n.campoMeta = campo(this.mappa, [n.ultimaNota]);
+      n.oblio = Math.max(n.oblio, ALLARME.memoria);
+    }
+  }
+
+  /** Chi sta portando la bomba, se qualcuno la sta portando. */
+  portaLaBomba(g) {
+    return this.bomba?.stato === 'inMano' && this.bomba.portata === g.id;
   }
 
   /**
@@ -545,7 +935,14 @@ export class Mondo {
     if (this.nemici.length >= this.tettoNemici()) return;
     this.attesaRinforzi -= dt;
     if (this.attesaRinforzi > 0) return;
-    this.attesaRinforzi = this.allarme ? ALLARME.rinforzi : 12;
+    // Con l'allarme arrivano fitti; mentre si tiene una zona pure, perche' e'
+    // proprio la pressione a essere la missione.
+    const tieneLaZona = this.modalita === 'dominio' && !this.missioneFatta;
+    this.attesaRinforzi = this.allarme
+      ? ALLARME.rinforzi
+      : tieneLaZona
+        ? DOMINIO.rinforzi
+        : 12;
 
     const lontanoDa = [...this.giocatori.values()].filter((g) => g.online || g.bot);
     // Con l'allarme il posto lo scegliamo noi (vicino all'uscita), quindi il
@@ -617,13 +1014,16 @@ export class Mondo {
       g.ultimoSeq = c.seq;
       if (g.stato === STATO.MORTO) continue;
 
-      g.scattoResta = Math.max(0, g.scattoResta - SOTTOPASSO);
-      const velocita =
-        g.stato === STATO.CRITICO
-          ? VELOCITA_CRITICO
-          : g.scattoResta > 0
-            ? VELOCITA * ABILITA.assalto.moltiplicatore
-            : undefined;
+      // Scavalcare un riparo rallenta, e il conto lo fa la stessa funzione
+      // che gira sul telefono: se qui e li' si calcolasse una velocita'
+      // diversa, il personaggio verrebbe strattonato indietro a ogni
+      // fotografia proprio mentre e' sopra la barriera.
+      const velocita = velocitaFraIRipari(
+        g.stato === STATO.CRITICO ? VELOCITA_CRITICO : VELOCITA,
+        this.ripari,
+        g.x,
+        g.y,
+      );
       const primaX = g.x;
       const primaY = g.y;
       muovi(g, c.mx, c.my, SOTTOPASSO, this.mappa, velocita);
@@ -673,6 +1073,11 @@ export class Mondo {
 
   sparaGiocatore(g) {
     if (g.ricarica > 0) return;
+    // In due chi porta la bomba ha le mani occupate: il compagno diventa la
+    // sua scorta, ed e' il momento piu' cooperativo del gioco. Da soli invece
+    // si spara lo stesso — attraversare mezzo settore disarmati senza nessuno
+    // che ti copra non sarebbe difficile, sarebbe solo ingiusto.
+    if (this.portaLaBomba(g) && !this.daSoli()) return;
     const arma = ARMI[g.ruolo] ?? ARMI.faro;
     g.ricarica = arma.cadenza;
 
@@ -954,16 +1359,13 @@ export class Mondo {
       return;
     }
 
-    // E se il compagno sta accendendo un nucleo, gli da' una mano: in due ci
-    // vuole meta' tempo, ed e' proprio il momento in cui si e' scoperti.
-    const daAccendere = umano
-      ? this.nuclei.find(
-          (n) => !n.attivo && Math.hypot(umano.x - n.x, umano.y - n.y) <= SPEDIZIONE.raggioNucleo,
-        )
-      : null;
-    if (daAccendere) {
-      if (Math.hypot(daAccendere.x - g.x, daAccendere.y - g.y) > SPEDIZIONE.raggioNucleo * 0.6) {
-        this.trascina(g, daAccendere, 155, dt);
+    // E poi la missione, quale che sia: dare una mano su un server, restare
+    // sulla bomba piazzata, tenere la zona. Un compagno che gira per conto suo
+    // mentre tu difendi qualcosa e' peggio di nessun compagno.
+    const presidio = this.puntoDaPresidiare(umano);
+    if (presidio) {
+      if (Math.hypot(presidio.punto.x - g.x, presidio.punto.y - g.y) > presidio.vicinanza) {
+        this.trascina(g, presidio.punto, 155, dt);
         return;
       }
       this.copri(g);
@@ -993,6 +1395,38 @@ export class Mondo {
     // Se comunque non si e' mosso, la meta' era irraggiungibile: se ne sceglie
     // un'altra invece di insistere.
     if (Math.hypot(g.x - primaX, g.y - primaY) < 0.4) g.meta = null;
+  }
+
+  /**
+   * Il posto dove il fantoccio deve piantarsi, secondo la modalita'. Torna
+   * anche quanto vicino ci deve stare: su un server basta essere nel cerchio,
+   * su una bomba piazzata conviene stare un po' largo per coprire le porte.
+   */
+  puntoDaPresidiare(umano) {
+    if (this.modalita === 'bomba') {
+      // Mentre la bomba viaggia sta dietro a chi la porta (ci pensa il giro
+      // normale, che lo tiene vicino al compagno); piazzata, la difende.
+      if (this.bomba?.stato === 'piazzata') {
+        return { punto: this.bomba, vicinanza: BOMBA.raggioPunto * 1.6 };
+      }
+      return null;
+    }
+
+    if (this.modalita === 'dominio') {
+      if (!this.zona || this.missioneFatta) return null;
+      // Ci va solo se anche il compagno e' nei paraggi: da solo in mezzo alla
+      // zona farebbe da bersaglio e basta.
+      if (umano && Math.hypot(umano.x - this.zona.x, umano.y - this.zona.y) > this.zona.raggio * 2.4) {
+        return null;
+      }
+      return { punto: this.zona, vicinanza: this.zona.raggio * 0.7 };
+    }
+
+    if (!umano) return null;
+    const daSpegnere = this.nuclei.find(
+      (n) => !n.attivo && Math.hypot(umano.x - n.x, umano.y - n.y) <= SPEDIZIONE.raggioNucleo,
+    );
+    return daSpegnere ? { punto: daSpegnere, vicinanza: SPEDIZIONE.raggioNucleo * 0.6 } : null;
   }
 
   /** Guarda se c'e' un nemico in vista e gli spara. Torna vero se ne ha trovato uno. */
@@ -1042,7 +1476,7 @@ export class Mondo {
         ca: Math.round(p.carica * 100) / 100,
         es: p.esaurita ? 1 : 0,
         ab: Math.round(p.abilitaRicarica * 10) / 10,
-        sc: Math.round(p.scattoResta * 10) / 10,
+        bo: this.portaLaBomba(p) ? 1 : 0, // ha la bomba in mano
       });
     }
 
@@ -1082,14 +1516,60 @@ export class Mondo {
       resta: Math.round(s.resta * 10) / 10,
     }));
 
+    // I ripari: posizione, verso e quanto sono malmessi. Il telefono ha
+    // bisogno anche del verso, sia per disegnarli sia per prevedere il proprio
+    // rallentamento mentre li scavalca.
+    const rp = this.ripari.map((r) => ({
+      i: r.id,
+      x: Math.round(r.x),
+      y: Math.round(r.y),
+      a: Math.round(r.ang * 100) / 100,
+      v: Math.round((r.vita / RIPARO.vita) * 100) / 100,
+    }));
+
+    const sp = this.scoppi.map((e, i) => ({
+      i,
+      x: Math.round(e.x),
+      y: Math.round(e.y),
+      resta: Math.round(e.resta * 100) / 100,
+    }));
+
     const ob = {
       settore: this.settore,
+      md: this.modalita,
+      pr: Math.round(this.preparazione * 10) / 10,
+      fatto: this.missioneFatta ? 1 : 0,
       nuclei: this.nuclei.map((k) => ({
         x: Math.round(k.x),
         y: Math.round(k.y),
+        o: Math.round((k.ang ?? 0) * 100) / 100,
         a: k.attivo ? 1 : 0,
         p: Math.round(k.progresso * 100) / 100,
       })),
+      bo: this.bomba
+        ? {
+            st: this.bomba.stato,
+            x: Math.round(this.bomba.x),
+            y: Math.round(this.bomba.y),
+            sx: Math.round(this.bomba.sito.x),
+            sy: Math.round(this.bomba.sito.y),
+            t: Math.max(0, Math.round(this.bomba.tempo)),
+            p: Math.round(this.bomba.posa * 100) / 100,
+            da: this.bomba.portata ?? 0,
+            c: this.bomba.contesa ? 1 : 0,
+            n: this.bomba.fatte,
+            q: this.bomba.quante,
+          }
+        : null,
+      zo: this.zona
+        ? {
+            x: Math.round(this.zona.x),
+            y: Math.round(this.zona.y),
+            r: this.zona.raggio,
+            p: Math.round(this.zona.progresso * 100) / 100,
+            c: this.zona.contesa ? 1 : 0,
+          }
+        : null,
       al: this.allarme ? 1 : 0,
       fine: this.disfatta ? 1 : 0,
       es: {
@@ -1107,7 +1587,13 @@ export class Mondo {
       u: r.usatoDa,
     }));
 
-    return { t: 'stato', tick: this.tick, ms: ora, g, n, c, fu, so, ri, ob, su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)) };
+    return {
+      t: 'stato',
+      tick: this.tick,
+      ms: ora,
+      g, n, c, fu, so, ri, rp, sp, ob,
+      su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)),
+    };
   }
 }
 
@@ -1132,7 +1618,6 @@ function statoIniziale() {
     carica: 1,
     esaurita: false,
     abilitaRicarica: 0,
-    scattoResta: 0,
     passoRumore: 0,
   };
 }

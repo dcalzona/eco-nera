@@ -6,7 +6,7 @@
  * parte (mira assistita, allarme, modalita' in solitaria) e sembra che il
  * gioco sia rotto. Se i numeri non coincidono, ora lo si legge a schermo.
  */
-export const VERSIONE = '0.9';
+export const VERSIONE = '1.0';
 
 // Numeri che server e client devono conoscere allo stesso modo.
 // Questa cartella e' condivisa: il server la importa da ../client/condiviso/,
@@ -88,7 +88,7 @@ export const CLASSI = {
     nome: 'Assalto',
     arma: "Fucile d'assalto",
     ruolo: 'Incursore',
-    descrizione: 'Vede a media distanza. Raffica veloce e continua. Con lo scatto attraversa una stanza scoperta prima che se ne accorgano.',
+    descrizione: 'Vede a media distanza. Raffica veloce e continua. Pianta un riparo da cui si spara senza essere colpiti.',
   },
 };
 
@@ -135,11 +135,25 @@ export const ARMATURA_INIZIALE = 60;
  * lasciarne una al compagno che sta peggio.
  */
 export const RIFORNIMENTI = {
-  quante: 3,
+  quante: 3, // nel primo settore
+  minimo: 1, // non si scende mai sotto una: un settore senza niente e' solo crudele
+  ogniSettori: 2, // una in meno ogni due settori
   raggio: 34,
   armatura: 70,
   salute: 15,
 };
+
+/**
+ * Quante casse ci sono in un settore. All'inizio se ne trovano tre e si gira
+ * tranquilli; piu' si scende, meno se ne trovano, e la stessa armatura che al
+ * primo settore era abbondante diventa qualcosa da amministrare. E' il modo
+ * piu' semplice di alzare la difficolta' senza toccare i nemici: non ti fanno
+ * piu' male, sei tu che hai meno margine.
+ */
+export function casseDelSettore(numero) {
+  const meno = Math.floor((numero - 1) / RIFORNIMENTI.ogniSettori);
+  return Math.max(RIFORNIMENTI.minimo, RIFORNIMENTI.quante - meno);
+}
 
 /**
  * Le due armi, in tinta con i due modi di vedere. Il Faro spara una rosa corta
@@ -235,7 +249,33 @@ export const SCONTO_AL_BUIO = 0.45;
 export const ABILITA = {
   faro: { tipo: 'kit', ricarica: 22, durata: 40, raggio: 30, cura: 45, tetto: 0.7 },
   eco: { tipo: 'sonar', ricarica: 18, durata: 14, raggio: 320 },
-  assalto: { tipo: 'scatto', ricarica: 13, durata: 3.5, moltiplicatore: 1.6 },
+  assalto: { tipo: 'riparo', ricarica: 16, durata: 50 },
+};
+
+/**
+ * Il riparo dell'Assalto: una barriera che si pianta davanti a se'.
+ *
+ * Ferma i colpi dei NEMICI e non i vostri. E' asimmetrico di proposito: da
+ * dietro si spara e non si viene colpiti, ed e' quello che trasforma una
+ * stanza aperta in una posizione da tenere — che e' esattamente quello che
+ * serviva alle due modalita' nuove, difendere la bomba e tenere la zona.
+ *
+ * Ma non e' un muro: i corpi ci passano sopra, lentamente. Chi lo scavalca —
+ * voi o loro — cammina al trenta per cento della velocita' per il tempo di
+ * scollinare, ed e' li' che si e' scoperti. Se fosse invalicabile basterebbe
+ * tapparsi un corridoio e la serata finirebbe li'.
+ *
+ * `spessore` e' quanto e' spesso davvero (lo usano i colpi), `banda' quanto e'
+ * larga la fascia in cui si rallenta: piu' larga di quella vera, altrimenti si
+ * scavalca in due decimi di secondo e non si sente niente.
+ */
+export const RIPARO = {
+  mezzaLunghezza: 30, // quasi due caselle di larghezza in tutto
+  spessore: 9,
+  banda: 26,
+  distanza: 26, // quanto avanti a chi lo pianta
+  vita: 150,
+  rallenta: 0.3, // la velocita' scende del settanta per cento
 };
 
 /** Quanto batte il sonar: ogni impulso rinfresca il marchio sui nemici sentiti. */
@@ -296,4 +336,78 @@ export const SPEDIZIONE = {
   durataNucleo: 3,
   raggioEstrazione: 56,
   durataEstrazione: 2.5,
+  /**
+   * Il briefing. Prima che il settore si svegli si legge cosa c'e' da fare:
+   * per quei secondi i nemici stanno fermi. Non e' un dettaglio di comodo —
+   * tre modalita' diverse senza un momento in cui si guarda il disegno e si
+   * capisce l'obiettivo diventano tre partite in cui si gira a caso. Si puo'
+   * chiudere prima premendo il pulsante; in due si parte quando sono pronti
+   * tutti e due.
+   */
+  preparazione: 12,
+};
+
+// --- Le tre modalita' ------------------------------------------------------
+
+/**
+ * Ogni settore ha il suo tipo di missione, e si susseguono in giro: primo
+ * settore sabotaggio, secondo bomba, terzo dominio, poi si ricomincia. In giro
+ * e non a caso, perche' a caso capita di farne tre uguali di fila proprio la
+ * sera che si vorrebbe vederle tutte — e cambiare idea e' una riga sola.
+ *
+ * Quello che NON cambia mai e' la coda: finito l'obiettivo, qualunque fosse,
+ * scatta l'allarme e si torna all'uscita con tutto il settore addosso.
+ */
+export const MODALITA = ['sabotaggio', 'bomba', 'dominio'];
+
+export function modalitaDelSettore(numero) {
+  return MODALITA[(numero - 1) % MODALITA.length];
+}
+
+/**
+ * La bomba. Si prende, si ha un tempo per portarla dov'e' segnato, e poi la si
+ * difende finche' non scoppia — perche' i nemici la sentono e vengono a
+ * disinnescarla. Finche' ce n'e' uno vicino la miccia si ferma: non basta
+ * piazzarla e scappare, bisogna restare.
+ *
+ * In due chi la porta non spara: ha le mani occupate, e il compagno diventa
+ * la sua scorta. Da soli invece si spara, perche' altrimenti sarebbe solo una
+ * passeggiata a occhi chiusi in mezzo ai nemici.
+ */
+export const BOMBA = {
+  perPiazzare: 50, // secondi da quando la prendi a quando deve essere giu'
+  piazzamento: 3, // secondi fermi sul punto per posarla
+  miccia: 55, // e poi quanto ci mette a scoppiare
+  raggioRitiro: 34,
+  raggioPunto: 40,
+  raggioDifesa: 120, // entro quanto un nemico blocca la miccia
+  dannoSeScoppia: 55, // se scade il tempo mentre ce l'hai in mano
+  /**
+   * Lo scoppio arriva piu' lontano di quanto arrivi il disturbo: se i due
+   * raggi fossero uguali, un nemico dentro il raggio dello scoppio bloccherebbe
+   * per definizione la miccia, e la bomba non ne prenderebbe mai nemmeno uno.
+   * Cosi' invece c'e' un anello — fra 120 e 190 — dove stanno arrivando e li
+   * prende in pieno.
+   */
+  raggioScoppio: 190,
+  dannoScoppio: 70,
+  // A voi arriva molto meno, e solo se ci siete proprio sopra. Difendere la
+  // bomba vuol dire starci vicino: punire con settanta danni la cosa che la
+  // missione stessa chiede di fare sarebbe una trappola, non una regola.
+  raggioSchegge: 90,
+  dannoSchegge: 25,
+  richiamo: 3, // ogni quanto i nemici si aggiornano su dov'e' la bomba
+};
+
+/**
+ * Il dominio: una zona da tenere. Il progresso sale se ci sei dentro tu e non
+ * ci sono nemici, si ferma se sono entrati, e cala piano se te ne vai — cosi'
+ * non si puo' sbocconcellarla nascondendosi ogni volta che si scalda.
+ */
+export const DOMINIO = {
+  raggio: 92,
+  durata: 40, // secondi di presenza per conquistarla
+  perSettore: 6, // e qualcuno in piu' man mano che si scende
+  perdita: 0.35, // quanto si perde stando fuori, rispetto a quanto si guadagna
+  rinforzi: 6, // secondi fra un nemico e l'altro mentre si tiene la zona
 };

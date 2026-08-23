@@ -1,6 +1,6 @@
 // Avvio del client e giro di rendering.
 
-import { muovi, angolo } from '../condiviso/fisica.js';
+import { muovi, angolo, velocitaFraIRipari } from '../condiviso/fisica.js';
 import { SOTTOPASSO, STATO, UMORE, VELOCITA, VELOCITA_CRITICO, NEMICI, VITA_MASSIMA, ECO_SECONDI }
   from '../condiviso/regole.js';
 import { Rete } from './rete.js';
@@ -9,8 +9,9 @@ import { Disegno } from './render.js';
 import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
 import { Suoni } from './audio.js';
 import { disegnaOmino, coloreDi, armaDi } from './render.js';
-import { CLASSI, ABILITA, VERSIONE } from '../condiviso/regole.js';
+import { CLASSI, ABILITA, VERSIONE, BOMBA } from '../condiviso/regole.js';
 import { LINGUE, t, impostaLingua, linguaCorrente, traduciPagina } from './lingue.js';
+import { disegnaBriefing } from './briefing.js';
 
 const canvas = document.getElementById('gioco');
 const disegno = new Disegno(canvas);
@@ -155,6 +156,8 @@ const pannelloPausa = document.getElementById('pausa');
 const bottonePausa = document.getElementById('apriPausa');
 
 function tornaAlMenu() {
+  pannelloBriefing.hidden = true;
+  briefingMostrato = null;
   pannelloPausa.hidden = true;
   pannelloFine.hidden = true;
   bottonePausa.hidden = true;
@@ -170,6 +173,61 @@ document.getElementById('riprendi').addEventListener('click', () => {
   pannelloPausa.hidden = true;
 });
 document.getElementById('esciAlMenu').addEventListener('click', tornaAlMenu);
+
+// --- Il briefing -----------------------------------------------------------
+// Prima di ogni missione: cosa si va a fare, scritto e disegnato. Per quei
+// secondi il settore resta addormentato — e' il server a tenerlo fermo, non il
+// telefono, altrimenti in due uno leggerebbe mentre l'altro viene braccato.
+const pannelloBriefing = document.getElementById('briefing');
+const briefingTela = document.getElementById('briefingDisegno');
+const briefingConto = document.getElementById('briefingConto');
+let briefingMostrato = null; // quale settore/modalita' e' gia' preparato
+let prontoDetto = false;
+
+document.getElementById('briefingVai').addEventListener('click', () => {
+  suoni.avvia();
+  prontoDetto = true;
+  rete.mandaPronto();
+});
+
+function aggiornaBriefing(ob) {
+  if (!ob || !(ob.pr > 0)) {
+    if (!pannelloBriefing.hidden) pannelloBriefing.hidden = true;
+    briefingMostrato = null;
+    return;
+  }
+
+  const chiave = `${ob.settore}/${ob.md}`;
+  if (briefingMostrato !== chiave) {
+    briefingMostrato = chiave;
+    prontoDetto = false;
+    document.getElementById('briefingSettore').textContent =
+      t('briefing.settore', { settore: ob.settore });
+    document.getElementById('briefingTitolo').textContent = t(`modo.${ob.md}.nome`);
+    // I secondi li dice la regola, non il testo: se domani la bomba dura di
+    // piu, il briefing lo dice da solo invece di mentire in sei lingue.
+    document.getElementById('briefingTesto').textContent =
+      t(`modo.${ob.md}.come`, { secondi: BOMBA.perPiazzare });
+    traduciPagina(pannelloBriefing);
+
+    // Il disegno alla risoluzione vera dello schermo: su un telefono fitto,
+    // alla risoluzione logica, verrebbe sgranato.
+    const dpr = Math.min(devicePixelRatio || 1, 3);
+    const w = briefingTela.clientWidth || 300;
+    const h = briefingTela.clientHeight || 190;
+    briefingTela.width = Math.round(w * dpr);
+    briefingTela.height = Math.round(h * dpr);
+    const c = briefingTela.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    disegnaBriefing(c, ob.md, w, h);
+
+    pannelloBriefing.hidden = false;
+  }
+
+  briefingConto.textContent = prontoDetto
+    ? t('briefing.attesa')
+    : t('briefing.conto', { secondi: Math.ceil(ob.pr) });
+}
 
 // --- Fine partita ----------------------------------------------------------
 const pannelloFine = document.getElementById('fine');
@@ -297,14 +355,9 @@ function giro(ora) {
   // A terra ci si trascina, da morti non ci si muove. Il telefono applica la
   // stessa regola del server, altrimenti prevederebbe una corsa che non c'e'.
   const mioStato = nostro?.st ?? STATO.VIVO;
-  const velocita =
-    mioStato === STATO.MORTO
-      ? 0
-      : mioStato === STATO.CRITICO
-        ? VELOCITA_CRITICO
-        : (nostro?.sc ?? 0) > 0
-          ? VELOCITA * ABILITA.assalto.moltiplicatore
-          : VELOCITA;
+  const ripari = rete.ripari();
+  const velocitaBase =
+    mioStato === STATO.MORTO ? 0 : mioStato === STATO.CRITICO ? VELOCITA_CRITICO : VELOCITA;
 
   accumulo += stallo ? 0 : dt;
   let fatti = 0;
@@ -313,6 +366,11 @@ function giro(ora) {
     fatti++;
     seq++;
     prima = { x: io.x, y: io.y };
+    // Scavalcare un riparo rallenta, e il conto si rifa' a ogni sottopasso
+    // esattamente come sul server. Farlo una volta per fotogramma sembrerebbe
+    // uguale e non lo e': la fascia della barriera e' larga meno di quanto si
+    // cammini in un fotogramma, e basterebbe a far litigare i due calcoli.
+    const velocita = velocitaFraIRipari(velocitaBase, ripari, io.x, io.y);
     muovi(io, c.mx, c.my, SOTTOPASSO, mappa, velocita);
     const mira = angolo(c.ax, c.ay) ?? angolo(c.mx, c.my);
     if (mira !== null) io.ang = mira;
@@ -354,10 +412,17 @@ function giro(ora) {
     umore: n.u,
   }));
 
-  disegno.scena(
-    mappa, scena, rete.io, luci, memoria, nemiciVisti, coni, rete.colpi(), fuochi,
-    rete.sonar(), rete.rifornimenti(), rete.io,
-  );
+  disegno.scena(mappa, scena, rete.io, luci, memoria, {
+    nemici: nemiciVisti,
+    coni,
+    colpi: rete.colpi(),
+    oggetti: fuochi,
+    sonar: rete.sonar(),
+    casse: rete.rifornimenti(),
+    ripari,
+    scoppi: rete.scoppi(),
+    mioId: rete.io,
+  });
   disegno.stick(comandi);
 
   // I rumori sentiti di recente, con quanto sono svaniti.
@@ -387,6 +452,7 @@ function giro(ora) {
     suoni.evento('aTerra');
   }
 
+  aggiornaBriefing(ob);
   disegno.obiettivi(ob, memoria, mappa);
   if (ob?.al) {
     disegno.allarme();
@@ -479,7 +545,12 @@ const prima_ = {
   torcia: null,
   esaurita: null,
   abilita: null,
+  bomba: null,
+  bombeFatte: null,
 };
+
+/** Quanto manca al prossimo tic della miccia. */
+let ticchettio = 0;
 
 function suona(dt, mio, dove) {
   const ob = rete.obiettivi();
@@ -507,8 +578,10 @@ function suona(dt, mio, dove) {
       suoni.evento(mio.l ? 'torciaAccesa' : 'torciaSpenta');
     }
     if (prima_.esaurita === 0 && mio.es === 1) suoni.evento('caricaFinita');
-    if (prima_.abilita !== null && mio.ab > prima_.abilita + 0.5 && mio.r === 'eco') {
-      suoni.evento('marchio');
+    // L'abilita' appena usata: la ricarica salta da zero al massimo.
+    if (prima_.abilita !== null && mio.ab > prima_.abilita + 0.5) {
+      if (mio.r === 'eco') suoni.evento('marchio');
+      if (mio.r === 'assalto') suoni.evento('riparo');
     }
     prima_.vita = mio.v;
     prima_.armatura = mio.ar ?? 0;
@@ -536,6 +609,35 @@ function suona(dt, mio, dove) {
     prima_.nuclei = accesi;
     prima_.uscita = ob.es.a;
     prima_.settore = ob.settore;
+
+    // La bomba: prenderla, posarla, e il tic della miccia. Il tic e' la voce
+    // della modalita' — dice quanto manca senza costringere a leggere un
+    // numero mentre si spara.
+    const b = ob.bo;
+    if (b) {
+      if (prima_.bomba !== null && prima_.bomba !== b.st) {
+        if (b.st === 'inMano') suoni.evento('bombaPresa');
+        if (b.st === 'piazzata') suoni.evento('bombaPiazzata');
+      }
+      if (prima_.bombeFatte !== null && b.n > prima_.bombeFatte) suoni.evento('scoppio');
+      prima_.bomba = b.st;
+      prima_.bombeFatte = b.n;
+
+      // In mano lo sente solo chi la porta; piazzata lo sentono tutti e due.
+      const miRiguarda = (b.st === 'inMano' && b.da === rete.io) || b.st === 'piazzata';
+      if (miRiguarda && !b.c) {
+        ticchettio -= dt;
+        if (ticchettio <= 0) {
+          ticchettio = b.t <= 10 ? 0.4 : 1;
+          suoni.evento(b.t <= 10 ? 'ticFitto' : 'tic');
+        }
+      } else {
+        ticchettio = 0;
+      }
+    } else {
+      prima_.bomba = null;
+      prima_.bombeFatte = null;
+    }
   }
 
   suoni.aggiorna(dt, {

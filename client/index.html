@@ -42,6 +42,44 @@
       }
       #apriPausa[hidden] { display: none; }
 
+      /* Il briefing: cosa si va a fare, con il disegno accanto. Sta su uno
+         schermo basso e largo, quindi testo a sinistra e figura a destra. */
+      #briefing {
+        position: absolute;
+        inset: 0;
+        background: rgba(5,7,12,0.96);
+        display: flex; align-items: center; justify-content: center;
+        padding: calc(10px + env(safe-area-inset-top, 0px))
+                 calc(14px + env(safe-area-inset-right, 0px))
+                 calc(10px + env(safe-area-inset-bottom, 0px))
+                 calc(14px + env(safe-area-inset-left, 0px));
+      }
+      #briefing[hidden] { display: none; }
+      #briefingDentro {
+        display: flex; gap: 18px; align-items: center;
+        max-width: 760px; width: 100%;
+      }
+      #briefingTesti { flex: 1 1 0; min-width: 0; }
+      .etichetta {
+        font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+        color: #78849f;
+      }
+      #briefingTitolo { font-size: 23px; font-weight: 600; margin: 2px 0 6px; }
+      #briefingTesto { font-size: 12.5px; line-height: 1.5; color: #c3cbde; }
+      #briefingDisegno {
+        display: block; width: 300px; height: 190px; flex: none;
+        background: #080c14; border: 1px solid #1c2434; border-radius: 10px;
+      }
+      #briefingConto { font-size: 12px; color: #78849f; }
+      @media (max-width: 620px) {
+        #briefingDentro { flex-direction: column; gap: 10px; }
+        #briefingDisegno { width: 260px; height: 150px; }
+      }
+      @media (max-height: 380px) {
+        #briefingDisegno { width: 230px; height: 150px; }
+        #briefingTitolo { font-size: 19px; }
+      }
+
       #menu, #guida, #collegamento, #fine, #pausa {
         position: absolute;
         inset: 0;
@@ -199,6 +237,23 @@
       </div>
     </div>
 
+    <!-- Prima di ogni missione: cosa c'e' da fare, scritto e disegnato. Per
+         questi secondi il settore resta addormentato. -->
+    <div id="briefing" hidden>
+      <div id="briefingDentro">
+        <div id="briefingTesti">
+          <div class="etichetta" id="briefingSettore"></div>
+          <h1 id="briefingTitolo"></h1>
+          <p id="briefingTesto"></p>
+          <div class="pulsantiera">
+            <button id="briefingVai" type="button" data-t="briefing.vai"></button>
+            <span id="briefingConto"></span>
+          </div>
+        </div>
+        <canvas id="briefingDisegno"></canvas>
+      </div>
+    </div>
+
     <div id="pausa" hidden>
       <div id="pausaDentro">
         <h1 data-t="pausa.titolo"></h1>
@@ -242,6 +297,16 @@
 
         <h2 data-t="guida.rifornimenti.titolo"></h2>
         <p data-t="guida.rifornimenti.testo"></p>
+
+        <h2 data-t="guida.riparo.titolo"></h2>
+        <p data-t="guida.riparo.testo"></p>
+
+        <h2 data-t="guida.modalita.titolo"></h2>
+        <ul>
+          <li data-t="guida.modalita.sabotaggio"></li>
+          <li data-t="guida.modalita.bomba"></li>
+          <li data-t="guida.modalita.dominio"></li>
+        </ul>
 
         <h2 data-t="guida.spedizione.titolo"></h2>
         <p data-t="guida.spedizione.testo"></p>

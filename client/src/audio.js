@@ -396,6 +396,30 @@ export class Suoni {
       case 'marchio':
         this.nota({ frequenza: 700, a: 1200, durata: 0.22, volume: 0.2, forma: 'sine' });
         break;
+      case 'riparo':
+        // Metallo che si pianta: una botta secca e un tonfo basso sotto.
+        this.botta({ durata: 0.14, taglio: 2200, discesa: 400, volume: 0.4 });
+        this.nota({ frequenza: 140, a: 70, durata: 0.26, volume: 0.28, forma: 'triangle' });
+        break;
+      case 'bombaPresa':
+        this.nota({ frequenza: 160, a: 240, durata: 0.3, volume: 0.3, forma: 'square' });
+        break;
+      case 'bombaPiazzata':
+        for (const [k, f] of [[0, 240], [0.12, 200], [0.24, 160]]) {
+          setTimeout(() => this.nota({ frequenza: f, a: f, durata: 0.28, volume: 0.26, forma: 'square' }), k * 1000);
+        }
+        break;
+      case 'tic':
+        this.nota({ frequenza: 1100, a: 1100, durata: 0.05, volume: 0.12, forma: 'square' });
+        break;
+      case 'ticFitto':
+        // Piu' acuto e piu' forte: gli ultimi dieci secondi si sentono e basta.
+        this.nota({ frequenza: 1600, a: 1600, durata: 0.06, volume: 0.2, forma: 'square' });
+        break;
+      case 'scoppio':
+        this.botta({ durata: 0.9, taglio: 900, discesa: 40, volume: 0.7 });
+        this.nota({ frequenza: 70, a: 30, durata: 0.8, volume: 0.4, forma: 'sawtooth' });
+        break;
       default:
         break;
     }

@@ -39,14 +39,13 @@ const TESTI = {
     'classe.assalto.arma': "Fucile d'assalto",
     'classe.assalto.ruolo': 'Incursore',
     'classe.assalto.desc':
-      'Vede a media distanza. Raffica veloce e continua. Con lo scatto attraversa una stanza scoperta prima che se ne accorgano.',
+      'Vede a media distanza. Raffica veloce e continua. Pianta un riparo: da dietro si spara senza essere colpiti.',
     'abilita.kit': 'kit medico a terra',
     'abilita.sonar': 'sonar a terra',
-    'abilita.scatto': 'scatto',
+    'abilita.riparo': 'riparo a terra',
     'abilita.kit.breve': 'KIT',
     'abilita.sonar.breve': 'SONAR',
-    'abilita.scatto.breve': 'SCATTO',
-
+    'abilita.riparo.breve': 'RIPARO',
     'guida.titolo': 'Come si gioca',
     'guida.buio.titolo': 'Il buio',
     'guida.buio.testo':
@@ -65,10 +64,10 @@ const TESTI = {
       'A zero vita resti a terra trenta secondi e ti trascini piano. Il compagno puo raggiungerti e rimetterti in piedi restandoti vicino tre secondi. Se non resta nessuno in piedi, la spedizione e persa.',
     'guida.rifornimenti.titolo': 'Armatura e rifornimenti',
     'guida.rifornimenti.testo':
-      "L'armatura incassa per prima: finita quella i colpi cominciano a fare male sul serio. Si ritrova nelle casse sparse per le stanze, che danno molta armatura e poca salute. La salute vera la rimette a posto solo il kit del medico.",
+      "L'armatura incassa per prima: finita quella i colpi cominciano a fare male sul serio. Si ritrova nelle casse sparse per le stanze, che danno molta armatura e poca salute. La salute vera la rimette a posto solo il kit del medico. E piu si scende, meno casse si trovano.",
     'guida.spedizione.titolo': 'La spedizione',
     'guida.spedizione.testo':
-      'Ogni settore: accendi i nuclei sparsi nelle stanze, tre secondi fermo accanto, in due la meta. Poi torna all ingresso. Si esce insieme: se uno solo e fuori dal cerchio non si parte. Acceso l ultimo nucleo scatta l allarme e il settore si sveglia.',
+      "Ogni settore ha la sua missione, e le tre si susseguono a turno. Finita — qualunque fosse — scatta l'allarme e si torna all'ingresso con tutto il settore sveglio. Si esce insieme: se uno solo e fuori dal cerchio non si parte.",
     'guida.chiudi': 'Ho capito',
 
     'pausa.titolo': 'Pausa',
@@ -92,13 +91,42 @@ const TESTI = {
     'gioco.torcia': 'TORCIA',
     'gioco.allarme': "ALLARME — torna all'uscita",
     'gioco.tornaUscita': 'Settore {settore} — torna all uscita',
-    'gioco.nuclei': 'Settore {settore} — nuclei {accesi}/{totale}',
+    'gioco.server': 'Settore {settore} — server {accesi}/{totale}',
     'gioco.aTerra': 'A TERRA — {secondi}s',
     'gioco.tiRialzano': 'ti stanno rialzando…',
     'gioco.fuoriGioco': 'Fuori gioco — rientri fra {secondi}s',
     'gioco.compagnoATerra': '{nome} e a terra — {secondi}s',
     'gioco.compagnoRientra': '{nome} rientra fra {secondi}s',
     'gioco.nemiciInVista': 'nemici in vista: {quanti}',
+
+    'briefing.settore': 'Settore {settore}',
+    'briefing.vai': 'Sono pronto',
+    'briefing.conto': 'si parte fra {secondi}s',
+    'briefing.attesa': 'aspetto il compagno…',
+    'modo.sabotaggio.nome': 'Sabotaggio',
+    'modo.sabotaggio.come':
+      "Nelle stanze in fondo ci sono dei server appoggiati alle pareti. Restagli accanto qualche secondo per spegnerli: in due ci vuole meta tempo. Spenti tutti, si torna all'uscita.",
+    'modo.bomba.nome': 'Ordigno',
+    'modo.bomba.come':
+      "Prendi l'ordigno dov'e segnato. Da quel momento hai {secondi} secondi per portarlo sul punto arancione, e in due chi lo porta ha le mani occupate e non spara. Piazzato, difendilo: la miccia scende solo se non c'e nessuno di loro li intorno.",
+    'modo.dominio.nome': 'Dominio',
+    'modo.dominio.come':
+      "In fondo al settore c'e una zona segnata. Entraci e restaci: la conquista sale finche ci sei tu e non ci sono loro. Continuano ad arrivare, quindi non e questione di nascondersi, e questione di tenere.",
+    'gioco.bombaPrendi': "Settore {settore} — prendi l'ordigno",
+    'gioco.bombaPorta': 'PIAZZALA — {secondi}s',
+    'gioco.bombaDifendi': 'DIFENDILA — {secondi}s',
+    'gioco.bombaBloccata': 'MICCIA FERMA — sono addosso alla bomba',
+    'gioco.zona': 'Settore {settore} — zona {percento}%',
+    'gioco.zonaContesa': 'ZONA CONTESA — sono dentro',
+    'guida.riparo.titolo': 'Il riparo',
+    'guida.riparo.testo':
+      "L'Assalto pianta una barriera davanti a se. Ferma i colpi dei nemici e non i vostri: da dietro si spara senza essere colpiti. Non e un muro pero — i corpi la scavalcano, i vostri e i loro, al trenta per cento della velocita, ed e li che si e scoperti. E a furia di fucilate cede.",
+    'guida.modalita.titolo': 'Le tre missioni',
+    'guida.modalita.sabotaggio':
+      'Sabotaggio — spegni i server appoggiati alle pareti delle stanze in fondo.',
+    'guida.modalita.bomba':
+      'Ordigno — portalo sul punto segnato e difendilo finche non scoppia.',
+    'guida.modalita.dominio': 'Dominio — entra nella zona segnata e restaci mentre arrivano.',
   },
 
   en: {
@@ -121,14 +149,13 @@ const TESTI = {
     'classe.assalto.arma': 'Assault rifle',
     'classe.assalto.ruolo': 'Raider',
     'classe.assalto.desc':
-      'Sees at medium range. Fast, steady fire. With the sprint, crosses an exposed room before anyone notices.',
+      'Sees at middling range. Fast, steady bursts. Plants a barricade you can shoot from without being hit.',
     'abilita.kit': 'medkit on the ground',
     'abilita.sonar': 'sonar on the ground',
-    'abilita.scatto': 'sprint',
+    'abilita.riparo': 'deployable cover',
     'abilita.kit.breve': 'KIT',
     'abilita.sonar.breve': 'SONAR',
-    'abilita.scatto.breve': 'SPRINT',
-
+    'abilita.riparo.breve': 'COVER',
     'guida.titolo': 'How to play',
     'guida.buio.titolo': 'The dark',
     'guida.buio.testo':
@@ -147,10 +174,10 @@ const TESTI = {
       'At zero health you stay down for thirty seconds, crawling slowly. Your partner can reach you and get you back up by staying close for three seconds. If nobody is left standing, the expedition is lost.',
     'guida.rifornimenti.titolo': 'Armour and supplies',
     'guida.rifornimenti.testo':
-      "Armour takes the hits first: once it is gone, shots start to really hurt. You find it in crates scattered through the rooms, which give plenty of armour and little health. Real health only comes back from the medic's kit.",
+      "Armour takes the hits first: once it is gone, shots start to really hurt. You find it in the crates scattered through the rooms, which give a lot of armour and little health. Real health only comes back from the medic's kit. And the deeper you go, the fewer crates there are.",
     'guida.spedizione.titolo': 'The expedition',
     'guida.spedizione.testo':
-      'Each sector: switch on the cores scattered through the rooms — three seconds standing next to one, half that with two of you. Then head back to the entrance. You leave together: if one of you is outside the circle, nobody goes. The last core trips the alarm and the sector wakes up.',
+      'Every sector has its own mission, and the three take turns. Once it is done — whichever it was — the alarm goes off and you head back to the entrance with the whole sector awake. You leave together: if one of you is outside the circle, nobody goes.',
     'guida.chiudi': 'Got it',
 
     'pausa.titolo': 'Paused',
@@ -174,13 +201,42 @@ const TESTI = {
     'gioco.torcia': 'TORCH',
     'gioco.allarme': 'ALARM — get back to the exit',
     'gioco.tornaUscita': 'Sector {settore} — back to the exit',
-    'gioco.nuclei': 'Sector {settore} — cores {accesi}/{totale}',
+    'gioco.server': 'Sector {settore} — servers {accesi}/{totale}',
     'gioco.aTerra': 'DOWN — {secondi}s',
     'gioco.tiRialzano': 'being picked up…',
     'gioco.fuoriGioco': 'Out — back in {secondi}s',
     'gioco.compagnoATerra': '{nome} is down — {secondi}s',
     'gioco.compagnoRientra': '{nome} back in {secondi}s',
     'gioco.nemiciInVista': 'enemies in sight: {quanti}',
+
+    'briefing.settore': 'Sector {settore}',
+    'briefing.vai': "I'm ready",
+    'briefing.conto': 'starting in {secondi}s',
+    'briefing.attesa': 'waiting for your partner…',
+    'modo.sabotaggio.nome': 'Sabotage',
+    'modo.sabotaggio.come':
+      'Servers stand against the walls of the far rooms. Stay next to one for a few seconds to shut it down: two of you do it in half the time. Once they are all off, head back to the exit.',
+    'modo.bomba.nome': 'Bomb',
+    'modo.bomba.come':
+      'Pick the bomb up where it is marked. From then on you have {secondi} seconds to carry it to the orange spot, and with two of you whoever carries it has their hands full and cannot shoot. Once it is down, defend it: the fuse only runs while none of them are nearby.',
+    'modo.dominio.nome': 'Hold',
+    'modo.dominio.come':
+      'There is a marked zone at the far end of the sector. Get in and stay in: the capture only climbs while you are there and they are not. They keep coming, so it is not about hiding, it is about holding.',
+    'gioco.bombaPrendi': 'Sector {settore} — grab the bomb',
+    'gioco.bombaPorta': 'PLANT IT — {secondi}s',
+    'gioco.bombaDifendi': 'DEFEND IT — {secondi}s',
+    'gioco.bombaBloccata': 'FUSE STALLED — they are on the bomb',
+    'gioco.zona': 'Sector {settore} — zone {percento}%',
+    'gioco.zonaContesa': 'ZONE CONTESTED — they are inside',
+    'guida.riparo.titolo': 'The barricade',
+    'guida.riparo.testo':
+      'The Assault plants a barrier in front of them. It stops enemy shots and not yours: from behind it you shoot without being hit. It is not a wall, though — bodies climb over it, yours and theirs, at thirty per cent speed, and that is when you are exposed. Enough gunfire brings it down.',
+    'guida.modalita.titolo': 'The three missions',
+    'guida.modalita.sabotaggio':
+      'Sabotage — shut down the servers standing against the walls of the far rooms.',
+    'guida.modalita.bomba':
+      'Bomb — carry it to the marked spot and defend it until it goes off.',
+    'guida.modalita.dominio': 'Hold — get into the marked zone and stay there while they come.',
   },
 
   fr: {
@@ -203,14 +259,13 @@ const TESTI = {
     'classe.assalto.arma': "Fusil d'assaut",
     'classe.assalto.ruolo': 'Assaillant',
     'classe.assalto.desc':
-      'Voit à moyenne distance. Rafale rapide et continue. Avec le sprint, traverse une pièce découverte avant qu on le remarque.',
+      "Voit à moyenne distance. Rafales rapides et continues. Plante une barricade d'où l'on tire sans être touché.",
     'abilita.kit': 'trousse de soins au sol',
     'abilita.sonar': 'sonar au sol',
-    'abilita.scatto': 'sprint',
+    'abilita.riparo': 'barricade au sol',
     'abilita.kit.breve': 'TROUSSE',
     'abilita.sonar.breve': 'SONAR',
-    'abilita.scatto.breve': 'SPRINT',
-
+    'abilita.riparo.breve': 'ABRI',
     'guida.titolo': 'Comment jouer',
     'guida.buio.titolo': "L'obscurité",
     'guida.buio.testo':
@@ -229,10 +284,10 @@ const TESTI = {
       "À zéro de vie tu restes à terre trente secondes et tu rampes lentement. Ton coéquipier peut te rejoindre et te relever en restant près de toi trois secondes. S'il ne reste personne debout, l'expédition est perdue.",
     'guida.rifornimenti.titolo': 'Armure et ravitaillement',
     'guida.rifornimenti.testo':
-      "L'armure encaisse en premier : une fois partie, les tirs commencent vraiment à faire mal. On la retrouve dans des caisses dispersées dans les pièces, qui donnent beaucoup d'armure et peu de vie. La vraie vie, seule la trousse du médecin la rend.",
+      "L'armure encaisse en premier : une fois partie, les balles font vraiment mal. On la retrouve dans les caisses éparpillées dans les salles, qui donnent beaucoup d'armure et peu de santé. La vraie santé, seule la trousse du médecin la rend. Et plus on descend, moins il y a de caisses.",
     'guida.spedizione.titolo': "L'expédition",
     'guida.spedizione.testo':
-      "Chaque secteur : allume les noyaux dispersés dans les pièces, trois secondes immobile à côté, moitié moins à deux. Puis retourne à l'entrée. On sort ensemble : si l'un est hors du cercle, personne ne part. Le dernier noyau déclenche l'alarme et le secteur se réveille.",
+      "Chaque secteur a sa mission, et les trois se succèdent. Une fois finie — peu importe laquelle — l'alarme se déclenche et on rentre à l'entrée avec tout le secteur réveillé. On sort ensemble : si l'un est hors du cercle, personne ne part.",
     'guida.chiudi': "J'ai compris",
 
     'pausa.titolo': 'Pause',
@@ -256,13 +311,43 @@ const TESTI = {
     'gioco.torcia': 'LAMPE',
     'gioco.allarme': "ALARME — retourne à la sortie",
     'gioco.tornaUscita': 'Secteur {settore} — retourne à la sortie',
-    'gioco.nuclei': 'Secteur {settore} — noyaux {accesi}/{totale}',
+    'gioco.server': 'Secteur {settore} — serveurs {accesi}/{totale}',
     'gioco.aTerra': 'À TERRE — {secondi}s',
     'gioco.tiRialzano': 'on te relève…',
     'gioco.fuoriGioco': 'Hors jeu — retour dans {secondi}s',
     'gioco.compagnoATerra': '{nome} est à terre — {secondi}s',
     'gioco.compagnoRientra': '{nome} revient dans {secondi}s',
     'gioco.nemiciInVista': 'ennemis en vue : {quanti}',
+
+    'briefing.settore': 'Secteur {settore}',
+    'briefing.vai': 'Je suis prêt',
+    'briefing.conto': 'départ dans {secondi}s',
+    'briefing.attesa': 'on attend ton coéquipier…',
+    'modo.sabotaggio.nome': 'Sabotage',
+    'modo.sabotaggio.come':
+      'Des serveurs sont adossés aux murs des salles du fond. Reste à côté quelques secondes pour en éteindre un : à deux, deux fois plus vite. Tous éteints, on rentre à la sortie.',
+    'modo.bomba.nome': 'Bombe',
+    'modo.bomba.come':
+      "Ramasse la bombe à l'endroit indiqué. À partir de là tu as {secondi} secondes pour la porter sur le point orange, et à deux celui qui la porte a les mains prises et ne tire pas. Une fois posée, défends-la : la mèche ne descend que si aucun d'eux n'est dans les parages.",
+    'modo.dominio.nome': 'Contrôle',
+    'modo.dominio.come':
+      "Au fond du secteur, une zone marquée. Entre et restes-y : la prise ne monte que tant que tu y es et qu'ils n'y sont pas. Ils continuent d'arriver — il ne s'agit pas de se cacher, il s'agit de tenir.",
+    'gioco.bombaPrendi': 'Secteur {settore} — récupère la bombe',
+    'gioco.bombaPorta': 'POSE-LA — {secondi}s',
+    'gioco.bombaDifendi': 'DÉFENDS-LA — {secondi}s',
+    'gioco.bombaBloccata': 'MÈCHE BLOQUÉE — ils sont sur la bombe',
+    'gioco.zona': 'Secteur {settore} — zone {percento}%',
+    'gioco.zonaContesa': 'ZONE DISPUTÉE — ils sont dedans',
+    'guida.riparo.titolo': 'La barricade',
+    'guida.riparo.testo':
+      "L'Assaut plante une barrière devant lui. Elle arrête leurs tirs et pas les vôtres : de derrière, on tire sans être touché. Ce n'est pas un mur pour autant — les corps l'enjambent, les vôtres comme les leurs, à trente pour cent de la vitesse, et c'est là qu'on est à découvert. Sous les balles, elle finit par céder.",
+    'guida.modalita.titolo': 'Les trois missions',
+    'guida.modalita.sabotaggio':
+      'Sabotage — éteins les serveurs adossés aux murs des salles du fond.',
+    'guida.modalita.bomba':
+      "Bombe — porte-la jusqu'au point marqué et défends-la jusqu'à l'explosion.",
+    'guida.modalita.dominio':
+      "Contrôle — entre dans la zone marquée et restes-y pendant qu'ils arrivent.",
   },
 
   es: {
@@ -285,14 +370,13 @@ const TESTI = {
     'classe.assalto.arma': 'Fusil de asalto',
     'classe.assalto.ruolo': 'Asaltante',
     'classe.assalto.desc':
-      'Ve a media distancia. Ráfaga rápida y continua. Con el impulso cruza una sala descubierta antes de que se den cuenta.',
+      'Ve a media distancia. Ráfagas rápidas y continuas. Planta una barricada desde la que disparar sin recibir.',
     'abilita.kit': 'botiquín en el suelo',
     'abilita.sonar': 'sónar en el suelo',
-    'abilita.scatto': 'impulso',
+    'abilita.riparo': 'barricada desplegable',
     'abilita.kit.breve': 'BOTIQUÍN',
     'abilita.sonar.breve': 'SÓNAR',
-    'abilita.scatto.breve': 'IMPULSO',
-
+    'abilita.riparo.breve': 'PARAPETO',
     'guida.titolo': 'Cómo se juega',
     'guida.buio.titolo': 'La oscuridad',
     'guida.buio.testo':
@@ -311,10 +395,10 @@ const TESTI = {
       'Con cero de vida te quedas en el suelo treinta segundos y te arrastras despacio. Tu compañero puede alcanzarte y levantarte quedándose cerca tres segundos. Si no queda nadie en pie, la expedición se pierde.',
     'guida.rifornimenti.titolo': 'Armadura y suministros',
     'guida.rifornimenti.testo':
-      'La armadura encaja primero: cuando se acaba, los disparos empiezan a doler de verdad. Se encuentra en cajas repartidas por las salas, que dan mucha armadura y poca vida. La vida de verdad solo la devuelve el botiquín del médico.',
+      'La armadura encaja primero: cuando se acaba, los disparos empiezan a doler de verdad. Se encuentra en las cajas repartidas por las salas, que dan mucha armadura y poca salud. La salud de verdad solo la repone el botiquín del médico. Y cuanto más se baja, menos cajas hay.',
     'guida.spedizione.titolo': 'La expedición',
     'guida.spedizione.testo':
-      'Cada sector: enciende los núcleos repartidos por las salas, tres segundos quieto al lado, la mitad entre dos. Luego vuelve a la entrada. Se sale juntos: si uno está fuera del círculo, no sale nadie. El último núcleo dispara la alarma y el sector se despierta.',
+      'Cada sector tiene su misión, y las tres se van turnando. Terminada — sea cual sea — salta la alarma y se vuelve a la entrada con todo el sector despierto. Se sale juntos: si uno está fuera del círculo, no se va nadie.',
     'guida.chiudi': 'Entendido',
 
     'pausa.titolo': 'Pausa',
@@ -338,13 +422,41 @@ const TESTI = {
     'gioco.torcia': 'LINTERNA',
     'gioco.allarme': 'ALARMA — vuelve a la salida',
     'gioco.tornaUscita': 'Sector {settore} — vuelve a la salida',
-    'gioco.nuclei': 'Sector {settore} — núcleos {accesi}/{totale}',
+    'gioco.server': 'Sector {settore} — servidores {accesi}/{totale}',
     'gioco.aTerra': 'EN EL SUELO — {secondi}s',
     'gioco.tiRialzano': 'te están levantando…',
     'gioco.fuoriGioco': 'Fuera — vuelves en {secondi}s',
     'gioco.compagnoATerra': '{nome} está en el suelo — {secondi}s',
     'gioco.compagnoRientra': '{nome} vuelve en {secondi}s',
     'gioco.nemiciInVista': 'enemigos a la vista: {quanti}',
+
+    'briefing.settore': 'Sector {settore}',
+    'briefing.vai': 'Estoy listo',
+    'briefing.conto': 'empieza en {secondi}s',
+    'briefing.attesa': 'esperando a tu compañero…',
+    'modo.sabotaggio.nome': 'Sabotaje',
+    'modo.sabotaggio.come':
+      'Hay servidores apoyados en las paredes de las salas del fondo. Quédate al lado unos segundos para apagar uno: entre dos se tarda la mitad. Apagados todos, se vuelve a la salida.',
+    'modo.bomba.nome': 'Bomba',
+    'modo.bomba.come':
+      'Coge el explosivo donde está marcado. Desde ese momento tienes {secondi} segundos para llevarlo al punto naranja, y entre dos quien lo lleva tiene las manos ocupadas y no dispara. Colocado, defiéndelo: la mecha solo baja si no hay ninguno de ellos cerca.',
+    'modo.dominio.nome': 'Control',
+    'modo.dominio.come':
+      'Al fondo del sector hay una zona marcada. Entra y quédate: la conquista sube mientras estés tú y no estén ellos. Siguen llegando, así que no se trata de esconderse, se trata de aguantar.',
+    'gioco.bombaPrendi': 'Sector {settore} — coge el explosivo',
+    'gioco.bombaPorta': 'COLÓCALO — {secondi}s',
+    'gioco.bombaDifendi': 'DEFIÉNDELO — {secondi}s',
+    'gioco.bombaBloccata': 'MECHA PARADA — están encima del explosivo',
+    'gioco.zona': 'Sector {settore} — zona {percento}%',
+    'gioco.zonaContesa': 'ZONA DISPUTADA — están dentro',
+    'guida.riparo.titolo': 'La barricada',
+    'guida.riparo.testo':
+      'El Asalto planta una barrera delante de sí. Detiene los disparos de ellos y no los vuestros: desde detrás se dispara sin recibir. Pero no es un muro: los cuerpos la cruzan, los vuestros y los suyos, al treinta por ciento de la velocidad, y ahí es donde estás al descubierto. A base de disparos acaba cediendo.',
+    'guida.modalita.titolo': 'Las tres misiones',
+    'guida.modalita.sabotaggio':
+      'Sabotaje — apaga los servidores apoyados en las paredes de las salas del fondo.',
+    'guida.modalita.bomba': 'Bomba — llévalo al punto marcado y defiéndelo hasta que estalle.',
+    'guida.modalita.dominio': 'Control — entra en la zona marcada y quédate mientras llegan.',
   },
 
   ru: {
@@ -367,14 +479,13 @@ const TESTI = {
     'classe.assalto.arma': 'Штурмовая винтовка',
     'classe.assalto.ruolo': 'Штурмовик',
     'classe.assalto.desc':
-      'Видит на средней дистанции. Быстрая непрерывная очередь. С рывком пересекает открытую комнату раньше, чем его заметят.',
+      'Видит на средней дистанции. Быстрые непрерывные очереди. Ставит укрытие: из-за него стреляешь, а тебя не задевают.',
     'abilita.kit': 'аптечка на полу',
     'abilita.sonar': 'сонар на полу',
-    'abilita.scatto': 'рывок',
+    'abilita.riparo': 'укрытие на земле',
     'abilita.kit.breve': 'АПТЕЧКА',
     'abilita.sonar.breve': 'СОНАР',
-    'abilita.scatto.breve': 'РЫВОК',
-
+    'abilita.riparo.breve': 'ЩИТ',
     'guida.titolo': 'Как играть',
     'guida.buio.titolo': 'Темнота',
     'guida.buio.testo':
@@ -393,10 +504,10 @@ const TESTI = {
       'При нуле здоровья ты лежишь тридцать секунд и медленно ползёшь. Напарник может добраться и поднять тебя, побыв рядом три секунды. Если на ногах никого не осталось — экспедиция проиграна.',
     'guida.rifornimenti.titolo': 'Броня и снабжение',
     'guida.rifornimenti.testo':
-      'Броня принимает удары первой: когда она кончается, выстрелы начинают ранить по-настоящему. Её находят в ящиках, разбросанных по комнатам: они дают много брони и мало здоровья. Настоящее здоровье возвращает только аптечка медика.',
+      'Броня принимает удар первой: как только она кончится, выстрелы начинают бить по-настоящему. Она лежит в ящиках по комнатам — много брони и чуть-чуть здоровья. Настоящее здоровье возвращает только аптечка медика. И чем глубже, тем меньше ящиков.',
     'guida.spedizione.titolo': 'Экспедиция',
     'guida.spedizione.testo':
-      'В каждом секторе: включи ядра, разбросанные по комнатам, — три секунды стоя рядом, вдвоём вдвое быстрее. Потом вернись ко входу. Уходят вместе: если один вне круга, не уходит никто. Последнее ядро включает тревогу, и сектор просыпается.',
+      'У каждого сектора своё задание, и три чередуются. Как только оно выполнено — любое из них — включается тревога, и вы возвращаетесь ко входу, а сектор весь на ногах. Уходят вместе: если один вне круга, не уходит никто.',
     'guida.chiudi': 'Понятно',
 
     'pausa.titolo': 'Пауза',
@@ -420,13 +531,40 @@ const TESTI = {
     'gioco.torcia': 'ФОНАРЬ',
     'gioco.allarme': 'ТРЕВОГА — возвращайся к выходу',
     'gioco.tornaUscita': 'Сектор {settore} — возвращайся к выходу',
-    'gioco.nuclei': 'Сектор {settore} — ядра {accesi}/{totale}',
+    'gioco.server': 'Сектор {settore} — серверы {accesi}/{totale}',
     'gioco.aTerra': 'РАНЕН — {secondi}с',
     'gioco.tiRialzano': 'тебя поднимают…',
     'gioco.fuoriGioco': 'Вне игры — вернёшься через {secondi}с',
     'gioco.compagnoATerra': '{nome} ранен — {secondi}с',
     'gioco.compagnoRientra': '{nome} вернётся через {secondi}с',
     'gioco.nemiciInVista': 'врагов в поле зрения: {quanti}',
+
+    'briefing.settore': 'Сектор {settore}',
+    'briefing.vai': 'Я готов',
+    'briefing.conto': 'старт через {secondi}с',
+    'briefing.attesa': 'ждём напарника…',
+    'modo.sabotaggio.nome': 'Саботаж',
+    'modo.sabotaggio.come':
+      'В дальних комнатах у стен стоят серверы. Постой рядом несколько секунд, чтобы выключить один: вдвоём вдвое быстрее. Когда погаснут все, возвращайтесь к выходу.',
+    'modo.bomba.nome': 'Бомба',
+    'modo.bomba.come':
+      'Возьми бомбу там, где отмечено. С этого момента у тебя {secondi} секунд, чтобы донести её до оранжевой точки, и вдвоём тот, кто несёт, занят руками и не стреляет. Установил — защищай: фитиль горит, только пока рядом нет никого из них.',
+    'modo.dominio.nome': 'Захват',
+    'modo.dominio.come':
+      'В дальней части сектора есть отмеченная зона. Зайди и оставайся: захват растёт, пока там ты и нет их. Они будут идти всё время — тут не прячутся, тут держат.',
+    'gioco.bombaPrendi': 'Сектор {settore} — возьми бомбу',
+    'gioco.bombaPorta': 'УСТАНОВИ — {secondi}с',
+    'gioco.bombaDifendi': 'ЗАЩИЩАЙ — {secondi}с',
+    'gioco.bombaBloccata': 'ФИТИЛЬ СТОИТ — они у бомбы',
+    'gioco.zona': 'Сектор {settore} — зона {percento}%',
+    'gioco.zonaContesa': 'ЗОНА ОСПАРИВАЕТСЯ — они внутри',
+    'guida.riparo.titolo': 'Укрытие',
+    'guida.riparo.testo':
+      'Штурмовик ставит перед собой барьер. Он держит их выстрелы, но не ваши: из-за него стреляешь, и тебя не задевают. Но это не стена — через него перелезают, и вы, и они, на тридцати процентах скорости, и вот тут ты открыт. От очередей барьер в конце концов рушится.',
+    'guida.modalita.titolo': 'Три задания',
+    'guida.modalita.sabotaggio': 'Саботаж — выключи серверы у стен дальних комнат.',
+    'guida.modalita.bomba': 'Бомба — донеси её до отмеченной точки и держи, пока не взорвётся.',
+    'guida.modalita.dominio': 'Захват — войди в отмеченную зону и держись, пока они идут.',
   },
 
   nl: {
@@ -449,14 +587,13 @@ const TESTI = {
     'classe.assalto.arma': 'Aanvalsgeweer',
     'classe.assalto.ruolo': 'Stormtroep',
     'classe.assalto.desc':
-      'Ziet op middellange afstand. Snel, aanhoudend vuur. Met de sprint steek je een open kamer over voor ze het doorhebben.',
+      "Ziet op middellange afstand. Snelle, aanhoudende salvo's. Plaatst dekking waarachter je schiet zonder geraakt te worden.",
     'abilita.kit': 'verbandkit op de grond',
     'abilita.sonar': 'sonar op de grond',
-    'abilita.scatto': 'sprint',
+    'abilita.riparo': 'dekking neerzetten',
     'abilita.kit.breve': 'KIT',
     'abilita.sonar.breve': 'SONAR',
-    'abilita.scatto.breve': 'SPRINT',
-
+    'abilita.riparo.breve': 'DEKKING',
     'guida.titolo': 'Hoe je speelt',
     'guida.buio.titolo': 'Het donker',
     'guida.buio.testo':
@@ -475,10 +612,10 @@ const TESTI = {
       'Op nul leven lig je dertig seconden neer en kruip je langzaam. Je partner kan je bereiken en overeind helpen door drie seconden dichtbij te blijven. Blijft er niemand staan, dan is de expeditie verloren.',
     'guida.rifornimenti.titolo': 'Bepantsering en bevoorrading',
     'guida.rifornimenti.testo':
-      'De bepantsering vangt de klappen eerst op: is die op, dan doen schoten pas echt pijn. Je vindt haar in kisten verspreid door de kamers, die veel bepantsering en weinig leven geven. Echt leven krijg je alleen terug van de kit van de hospik.',
+      'Het pantser vangt de klappen eerst op: is dat op, dan doen kogels pas echt pijn. Je vindt het in de kisten verspreid door de kamers, die veel pantser geven en weinig gezondheid. Echte gezondheid geeft alleen de kit van de medic terug. En hoe dieper je komt, hoe minder kisten er liggen.',
     'guida.spedizione.titolo': 'De expeditie',
     'guida.spedizione.testo':
-      'Elke sector: zet de kernen aan die door de kamers verspreid liggen — drie seconden stil ernaast, met zijn tweeën de helft. Ga daarna terug naar de ingang. Je vertrekt samen: staat er één buiten de cirkel, dan gaat niemand. De laatste kern zet het alarm aan en de sector wordt wakker.',
+      'Elke sector heeft zijn eigen missie, en de drie wisselen elkaar af. Zodra hij klaar is — welke het ook was — gaat het alarm af en ga je terug naar de ingang met de hele sector wakker. Je vertrekt samen: staat er één buiten de cirkel, dan gaat niemand.',
     'guida.chiudi': 'Begrepen',
 
     'pausa.titolo': 'Pauze',
@@ -502,13 +639,43 @@ const TESTI = {
     'gioco.torcia': 'ZAKLAMP',
     'gioco.allarme': 'ALARM — terug naar de uitgang',
     'gioco.tornaUscita': 'Sector {settore} — terug naar de uitgang',
-    'gioco.nuclei': 'Sector {settore} — kernen {accesi}/{totale}',
+    'gioco.server': 'Sector {settore} — servers {accesi}/{totale}',
     'gioco.aTerra': 'NEER — {secondi}s',
     'gioco.tiRialzano': 'je wordt overeind geholpen…',
     'gioco.fuoriGioco': 'Uitgeschakeld — terug over {secondi}s',
     'gioco.compagnoATerra': '{nome} ligt neer — {secondi}s',
     'gioco.compagnoRientra': '{nome} komt terug over {secondi}s',
     'gioco.nemiciInVista': 'vijanden in zicht: {quanti}',
+
+    'briefing.settore': 'Sector {settore}',
+    'briefing.vai': 'Ik ben klaar',
+    'briefing.conto': 'start over {secondi}s',
+    'briefing.attesa': 'wachten op je maat…',
+    'modo.sabotaggio.nome': 'Sabotage',
+    'modo.sabotaggio.come':
+      "In de verste kamers staan servers tegen de muren. Blijf er een paar seconden naast om er een uit te zetten: met z'n tweeën gaat het twee keer zo snel. Allemaal uit, dan terug naar de uitgang.",
+    'modo.bomba.nome': 'Bom',
+    'modo.bomba.come':
+      "Pak de bom op waar het gemarkeerd staat. Vanaf dat moment heb je {secondi} seconden om hem naar de oranje plek te brengen, en met z'n tweeën heeft de drager zijn handen vol en schiet hij niet. Eenmaal geplaatst: verdedigen. De lont loopt alleen door als er niemand van hen in de buurt is.",
+    'modo.dominio.nome': 'Bezetting',
+    'modo.dominio.come':
+      'Achterin de sector ligt een gemarkeerde zone. Ga erin en blijf er: de verovering loopt alleen op zolang jij er staat en zij niet. Ze blijven komen — het gaat niet om verstoppen, het gaat om standhouden.',
+    'gioco.bombaPrendi': 'Sector {settore} — pak de bom',
+    'gioco.bombaPorta': 'PLAATSEN — {secondi}s',
+    'gioco.bombaDifendi': 'VERDEDIGEN — {secondi}s',
+    'gioco.bombaBloccata': 'LONT STAAT STIL — ze staan bij de bom',
+    'gioco.zona': 'Sector {settore} — zone {percento}%',
+    'gioco.zonaContesa': 'ZONE BETWIST — ze staan erin',
+    'guida.riparo.titolo': 'De dekking',
+    'guida.riparo.testo':
+      'De Assault plant een barrière voor zich. Die houdt hun kogels tegen en die van jullie niet: erachter schiet je zonder geraakt te worden. Maar het is geen muur — lichamen klimmen erover, die van jullie en die van hen, op dertig procent snelheid, en juist dan sta je open. Onder genoeg vuur begeeft hij het.',
+    'guida.modalita.titolo': 'De drie missies',
+    'guida.modalita.sabotaggio':
+      'Sabotage — zet de servers uit die tegen de muren van de verste kamers staan.',
+    'guida.modalita.bomba':
+      'Bom — breng hem naar de gemarkeerde plek en verdedig hem tot hij afgaat.',
+    'guida.modalita.dominio':
+      'Bezetting — ga de gemarkeerde zone in en blijf er terwijl ze komen.',
   },
 };
 

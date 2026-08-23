@@ -138,6 +138,12 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
+    if (msg.t === 'pronto' && ws.gioco) {
+      // Briefing letto. Il settore parte quando l'hanno detto tutti.
+      mondo.pronto(ws.gioco);
+      return;
+    }
+
     if (msg.t === 'esci' && ws.gioco) {
       const g = mondo.giocatori.get(ws.gioco);
       mondo.esce(ws.gioco);

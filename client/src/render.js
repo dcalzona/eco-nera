@@ -2,7 +2,7 @@
 // la propria o quella del compagno — piu' quello che si e' gia' visto prima,
 // che resta disegnato spento, come un ricordo.
 
-import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA, ARMATURA_MASSIMA }
+import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA, ARMATURA_MASSIMA, RIPARO, BOMBA }
   from '../condiviso/regole.js';
 import { giaVisto } from './visione.js';
 import { t } from './lingue.js';
@@ -38,6 +38,12 @@ const COLORI = {
   marchio: '#c98bff',
   nucleo: '#ffd166',
   nucleoAcceso: '#5fd08a',
+  riparo: '#9aa8c4',
+  riparoRotto: '#6d5040',
+  bomba: '#ff8a4c',
+  miccia: '#ff5d5d',
+  zona: '#c98bff',
+  scoppio: '#ffd9a0',
   uscita: '#7fd3ff',
   rumore: '#e8e2c0',
   pulsante: 'rgba(223,230,245,0.16)',
@@ -103,7 +109,11 @@ export class Disegno {
     return { x: this.cam.x - mezzaW, y: this.cam.y - mezzaH, w: mezzaW * 2, h: mezzaH * 2 };
   }
 
-  scena(mappa, personaggi, io, luci, memoria, nemici = [], coni = [], colpi = [], oggetti = [], sonar = [], casse = [], mioId = null) {
+  scena(mappa, personaggi, io, luci, memoria, extra = {}) {
+    const {
+      nemici = [], coni = [], colpi = [], oggetti = [], sonar = [],
+      casse = [], ripari = [], scoppi = [], mioId = null,
+    } = extra;
     const c = this.ctx;
     c.fillStyle = COLORI.fondo;
     c.fillRect(0, 0, this.w, this.h);
@@ -141,10 +151,11 @@ export class Disegno {
     //    sotto, come una macchia sul pavimento.
     for (const cono of coni) this.conoNemico(cono);
 
-    // 3b. Le cose lasciate per terra: kit e sonar.
+    // 3b. Le cose lasciate per terra: kit, sonar, ripari.
     for (const s of sonar) this.sonarATerra(s);
     for (const cassa of casse) this.cassaRifornimento(cassa, memoria, mioId);
     for (const o of oggetti) this.kitMedico(o);
+    for (const r of ripari) this.riparo(r);
 
     // 4. I personaggi. I compagni si vedono sempre: si sa dov'e' il proprio,
     //    anche al buio. I nemici solo quando qualcuno li illumina.
@@ -154,6 +165,7 @@ export class Disegno {
     // 5. I colpi in volo si vedono sempre, anche al buio: una scia nel nero e'
     //    il modo piu' onesto di dire "ti stanno sparando, e da quella parte".
     for (const colpo of colpi) this.colpo(colpo);
+    for (const e of scoppi) this.scoppio(e);
 
     c.restore();
   }
@@ -199,6 +211,67 @@ export class Disegno {
       c.arc(cassa.x, cassa.y, 14, 0, Math.PI * 2);
       c.stroke();
     }
+    c.restore();
+  }
+
+  /**
+   * Il riparo dell'Assalto: una barra piantata di traverso. Si vede sempre,
+   * anche al buio — e' roba vostra, e sapere dov'e' la propria copertura fa
+   * parte del poterla usare. Quanto e' malmesso si legge dal colore: da
+   * metallo chiaro a legno bruciato.
+   */
+  riparo(r) {
+    const c = this.ctx;
+    const pieno = Math.max(0, Math.min(1, r.v ?? 1));
+    c.save();
+    c.translate(r.x, r.y);
+    c.rotate(r.a);
+
+    // Il corpo: lungo lungo la barriera, sottile lungo la direzione di tiro.
+    c.fillStyle = pieno > 0.35 ? COLORI.riparo : COLORI.riparoRotto;
+    c.globalAlpha = 0.45 + 0.55 * pieno;
+    c.fillRect(-RIPARO.spessore / 2, -RIPARO.mezzaLunghezza, RIPARO.spessore, RIPARO.mezzaLunghezza * 2);
+    c.globalAlpha = 1;
+
+    // Il lato verso cui protegge, marcato: si deve capire da che parte stare.
+    c.fillStyle = tinta(COLORI.assalto, 0.55 * pieno + 0.15);
+    c.fillRect(RIPARO.spessore / 2 - 2, -RIPARO.mezzaLunghezza, 2, RIPARO.mezzaLunghezza * 2);
+
+    // Le crepe quando comincia a cedere.
+    if (pieno < 0.7) {
+      c.strokeStyle = 'rgba(5,7,12,0.75)';
+      c.lineWidth = 1.2;
+      c.beginPath();
+      for (let k = -1; k <= 1; k++) {
+        const y = k * RIPARO.mezzaLunghezza * 0.55;
+        c.moveTo(-RIPARO.spessore / 2, y);
+        c.lineTo(RIPARO.spessore / 2, y + 4 * (1 - pieno));
+      }
+      c.stroke();
+    }
+    c.restore();
+  }
+
+  /** Uno scoppio: un anello che si apre e si spegne. */
+  scoppio(e) {
+    const c = this.ctx;
+    const q = Math.max(0, Math.min(1, e.resta / 1.2));
+    const raggio = BOMBA.raggioScoppio * (1 - q * 0.85);
+    c.save();
+    c.globalAlpha = q;
+    const g = c.createRadialGradient(e.x, e.y, 0, e.x, e.y, Math.max(1, raggio));
+    g.addColorStop(0, tinta(COLORI.scoppio, 0.9));
+    g.addColorStop(0.6, tinta(COLORI.bomba, 0.45));
+    g.addColorStop(1, tinta(COLORI.bomba, 0));
+    c.fillStyle = g;
+    c.beginPath();
+    c.arc(e.x, e.y, Math.max(1, raggio), 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = tinta(COLORI.scoppio, q);
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(e.x, e.y, Math.max(1, raggio), 0, Math.PI * 2);
+    c.stroke();
     c.restore();
   }
 
@@ -379,18 +452,9 @@ export class Disegno {
       aTerra: p.st === STATO.CRITICO,
     });
 
-    // Chi sta scattando si porta dietro una scia: si vede che va piu' forte.
-    if (p.sc > 0) {
-      c.strokeStyle = tinta(COLORI.assalto, 0.5);
-      c.lineWidth = 2;
-      for (let k = 1; k <= 3; k++) {
-        c.globalAlpha = 0.5 / k;
-        c.beginPath();
-        c.arc(p.x - Math.cos(p.a) * k * 7, p.y - Math.sin(p.a) * k * 7, 7 - k, 0, Math.PI * 2);
-        c.stroke();
-      }
-      c.globalAlpha = 1;
-    }
+    // Chi porta la bomba se la vede addosso, e la vede anche il compagno: in
+    // due bisogna sapere a colpo d'occhio chi ha le mani occupate.
+    if (p.bo === 1) this.ordigno(p.x, p.y - 14, null, false);
 
     if (sonoIo) {
       c.strokeStyle = '#ffffff';
@@ -428,10 +492,13 @@ export class Disegno {
   }
 
   /**
-   * I nuclei e l'uscita, disegnati nel mondo. Un nucleo si vede solo se lo si
-   * e' gia' incontrato: trovarli e' meta' del settore. L'uscita, una volta
-   * aperta, si vede sempre — a quel punto il problema non e' piu' sapere dove
-   * andare, e' arrivarci.
+   * Gli obiettivi, disegnati nel mondo. Ogni modalita' disegna la sua roba, ma
+   * l'uscita e' sempre la stessa e sta sempre in fondo: e' il pezzo che dice
+   * "qualunque cosa tu sia venuto a fare, ora si torna indietro".
+   *
+   * I server si vedono solo dove si e' gia' stati — trovarli e' meta' del
+   * settore. La bomba e la zona no: sono segnate dal briefing, e la tensione
+   * li' non sta nel cercarle, sta nell'arrivarci e restarci.
    */
   obiettivi(ob, memoria, mappa) {
     if (!ob) return;
@@ -441,29 +508,9 @@ export class Disegno {
     c.scale(this.zoom, this.zoom);
     c.translate(-this.cam.x, -this.cam.y);
 
-    for (const nucleo of ob.nuclei) {
-      if (!this.scoperto(nucleo, memoria)) continue;
-      const colore = nucleo.a ? COLORI.nucleoAcceso : COLORI.nucleo;
-      c.strokeStyle = colore;
-      c.lineWidth = 2.5;
-      c.beginPath();
-      c.arc(nucleo.x, nucleo.y, 13, 0, Math.PI * 2);
-      c.stroke();
-      c.fillStyle = colore;
-      c.globalAlpha = nucleo.a ? 0.9 : 0.35 + 0.25 * Math.sin(performance.now() / 300);
-      c.beginPath();
-      c.arc(nucleo.x, nucleo.y, 6, 0, Math.PI * 2);
-      c.fill();
-      c.globalAlpha = 1;
-
-      if (!nucleo.a && nucleo.p > 0) {
-        c.strokeStyle = COLORI.nucleoAcceso;
-        c.lineWidth = 3.5;
-        c.beginPath();
-        c.arc(nucleo.x, nucleo.y, 19, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * nucleo.p);
-        c.stroke();
-      }
-    }
+    if (ob.md === 'bomba') this.disegnaBomba(ob.bo);
+    else if (ob.md === 'dominio') this.disegnaZona(ob.zo);
+    else for (const n of ob.nuclei) this.serverDaSpegnere(n, memoria);
 
     const uscita = ob.es;
     if (uscita.a || this.scoperto(uscita, memoria)) {
@@ -484,6 +531,161 @@ export class Disegno {
       }
     }
 
+    c.restore();
+  }
+
+  /**
+   * Un server da spegnere: un armadio appoggiato al muro, con le spie davanti.
+   * Appoggiato e non in mezzo alla stanza — sembra una cosa installata li', e
+   * obbliga a rasentare le pareti, che al buio e' un'altra sensazione.
+   */
+  serverDaSpegnere(nucleo, memoria) {
+    if (!this.scoperto(nucleo, memoria)) return;
+    const c = this.ctx;
+    const spento = nucleo.a === 1;
+    c.save();
+    c.translate(nucleo.x, nucleo.y);
+    c.rotate(nucleo.o ?? 0);
+
+    // L'armadio: sviluppato lungo la parete, poco profondo.
+    c.fillStyle = spento ? '#26313f' : '#33405c';
+    stondato(c, -7, -11, 12, 22, 2);
+    c.fill();
+    c.strokeStyle = 'rgba(5,7,12,0.8)';
+    c.lineWidth = 1.2;
+    c.stroke();
+
+    // Le spie sul davanti: rosse e inquiete finche' e' acceso, verdi e ferme
+    // quando e' spento. E' il colpo d'occhio che dice se manca ancora.
+    const battito = 0.45 + 0.45 * Math.sin(performance.now() / 260);
+    for (let k = -2; k <= 2; k++) {
+      c.fillStyle = spento
+        ? tinta(COLORI.nucleoAcceso, 0.85)
+        : tinta(COLORI.nucleo, 0.35 + battito * 0.6 * ((k + 3) % 2));
+      c.fillRect(2, k * 4 - 1.2, 2.6, 2.4);
+    }
+    c.restore();
+
+    if (!spento && nucleo.p > 0) {
+      c.strokeStyle = COLORI.nucleoAcceso;
+      c.lineWidth = 3.5;
+      c.beginPath();
+      c.arc(nucleo.x, nucleo.y, 19, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * nucleo.p);
+      c.stroke();
+    }
+  }
+
+  /** La bomba: dove si prende, dove va portata, e quanto manca. */
+  disegnaBomba(bo) {
+    if (!bo || bo.st === 'finita') return;
+    const c = this.ctx;
+
+    // Il punto dove va piazzata: finche' non e' giu', si vede sempre.
+    if (bo.st !== 'piazzata') {
+      const battito = 0.4 + 0.3 * Math.sin(performance.now() / 300);
+      c.save();
+      c.strokeStyle = tinta(COLORI.bomba, battito);
+      c.lineWidth = 2.5;
+      c.setLineDash([7, 5]);
+      c.beginPath();
+      c.arc(bo.sx, bo.sy, 26, 0, Math.PI * 2);
+      c.stroke();
+      c.setLineDash([]);
+      // Quattro squadrette agli angoli: si legge come "qui", non come "cosa".
+      c.strokeStyle = tinta(COLORI.bomba, 0.75);
+      c.lineWidth = 2;
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        c.beginPath();
+        c.moveTo(bo.sx + sx * 30, bo.sy + sy * 30 - sy * 9);
+        c.lineTo(bo.sx + sx * 30, bo.sy + sy * 30);
+        c.lineTo(bo.sx + sx * 30 - sx * 9, bo.sy + sy * 30);
+        c.stroke();
+      }
+      if (bo.p > 0) {
+        c.strokeStyle = COLORI.bomba;
+        c.lineWidth = 4;
+        c.beginPath();
+        c.arc(bo.sx, bo.sy, 34, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * bo.p);
+        c.stroke();
+      }
+      c.restore();
+    }
+
+    // La bomba vera. In mano la disegna il personaggio che la porta.
+    if (bo.st === 'inMano') return;
+    this.ordigno(bo.x, bo.y, bo.st === 'piazzata' ? bo.t / BOMBA.miccia : null, bo.c === 1);
+  }
+
+  /**
+   * L'ordigno. `miccia` da 1 a 0 quando e' piazzata: l'anello si consuma, e
+   * quando un nemico e' li' vicino l'anello si ferma e diventa rosso — si deve
+   * capire senza leggere che la miccia sta ferma per colpa loro.
+   */
+  ordigno(x, y, miccia, bloccata) {
+    const c = this.ctx;
+    const battito = 0.5 + 0.5 * Math.sin(performance.now() / (miccia !== null ? 160 : 420));
+    c.save();
+
+    c.fillStyle = COLORI.bomba;
+    c.beginPath();
+    c.arc(x, y, 8, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = 'rgba(5,7,12,0.7)';
+    c.lineWidth = 1.2;
+    c.stroke();
+
+    // La spia che lampeggia sopra.
+    c.fillStyle = tinta(bloccata ? COLORI.critico : COLORI.scoppio, 0.35 + 0.65 * battito);
+    c.beginPath();
+    c.arc(x, y - 2, 3.2, 0, Math.PI * 2);
+    c.fill();
+
+    if (miccia !== null) {
+      c.strokeStyle = bloccata ? COLORI.critico : COLORI.miccia;
+      c.lineWidth = 3.5;
+      c.beginPath();
+      c.arc(x, y, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, Math.min(1, miccia)));
+      c.stroke();
+    } else {
+      c.strokeStyle = tinta(COLORI.bomba, 0.3 + 0.35 * battito);
+      c.lineWidth = 2;
+      c.beginPath();
+      c.arc(x, y, 15, 0, Math.PI * 2);
+      c.stroke();
+    }
+    c.restore();
+  }
+
+  /** La zona da tenere: un cerchio con quanto manca sul bordo. */
+  disegnaZona(zo) {
+    if (!zo) return;
+    const c = this.ctx;
+    const battito = 0.5 + 0.5 * Math.sin(performance.now() / 420);
+    c.save();
+
+    const g = c.createRadialGradient(zo.x, zo.y, zo.r * 0.2, zo.x, zo.y, zo.r);
+    g.addColorStop(0, tinta(zo.c ? COLORI.critico : COLORI.zona, 0.02));
+    g.addColorStop(1, tinta(zo.c ? COLORI.critico : COLORI.zona, 0.14));
+    c.fillStyle = g;
+    c.beginPath();
+    c.arc(zo.x, zo.y, zo.r, 0, Math.PI * 2);
+    c.fill();
+
+    c.strokeStyle = tinta(zo.c ? COLORI.critico : COLORI.zona, 0.35 + 0.3 * battito);
+    c.lineWidth = 2;
+    c.setLineDash([9, 7]);
+    c.beginPath();
+    c.arc(zo.x, zo.y, zo.r, 0, Math.PI * 2);
+    c.stroke();
+    c.setLineDash([]);
+
+    if (zo.p > 0) {
+      c.strokeStyle = COLORI.zona;
+      c.lineWidth = 5;
+      c.beginPath();
+      c.arc(zo.x, zo.y, zo.r - 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * zo.p);
+      c.stroke();
+    }
     c.restore();
   }
 
@@ -529,38 +731,76 @@ export class Disegno {
     c.fillRect(0, 0, this.w, this.h);
   }
 
-  /** A che punto e' la missione, in alto. E dove sta l'uscita, quando conta. */
+  /**
+   * A che punto e' la missione, in alto. Una riga sola, diversa per ogni
+   * modalita' e per ogni momento: cosa fare adesso, non cosa fare in generale.
+   * E' l'unico posto in cui il gioco parla, quindi deve dire la cosa giusta.
+   */
   missione(ob, io) {
     if (!ob) return;
     const c = this.ctx;
-    const accesi = ob.nuclei.filter((n) => n.a).length;
-    const totale = ob.nuclei.length;
+    const bo = ob.bo;
+    const zo = ob.zo;
+
+    let testo;
+    let colore = COLORI.testo;
+    if (ob.al) {
+      testo = t('gioco.allarme');
+      colore = COLORI.critico;
+    } else if (ob.es.a) {
+      testo = t('gioco.tornaUscita', { settore: ob.settore });
+      colore = COLORI.uscita;
+    } else if (ob.md === 'bomba' && bo) {
+      const quale = bo.q > 1 ? ` (${bo.n + 1}/${bo.q})` : '';
+      if (bo.st === 'aTerra') {
+        testo = t('gioco.bombaPrendi', { settore: ob.settore }) + quale;
+        colore = COLORI.bomba;
+      } else if (bo.st === 'inMano') {
+        testo = t('gioco.bombaPorta', { secondi: bo.t }) + quale;
+        colore = bo.t <= 12 ? COLORI.critico : COLORI.bomba;
+      } else {
+        testo = bo.c
+          ? t('gioco.bombaBloccata', { secondi: bo.t })
+          : t('gioco.bombaDifendi', { secondi: bo.t });
+        colore = bo.c ? COLORI.critico : COLORI.miccia;
+      }
+    } else if (ob.md === 'dominio' && zo) {
+      testo = zo.c
+        ? t('gioco.zonaContesa')
+        : t('gioco.zona', { settore: ob.settore, percento: Math.round(zo.p * 100) });
+      colore = zo.c ? COLORI.critico : COLORI.zona;
+    } else {
+      const accesi = ob.nuclei.filter((n) => n.a).length;
+      testo = t('gioco.server', { settore: ob.settore, accesi, totale: ob.nuclei.length });
+    }
 
     c.textAlign = 'center';
     c.font = ob.al ? 'bold 14px system-ui, sans-serif' : '13px system-ui, sans-serif';
-    c.fillStyle = ob.al ? COLORI.critico : ob.es.a ? COLORI.uscita : COLORI.testo;
-    c.fillText(
-      ob.al
-        ? t('gioco.allarme')
-        : ob.es.a
-          ? t('gioco.tornaUscita', { settore: ob.settore })
-          : t('gioco.nuclei', { settore: ob.settore, accesi, totale }),
-      this.w / 2,
-      24,
-    );
+    c.fillStyle = colore;
+    c.fillText(testo, this.w / 2, 24);
 
-    if (!ob.es.a || !io) return;
+    if (!io) return;
 
-    // Una freccia sul bordo, nella direzione dell'uscita: aperta l'uscita il
-    // problema non e' piu' trovarla.
-    const ang = Math.atan2(ob.es.y - io.y, ob.es.x - io.x);
+    // Una freccia sul bordo verso quello che conta adesso. L'uscita quando e'
+    // aperta; se no la bomba o la zona, che il briefing ha gia' segnato sulla
+    // pianta. Per i server no: trovarli e' il gioco.
+    let meta = null;
+    if (ob.es.a) meta = { x: ob.es.x, y: ob.es.y, colore: COLORI.uscita };
+    else if (ob.md === 'bomba' && bo && bo.st !== 'finita') {
+      meta = bo.st === 'aTerra'
+        ? { x: bo.x, y: bo.y, colore: COLORI.bomba }
+        : { x: bo.sx, y: bo.sy, colore: COLORI.bomba };
+    } else if (ob.md === 'dominio' && zo) meta = { x: zo.x, y: zo.y, colore: COLORI.zona };
+    if (!meta) return;
+
+    const ang = Math.atan2(meta.y - io.y, meta.x - io.x);
     const raggio = Math.min(this.w, this.h) * 0.44;
     const x = this.w / 2 + Math.cos(ang) * raggio;
     const y = this.h / 2 + Math.sin(ang) * raggio;
     c.save();
     c.translate(x, y);
     c.rotate(ang);
-    c.fillStyle = COLORI.uscita;
+    c.fillStyle = meta.colore;
     c.globalAlpha = 0.5 + 0.35 * Math.sin(performance.now() / 260);
     c.beginPath();
     c.moveTo(11, 0);

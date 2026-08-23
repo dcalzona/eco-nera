@@ -31,8 +31,12 @@ export function creaColpo(padrone, x, y, ang, danno, gittata, velocita, daNemico
 /**
  * Fa volare tutti i colpi. `colpisci(colpo)` viene chiamata a ogni pezzetto e
  * deve tornare vero se il colpo ha centrato qualcuno: in quel caso sparisce.
+ * `fermato(colpo)` e' la stessa cosa per i ripari dell'Assalto — si guarda
+ * pezzetto per pezzetto come per i muri, perche' una barriera spessa nove
+ * pixel un colpo dell'Eco la salterebbe a pie' pari controllando solo il
+ * punto d'arrivo.
  */
-export function passoProiettili(mappa, proiettili, dt, colpisci) {
+export function passoProiettili(mappa, proiettili, dt, colpisci, fermato = null) {
   for (let k = proiettili.length - 1; k >= 0; k--) {
     const c = proiettili[k];
     const tratto = Math.hypot(c.vx, c.vy) * dt;
@@ -45,6 +49,10 @@ export function passoProiettili(mappa, proiettili, dt, colpisci) {
       c.resta -= tratto / pezzi;
 
       if (muro(mappa, Math.floor(c.x / TILE), Math.floor(c.y / TILE))) {
+        finito = true;
+        break;
+      }
+      if (fermato && fermato(c)) {
         finito = true;
         break;
       }

@@ -3,7 +3,7 @@
 // personaggio per non sentire il ritardo della rete sotto il dito.
 // Devono per forza calcolare la stessa cosa, quindi il codice e' uno solo.
 
-import { RAGGIO, VELOCITA } from './regole.js';
+import { RAGGIO, VELOCITA, RIPARO } from './regole.js';
 import { muro } from './mappa.js';
 
 /** Riduce a lunghezza 1 un vettore piu' lungo di 1 (il dito sullo stick puo' sbordare). */
@@ -76,4 +76,37 @@ function passoAsse(ent, dx, dy, mappa) {
 export function angolo(ax, ay) {
   if (ax === 0 && ay === 0) return null;
   return Math.atan2(ay, ax);
+}
+
+
+/**
+ * Si sta scavalcando un riparo? Serve al server e al telefono allo stesso
+ * modo: la velocita' fa parte della previsione, e se il telefono non sapesse
+ * del rallentamento si vedrebbe correre e poi verrebbe riportato indietro a
+ * ogni fotografia.
+ *
+ * Il conto e' un cambio di assi: quanto sei avanti rispetto al riparo (lungo
+ * la direzione in cui guarda) e quanto sei di lato (lungo la barriera). La
+ * fascia in cui si rallenta e' piu' larga dello spessore vero, altrimenti la
+ * si attraversa in due decimi di secondo e non si sente niente.
+ */
+export function suUnRiparo(ripari, x, y) {
+  if (!ripari?.length) return false;
+  for (const r of ripari) {
+    const dx = x - r.x;
+    const dy = y - r.y;
+    const co = Math.cos(r.ang);
+    const si = Math.sin(r.ang);
+    const avanti = dx * co + dy * si;
+    const lato = -dx * si + dy * co;
+    if (Math.abs(avanti) > RIPARO.banda / 2) continue;
+    if (Math.abs(lato) > RIPARO.mezzaLunghezza + RAGGIO * 0.5) continue;
+    return true;
+  }
+  return false;
+}
+
+/** La velocita' di chi sta scavalcando, se sta scavalcando. */
+export function velocitaFraIRipari(velocita, ripari, x, y) {
+  return suUnRiparo(ripari, x, y) ? velocita * RIPARO.rallenta : velocita;
 }

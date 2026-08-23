@@ -247,6 +247,12 @@ export class Rete {
     );
   }
 
+  /** Briefing letto: si puo' cominciare. */
+  mandaPronto() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({ t: 'pronto' }));
+  }
+
   mandaDiario(dati) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     this.ws.send(JSON.stringify({ t: 'diario', ...dati }));
@@ -292,6 +298,20 @@ export class Rete {
   /** I sonar posati dall'Eco. */
   sonar() {
     return this.fotografie.at(-1)?.so ?? [];
+  }
+
+  /**
+   * I ripari piantati dall'Assalto. Non si interpolano: stanno fermi dove
+   * sono stati piantati, e il telefono li usa anche per prevedere il proprio
+   * rallentamento mentre li scavalca.
+   */
+  ripari() {
+    return this.fotografie.at(-1)?.rp ?? [];
+  }
+
+  /** I lampi degli scoppi. */
+  scoppi() {
+    return this.fotografie.at(-1)?.sp ?? [];
   }
 
   /** I colpi in volo. Corrono: senza interpolarli si vedrebbero a scatti. */
