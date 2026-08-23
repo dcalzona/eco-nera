@@ -32,6 +32,7 @@ export class ReteLocale extends Rete {
     this.disallineato = false;
     this.ping = 0;
     this.stato = 'menu';
+    this.collegamento = 'aperto'; // il server e' qui dentro: c'e' sempre
   }
 
   /** Niente da collegare: si va dritti al menu. */
@@ -63,6 +64,7 @@ export class ReteLocale extends Rete {
     this.ultimoOrologio = performance.now();
     this.arretrato = 0;
     this.accendiOrologio();
+    return true;
   }
 
   /**

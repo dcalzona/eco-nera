@@ -116,7 +116,18 @@ velocita', o il minimo tocco farebbe uno scatto.
 ## Fuori casa: il server dentro il telefono
 
 Spuntando **«senza server»** nel menu, il mondo gira dentro l'app: niente PC,
-niente Wi-Fi, si gioca in treno. Si gioca **da soli**, perche' senza server non
+niente Wi-Fi, si gioca in treno.
+
+Il menu si apre **subito**, senza aspettare il server, e dice come sta la
+faccenda: *pronto*, *sto cercando*, oppure *non risponde* — e quella riga si
+tocca per cambiare indirizzo. Non e' un dettaglio di comodo. Fuori casa la
+presa verso il PC non fallisce: resta appesa finche' non scade il tempo di rete,
+che su un telefono puo' voler dire minuti. Prima l'app controllava il server
+*prima* di lasciar vedere il menu, e chi era fuori casa restava fermo su "mi
+collego al server" senza poter arrivare alla spunta che sta nel menu stesso.
+Adesso il menu viene prima di tutto, premere Entra senza server risponde di no
+invece di appendere, e chi entra mentre il collegamento e' ancora in corso viene
+riportato al menu dopo otto secondi. Si gioca **da soli**, perche' senza server non
 c'e' nessun posto dove il compagno potrebbe collegarsi.
 
 Non e' una versione ridotta del gioco, ed e' il punto: e' lo **stesso identico

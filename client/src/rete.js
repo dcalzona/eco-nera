@@ -51,7 +51,12 @@ export class Rete {
     this.ws = null;
     this.io = null; // id del nostro personaggio
     this.mappa = null;
-    this.stato = 'collego'; // collego | dentro | caduto
+    // Si parte dal menu, sempre. Il collegamento e' un'altra cosa e ha uno
+    // stato suo: fuori casa la presa verso il PC non fallisce — resta appesa
+    // finche' non scade il tempo di rete, che su un telefono puo' voler dire
+    // minuti — e chi aspettava di arrivare al menu non ci arrivava mai.
+    this.stato = 'menu'; // menu | collego | dentro | caduto
+    this.collegamento = 'spento'; // spento | collego | aperto | caduto
     this.fotografie = [];
     this.scarto = null; // differenza fra orologio del server e nostro
     this.ping = 0;
@@ -66,14 +71,33 @@ export class Rete {
     this.classe = null;
   }
 
-  /** Entra in partita con la classe scelta. */
+  /**
+   * Entra in partita con la classe scelta. Torna falso se non c'e' proprio
+   * nessuno con cui giocare: chi ha premuto deve poterlo sapere e restare nel
+   * menu, invece di finire su una scritta che non cambia mai.
+   */
   entra(classe, solo = false) {
     this.classe = classe;
     this.solo = solo;
     localStorage.setItem('ecoNera.classe', classe);
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    const pronta = this.ws && this.ws.readyState === WebSocket.OPEN;
+    const inCorso = this.ws && this.ws.readyState === WebSocket.CONNECTING;
+    // Si accetta di aspettare solo il PRIMO tentativo — quello che in casa dura
+    // meno di un secondo. Se un tentativo e' gia' andato a vuoto si sa gia'
+    // come va a finire, e far aspettare di nuovo vorrebbe dire tenere fermo chi
+    // voleva solo giocare nel telefono.
+    if (!pronta && (!inCorso || this.tentativi > 0)) {
+      this.classe = null; // non si resta appesi a una partita che non puo' partire
+      return false;
+    }
+
     this.stato = 'collego';
-    this.ws.send(JSON.stringify({ t: 'entra', sessione: sessione(), classe, solo }));
+    // Se la presa si sta ancora aprendo ci pensa `onopen`: la classe e' segnata.
+    if (pronta) {
+      this.ws.send(JSON.stringify({ t: 'entra', sessione: sessione(), classe, solo }));
+    }
+    return true;
   }
 
   /**
@@ -127,18 +151,22 @@ export class Rete {
     if (this.spento) return;
     const url = indirizzo();
     if (!url) {
-      this.stato = 'senzaIndirizzo';
+      // Nessun indirizzo: si chiede, ma il menu resta li' sotto — dal pannello
+      // si puo' anche rinunciare al server e giocare nel telefono.
+      this.collegamento = 'spento';
       this.chiediIndirizzo?.();
+      this.chiediClasse?.();
       return;
     }
 
-    this.stato = this.tentativi === 0 ? 'collego' : 'riprovo';
+    this.collegamento = 'collego';
     const ws = new WebSocket(url);
     this.ws = ws;
 
     ws.onopen = () => {
       if (this.io !== null) this.riconnessioni++;
       this.tentativi = 0;
+      this.collegamento = 'aperto';
       // Non si entra piu' appena aperto il collegamento: prima si sceglie la
       // classe dal menu. Se pero' si era gia' dentro (e questa e' una
       // riconnessione), si rientra da soli con la stessa scelta di prima.
@@ -163,17 +191,16 @@ export class Rete {
     ws.onclose = () => {
       clearInterval(this.battito);
       if (this.spento) return;
-      this.stato = 'caduto';
+      this.collegamento = 'caduto';
       this.tentativi++;
-      // Nell'app, dopo qualche tentativo a vuoto, e' molto piu' probabile che
-      // l'indirizzo sia sbagliato che non che la rete sia lenta: si richiede.
-      if (inApp() && this.tentativi >= 4 && this.io === null) {
-        this.stato = 'senzaIndirizzo';
-        this.chiediIndirizzo?.('server.nessuno');
-        return;
-      }
+      // In partita e' un buco di rete e si continua a riprovare in silenzio.
+      // Nel menu invece non si tocca lo stato: si resta nel menu, dove la riga
+      // del server dice com'e' andata e la spunta «senza server» e' li' a un
+      // dito di distanza.
+      if (this.stato === 'dentro' || this.stato === 'caduto') this.stato = 'caduto';
       // Riprova da sola: il telefono che si blocca in tasca non deve
-      // costringere a ricaricare la pagina.
+      // costringere a ricaricare la pagina, e chi accende il PC a meta' serata
+      // deve ritrovarselo collegato senza fare niente.
       setTimeout(() => this.avvia(), Math.min(500 * this.tentativi, 4000));
     };
 

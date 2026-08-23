@@ -177,6 +177,24 @@ sceltaLingua.addEventListener('change', () => {
   avvisaSeDisallineato();
 });
 
+// Come sta il server. Sta nel menu e non su una schermata a parte: e' li' che
+// si decide se giocare in casa o nel telefono, e la decisione vuole saperlo.
+const rigaServer = document.getElementById('statoServer');
+rigaServer.addEventListener('click', () => chiediIndirizzo());
+
+function aggiornaStatoServer() {
+  if (rete.locale) {
+    rigaServer.hidden = true;
+    return;
+  }
+  const come = rete.collegamento;
+  const chiave =
+    come === 'aperto' ? 'menu.serverPronto' : come === 'collego' ? 'menu.serverCerco' : 'menu.serverNiente';
+  rigaServer.hidden = false;
+  rigaServer.textContent = t(chiave);
+  rigaServer.classList.toggle('guasto', chiave === 'menu.serverNiente');
+}
+
 const spuntaSolo = document.getElementById('daSolo');
 spuntaSolo.checked = localStorage.getItem('ecoNera.solo') === '1';
 
@@ -212,12 +230,41 @@ bottoneAvvio.addEventListener('click', () => {
   if (!classeScelta) return;
   suoni.avvia();
   localStorage.setItem('ecoNera.solo', spuntaSolo.checked ? '1' : '0');
-  rete.entra(classeScelta, spuntaSolo.checked);
+  // Se non c'e' nessun server si resta nel menu e lo si dice, invece di
+  // spedire chi gioca su una scritta che non cambia mai.
+  if (!rete.entra(classeScelta, spuntaSolo.checked)) {
+    aggiornaStatoServer();
+    return;
+  }
   pannelloMenu.hidden = true;
   pannelloFine.hidden = true;
   pannelloPausa.hidden = true;
   bottonePausa.hidden = false;
+  sorvegliaIngresso();
 });
+
+/**
+ * Otto secondi per entrare, poi si torna al menu.
+ *
+ * Fuori casa il collegamento verso il PC non fallisce: resta appeso finche' non
+ * scade il tempo di rete, che su un telefono puo' voler dire minuti. Senza
+ * questa sorveglianza si restava fermi su "mi collego al server" senza poter
+ * fare niente — nemmeno arrivare alla spunta per giocare senza server, che sta
+ * proprio nel menu da cui si era appena usciti.
+ */
+let guardiaIngresso = null;
+function sorvegliaIngresso() {
+  clearTimeout(guardiaIngresso);
+  if (rete.locale) return;
+  guardiaIngresso = setTimeout(() => {
+    if (rete.stato === 'dentro') return;
+    rete.classe = null; // e non ci si ritrovi dentro fra dieci minuti, da soli
+    rete.stato = 'menu';
+    pannelloMenu.hidden = false;
+    bottonePausa.hidden = true;
+    aggiornaStatoServer();
+  }, 8000);
+}
 
 // --- Pausa e uscita --------------------------------------------------------
 // Il gioco non si ferma davvero — il server va avanti — ma si puo' smettere.
@@ -410,9 +457,11 @@ function giro(ora) {
   fps += (1 / (dt || 1) - fps) * 0.05;
 
   if (rete.stato === 'menu') {
-    if (pannelloMenu.hidden) pannelloMenu.hidden = false;
+    // Se si sta scrivendo l'indirizzo del server, parla quel pannello.
+    if (pannelloMenu.hidden && pannello.hidden) pannelloMenu.hidden = false;
     if (!bottonePausa.hidden) bottonePausa.hidden = true;
     controllerNelMenu();
+    aggiornaStatoServer();
     return; // parla il menu
   }
 

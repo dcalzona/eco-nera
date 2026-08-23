@@ -140,6 +140,11 @@ const TESTI = {
       "Spuntando «senza server» il gioco gira tutto dentro il telefono: non servono ne il PC ne il Wi-Fi, e si puo giocare in treno. E lo stesso identico gioco — stessa simulazione, stesse missioni, stesso buio — ma da soli, perche senza server non c'e nessun posto dove il compagno potrebbe collegarsi. La partita di fuori e sua e resta nel telefono: quella in casa, sul server, non la tocca.",
     'menu.controllerStrano':
       'Controller collegato: {nome} — mappatura non standard, i comandi potrebbero essere sbagliati',
+
+    'menu.serverPronto': 'Server: pronto',
+    'menu.serverCerco': 'Server: sto cercando…',
+    'menu.serverNiente':
+      'Server: non risponde — tocca per cambiare indirizzo, o spunta «senza server» qui sotto',
   },
 
   en: {
@@ -262,6 +267,11 @@ const TESTI = {
       'Tick “no server” and the whole game runs inside the phone: no PC, no Wi-Fi, playable on a train. It is the same game — same simulation, same missions, same dark — but alone, because without a server there is nowhere for your partner to connect. The away game is its own and stays on the phone: the one at home, on the server, is untouched.',
     'menu.controllerStrano':
       'Controller connected: {nome} — non-standard mapping, the controls may come out wrong',
+
+    'menu.serverPronto': 'Server: ready',
+    'menu.serverCerco': 'Server: looking…',
+    'menu.serverNiente':
+      'Server: no answer — tap to change the address, or tick “no server” below',
   },
 
   fr: {
@@ -386,6 +396,11 @@ const TESTI = {
       "Coche « sans serveur » et tout le jeu tourne dans le téléphone : ni PC ni Wi-Fi, jouable dans le train. C'est exactement le même jeu — même simulation, mêmes missions, même noir — mais en solo, parce que sans serveur ton coéquipier n'a nulle part où se connecter. La partie hors de chez toi lui appartient et reste dans le téléphone : celle à la maison, sur le serveur, n'y touche pas.",
     'menu.controllerStrano':
       'Manette connectée : {nome} — mappage non standard, les commandes peuvent être fausses',
+
+    'menu.serverPronto': 'Serveur : prêt',
+    'menu.serverCerco': 'Serveur : recherche…',
+    'menu.serverNiente':
+      'Serveur : pas de réponse — touche pour changer l’adresse, ou coche « sans serveur » ci-dessous',
   },
 
   es: {
@@ -508,6 +523,11 @@ const TESTI = {
       'Marcando «sin servidor» el juego entero corre dentro del teléfono: no hacen falta ni el PC ni el Wi-Fi, y se puede jugar en el tren. Es el mismo juego — misma simulación, mismas misiones, misma oscuridad — pero en solitario, porque sin servidor no hay ningún sitio donde tu compañero pueda conectarse. La partida de fuera es suya y se queda en el teléfono: la de casa, en el servidor, no se toca.',
     'menu.controllerStrano':
       'Mando conectado: {nome} — mapeo no estándar, los controles pueden salir mal',
+
+    'menu.serverPronto': 'Servidor: listo',
+    'menu.serverCerco': 'Servidor: buscando…',
+    'menu.serverNiente':
+      'Servidor: no responde — toca para cambiar la dirección, o marca «sin servidor» aquí abajo',
   },
 
   ru: {
@@ -628,6 +648,11 @@ const TESTI = {
       'Поставь галочку «без сервера» — и вся игра идёт внутри телефона: не нужны ни ПК, ни Wi-Fi, можно играть в поезде. Это та же самая игра — та же симуляция, те же задания, та же темнота — но в одиночку, потому что без сервера напарнику некуда подключаться. Партия вне дома живёт отдельно и остаётся в телефоне: домашнюю, на сервере, она не трогает.',
     'menu.controllerStrano':
       'Геймпад подключён: {nome} — нестандартная раскладка, управление может быть неверным',
+
+    'menu.serverPronto': 'Сервер: готов',
+    'menu.serverCerco': 'Сервер: ищу…',
+    'menu.serverNiente':
+      'Сервер: не отвечает — нажми, чтобы сменить адрес, или поставь галочку «без сервера» ниже',
   },
 
   nl: {
@@ -752,6 +777,11 @@ const TESTI = {
       'Vink “zonder server” aan en het hele spel draait in de telefoon: geen pc, geen wifi, speelbaar in de trein. Het is precies hetzelfde spel — dezelfde simulatie, dezelfde missies, hetzelfde donker — maar alleen, want zonder server is er nergens waar je maat kan inloggen. Het potje van onderweg is van zichzelf en blijft in de telefoon: dat thuis, op de server, blijft ongemoeid.',
     'menu.controllerStrano':
       'Controller verbonden: {nome} — niet-standaard indeling, de besturing kan verkeerd uitvallen',
+
+    'menu.serverPronto': 'Server: klaar',
+    'menu.serverCerco': 'Server: zoeken…',
+    'menu.serverNiente':
+      'Server: geen antwoord — tik om het adres te wijzigen, of vink “zonder server” hieronder aan',
   },
 };
 
