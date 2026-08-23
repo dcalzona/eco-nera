@@ -73,22 +73,34 @@ function costruisciMenu() {
     scheda.style.color = coloreDi(id);
     scheda.setAttribute('aria-pressed', String(id === classeScelta));
 
+    // L'anteprima si disegna alla risoluzione vera dello schermo, altrimenti
+    // sui telefoni fitti viene sgranata.
+    const dpr = Math.min(devicePixelRatio || 1, 3);
+    const larghezza = 44;
+    const altezza = 34;
     const tela = document.createElement('canvas');
-    tela.width = 96;
-    tela.height = 52;
+    tela.width = larghezza * dpr;
+    tela.height = altezza * dpr;
     const c = tela.getContext('2d');
-    c.translate(30, 26);
-    c.scale(2.6, 2.6);
+    c.scale(dpr, dpr);
+    c.translate(larghezza / 2 - 4, altezza / 2);
+    c.scale(1.7, 1.7);
     disegnaOmino(c, 0, 0, 0, { corpo: coloreDi(id), arma: armaDi(id) });
 
     const abilita = ABILITA[id];
-    scheda.append(tela);
+    const intestazione = document.createElement('div');
+    intestazione.className = 'intestazione';
+    intestazione.append(tela);
+    intestazione.insertAdjacentHTML(
+      'beforeend',
+      `<div><div class="nome">${classe.nome}</div>
+       <div class="arma">${classe.arma}</div></div>`,
+    );
+    scheda.append(intestazione);
     scheda.insertAdjacentHTML(
       'beforeend',
-      `<div class="nome">${classe.nome}</div>
-       <div class="arma">${classe.arma} · ${classe.ruolo}</div>
-       <div class="desc">${classe.descrizione}</div>
-       <div class="desc"><b>Abilita':</b> ${nomeAbilita(abilita.tipo)} — pronta ogni ${abilita.ricarica} s</div>`,
+      `<div class="desc">${classe.descrizione}</div>
+       <div class="abilita">${nomeAbilita(abilita.tipo)} · ${abilita.ricarica} s</div>`,
     );
 
     scheda.addEventListener('click', () => {
@@ -173,6 +185,8 @@ function giro(ora) {
     // Settore nuovo: si riparte al buio, senza ricordi di una pianta che non
     // esiste piu', e senza previsioni riferite a posizioni di prima.
     versioneMappaVista = rete.versioneMappa;
+    suoni.sirena(false);
+    prima_.allarme = null;
     memoria = nuovaMemoria(mappa);
     io = null;
     prima = null;
@@ -291,6 +305,7 @@ function giro(ora) {
 
   const ob = rete.obiettivi();
   disegno.obiettivi(ob, memoria, mappa);
+  if (ob?.al) disegno.allarme();
   disegno.missione(ob, disegnato);
   disegno.hud([`ping ${rete.ping} ms   fps ${fps.toFixed(0)}`]);
   if (stallo) disegno.avviso('Rete interrotta — aspetto…');
@@ -368,6 +383,7 @@ const prima_ = {
   nemici: null,
   nuclei: null,
   uscita: null,
+  allarme: null,
   settore: null,
   torcia: null,
   esaurita: null,
@@ -416,6 +432,10 @@ function suona(dt, mio, dove) {
     const accesi = ob.nuclei.filter((n) => n.a).length;
     if (prima_.nuclei !== null && accesi > prima_.nuclei) suoni.evento('nucleoAcceso');
     if (prima_.uscita === 0 && ob.es.a === 1) suoni.evento('uscitaAperta');
+    // La sirena non e' un effetto che parte e finisce: e' uno stato, e si
+    // accende e si spegne insieme all'allarme.
+    if (prima_.allarme !== ob.al) suoni.sirena(ob.al === 1);
+    prima_.allarme = ob.al;
     if (prima_.settore !== null && ob.settore !== prima_.settore) suoni.evento('settore');
     prima_.nuclei = accesi;
     prima_.uscita = ob.es.a;
@@ -425,6 +445,7 @@ function suona(dt, mio, dove) {
   suoni.aggiorna(dt, {
     cacciatori: nemici.filter((n) => n.u === UMORE.CACCIA).length,
     critico: mio?.st === STATO.CRITICO,
+    allarme: ob?.al === 1,
   });
 }
 

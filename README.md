@@ -273,6 +273,18 @@ e' piu' scoperti: per questo conviene essere in due, uno accende e l'altro
 guarda le spalle. In due si accende in meta' tempo. Allontanandosi il lavoro si
 perde, piano.
 
+Acceso l'ultimo nucleo scatta **l'allarme**: il settore si sveglia, i nemici
+smettono di pattugliare e vengono verso di voi, i rinforzi arrivano al doppio
+del ritmo. Non e' onniscienza — sanno dove *eravate*, e ogni tre secondi si
+aggiornano: spezzare la linea di vista e cambiare strada funziona ancora. Ma
+il tratto di ritorno, che era il piu' lungo e il piu' noioso, diventa il
+momento in cui la serata si decide. Suona una sirena e i bordi dello schermo
+pulsano di rosso — i bordi e non tutto lo schermo, perche' proprio in quel
+momento serve vedere.
+
+Non c'e' un conto alla rovescia: non si perde per il tempo, si perde se si
+inciampa. La fretta la mette la sirena, non un numero.
+
 L'uscita si apre solo a nuclei finiti, e si esce **insieme**: se uno solo e'
 fuori dal cerchio non si parte. Da quel momento una freccia sul bordo dello
 schermo indica dove tornare — aperta l'uscita il problema non e' piu' trovarla.

@@ -43,6 +43,7 @@ export class Suoni {
 
     this.rumoreBuffer = this.creaRumore();
     this.avviaBordone();
+    this.costruisciSirena();
   }
 
   /**
@@ -176,13 +177,69 @@ export class Suoni {
   }
 
   /**
+   * La sirena dell'allarme: una nota che sale e scende senza fermarsi, con
+   * sotto un ronzio basso. Non e' un effetto che parte e finisce, e' uno stato
+   * — finche' suona, sai che ti stanno venendo a prendere.
+   *
+   * I nodi si costruiscono una volta sola e poi si alza e si abbassa il
+   * volume: accendere e spegnere oscillatori a ogni cambio fa schiocchi.
+   */
+  costruisciSirena() {
+    const ora = this.ctx.currentTime;
+
+    this.sirenaVolume = this.ctx.createGain();
+    this.sirenaVolume.gain.value = 0;
+    this.sirenaVolume.connect(this.busMusica);
+
+    const voce = this.ctx.createOscillator();
+    voce.type = 'sawtooth';
+    voce.frequency.value = 520;
+
+    const filtro = this.ctx.createBiquadFilter();
+    filtro.type = 'lowpass';
+    filtro.frequency.value = 1400;
+
+    // L'oscillatore lento che fa salire e scendere la nota: e' questo che la
+    // rende una sirena invece di un fischio.
+    const altalena = this.ctx.createOscillator();
+    altalena.type = 'sine';
+    altalena.frequency.value = 0.38;
+    const escursione = this.ctx.createGain();
+    escursione.gain.value = 210;
+    altalena.connect(escursione).connect(voce.frequency);
+
+    voce.connect(filtro).connect(this.sirenaVolume);
+    voce.start(ora);
+    altalena.start(ora);
+
+    // Il ronzio basso sotto, che da' corpo.
+    const ronzio = this.ctx.createOscillator();
+    ronzio.type = 'square';
+    ronzio.frequency.value = 68;
+    const gRonzio = this.ctx.createGain();
+    gRonzio.gain.value = 0.22;
+    ronzio.connect(gRonzio).connect(this.sirenaVolume);
+    ronzio.start(ora);
+  }
+
+  sirena(accesa) {
+    if (!this.ctx || !this.sirenaVolume) return;
+    const ora = this.ctx.currentTime;
+    this.sirenaVolume.gain.cancelScheduledValues(ora);
+    this.sirenaVolume.gain.setValueAtTime(this.sirenaVolume.gain.value, ora);
+    // Si accende in fretta e si spegne piano: cosi' finisce come un respiro
+    // invece che come un interruttore.
+    this.sirenaVolume.gain.linearRampToValueAtTime(accesa ? 0.16 : 0, ora + (accesa ? 0.25 : 0.8));
+  }
+
+  /**
    * Ogni fotogramma: quanto e' tesa la situazione. Si muove piano, perche' una
    * colonna sonora che scatta a ogni nemico che ti perde di vista e' peggio
    * del silenzio.
    */
-  aggiorna(dt, { cacciatori = 0, critico = false }) {
+  aggiorna(dt, { cacciatori = 0, critico = false, allarme = false }) {
     if (!this.ctx) return;
-    const voluta = critico ? 1 : Math.min(1, cacciatori / 2);
+    const voluta = critico || allarme ? 1 : Math.min(1, cacciatori / 2);
     this.tensione += (voluta - this.tensione) * Math.min(1, dt * 1.5);
 
     this.filtroBordone.frequency.value = 260 + this.tensione * 520;

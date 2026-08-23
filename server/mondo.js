@@ -29,6 +29,7 @@ import {
   ABILITA,
   PASSO_RUMOROSO,
   SPEDIZIONE,
+  ALLARME,
   CLASSI,
   CLASSE_PREDEFINITA,
   IMPULSO_SONAR,
@@ -89,6 +90,8 @@ export class Mondo {
     }));
 
     this.estrazione = { ...centroStanza(ingresso), aperta: false, progresso: 0 };
+    this.allarme = false;
+    this.prossimoRichiamo = 0;
 
     this.nemiciDelSettore = Math.min(SPEDIZIONE.nemiciMax, SPEDIZIONE.nemiciBase + numero);
     this.nemici = creaNemici(this.mappa, this.nemiciDelSettore);
@@ -374,7 +377,14 @@ export class Mondo {
       }
     }
 
+    const eranoTutti = this.estrazione.aperta;
     this.estrazione.aperta = this.nuclei.every((n) => n.attivo);
+    if (this.estrazione.aperta && !eranoTutti) {
+      this.allarme = true;
+      this.prossimoRichiamo = 0;
+      console.log('ALLARME: il settore si e svegliato. Tornate indietro.');
+    }
+    if (this.allarme) this.suonaLAllarme(dt);
     if (!this.estrazione.aperta || !vivi.length) {
       this.estrazione.progresso = 0;
       return;
@@ -390,6 +400,39 @@ export class Mondo {
     }
     this.estrazione.progresso += dt / SPEDIZIONE.durataEstrazione;
     if (this.estrazione.progresso >= 1) this.nuovoSettore(this.settore + 1);
+  }
+
+  /**
+   * Con l'allarme acceso i nemici vengono aggiornati ogni tanto su dove siete.
+   * Non e' onniscienza: sanno DOVE ERAVATE, e ci vanno. Spezzare la linea di
+   * vista e cambiare strada funziona ancora — ma non si torna piu' indietro
+   * passeggiando.
+   */
+  suonaLAllarme(dt) {
+    this.prossimoRichiamo -= dt;
+    if (this.prossimoRichiamo > 0) return;
+    this.prossimoRichiamo = ALLARME.richiamo;
+
+    const vivi = this.inPiedi();
+    if (!vivi.length) return;
+
+    for (const n of this.nemici) {
+      if (n.umore === UMORE.CACCIA) continue;
+      // Ognuno punta al piu' vicino fra quelli in piedi.
+      let meta = vivi[0];
+      let distanza = Infinity;
+      for (const g of vivi) {
+        const d = Math.hypot(g.x - n.x, g.y - n.y);
+        if (d < distanza) {
+          distanza = d;
+          meta = g;
+        }
+      }
+      n.umore = UMORE.CERCA;
+      n.ultimaNota = { x: meta.x, y: meta.y };
+      n.campoMeta = campo(this.mappa, [n.ultimaNota]);
+      n.oblio = ALLARME.memoria;
+    }
   }
 
   /**
@@ -426,7 +469,7 @@ export class Mondo {
     if (this.nemici.length >= this.nemiciDelSettore) return;
     this.attesaRinforzi -= dt;
     if (this.attesaRinforzi > 0) return;
-    this.attesaRinforzi = 12;
+    this.attesaRinforzi = this.allarme ? ALLARME.rinforzi : 12;
 
     const lontanoDa = [...this.giocatori.values()].filter((g) => g.online || g.bot);
     const nuovo = creaNemici(this.mappa, 1, lontanoDa)[0];
@@ -877,6 +920,7 @@ export class Mondo {
         a: k.attivo ? 1 : 0,
         p: Math.round(k.progresso * 100) / 100,
       })),
+      al: this.allarme ? 1 : 0,
       es: {
         x: Math.round(this.estrazione.x),
         y: Math.round(this.estrazione.y),

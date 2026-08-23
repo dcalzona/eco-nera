@@ -27,58 +27,80 @@
         --sab: env(safe-area-inset-bottom, 0px);
       }
       #wrap { position: relative; width: 100vw; height: 100vh; height: 100dvh; }
-      /* Le schermate a tutto schermo: menu, guida e collegamento. */
+      /* Le schermate a tutto schermo: menu, guida e collegamento.
+         Sono pensate per uno schermo BASSO — il gioco e' bloccato in
+         orizzontale, quindi in verticale ci sono si e no 360 punti, e una
+         scheda alta manda i nomi sotto il bordo. */
       #menu, #guida, #collegamento {
         position: absolute;
         inset: 0;
         background: #05070c;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        padding: calc(18px + env(safe-area-inset-top, 0px)) 20px
-                 calc(18px + env(safe-area-inset-bottom, 0px));
+        padding: calc(10px + env(safe-area-inset-top, 0px))
+                 calc(14px + env(safe-area-inset-right, 0px))
+                 calc(10px + env(safe-area-inset-bottom, 0px))
+                 calc(14px + env(safe-area-inset-left, 0px));
       }
       #menu[hidden], #guida[hidden] { display: none; }
 
-      #menuDentro, #guidaDentro { max-width: 760px; margin: 0 auto; }
+      #menuDentro, #guidaDentro { max-width: 900px; margin: 0 auto; }
       #menuDentro h1, #guidaDentro h1 {
-        font-size: 26px; font-weight: 600; letter-spacing: 0.05em;
+        font-size: 20px; font-weight: 600; letter-spacing: 0.05em;
       }
-      .sottotitolo { color: #78849f; font-size: 13px; margin: 6px 0 16px; }
+      .sottotitolo { color: #78849f; font-size: 12px; margin: 3px 0 10px; }
 
-      /* Le tre classi: in fila su schermo largo, in colonna sul telefono in
-         verticale. */
-      #classi { display: flex; gap: 10px; flex-wrap: wrap; }
+      /* Le tre classi in fila, ognuna con la figura accanto al nome. */
+      #classi { display: flex; gap: 8px; align-items: stretch; }
       .classe {
-        flex: 1 1 200px;
+        flex: 1 1 0;
+        min-width: 0;
         text-align: left;
         background: #0c1017;
         border: 2px solid #232d41;
-        border-radius: 12px;
-        padding: 12px 14px;
+        border-radius: 10px;
+        padding: 8px 10px;
         color: #dfe6f5;
         font: inherit;
         cursor: pointer;
       }
-      .classe[aria-pressed='true'] { border-color: currentColor; background: #131a26; }
-      .classe .nome { font-size: 17px; font-weight: 600; }
-      .classe .arma { font-size: 12px; opacity: 0.85; margin-top: 2px; }
-      .classe .desc { font-size: 12px; color: #98a3bd; margin-top: 8px; line-height: 1.45; }
-      .classe canvas { display: block; margin: 8px 0 2px; }
+      .classe[aria-pressed='true'] { border-color: currentColor; background: #141c2a; }
+      .intestazione { display: flex; align-items: center; gap: 8px; }
+      /* Misura fissa: senza, la regola del gioco la stirava a tutta scheda. */
+      .classe canvas { display: block; width: 44px; height: 34px; flex: none; }
+      .classe .nome { font-size: 15px; font-weight: 600; line-height: 1.1; }
+      .classe .arma { font-size: 10px; opacity: 0.8; }
+      .classe .desc { font-size: 11px; color: #98a3bd; margin-top: 6px; line-height: 1.35; }
+      .classe .abilita { font-size: 11px; margin-top: 5px; color: currentColor; }
 
-      .pulsantiera { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+      .pulsantiera { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
       .pulsantiera button, #chiudiGuida {
-        font: inherit; font-size: 16px; font-weight: 600;
-        padding: 12px 22px; border: 0; border-radius: 10px;
+        font: inherit; font-size: 15px; font-weight: 600;
+        padding: 9px 20px; border: 0; border-radius: 9px;
         background: #ffc65c; color: #05070c; cursor: pointer;
       }
       .pulsantiera button:disabled { background: #2a3550; color: #6a7590; cursor: default; }
       .pulsantiera .secondario { background: #1b2434; color: #dfe6f5; }
 
-      #guidaDentro h2 { font-size: 15px; margin: 18px 0 6px; color: #ffc65c; }
-      #guidaDentro p, #guidaDentro li { font-size: 13px; line-height: 1.55; color: #c3cbde; }
-      #guidaDentro ul { margin-left: 18px; }
+      #guidaDentro h2 { font-size: 14px; margin: 12px 0 4px; color: #ffc65c; }
+      #guidaDentro p, #guidaDentro li { font-size: 12px; line-height: 1.5; color: #c3cbde; }
+      #guidaDentro ul { margin-left: 16px; }
       #guidaDentro b { color: #dfe6f5; }
-      #chiudiGuida { margin-top: 22px; }
+      #chiudiGuida { margin-top: 14px; }
+
+      /* Schermo davvero basso (telefono in orizzontale): si stringe tutto e
+         le descrizioni lunghe spariscono, tanto ci sono nella guida. */
+      @media (max-height: 420px) {
+        #menuDentro h1 { font-size: 17px; }
+        .sottotitolo { display: none; }
+        .classe .desc { display: none; }
+        .classe canvas { width: 38px; height: 30px; }
+      }
+
+      /* Schermo stretto: le schede vanno in colonna invece di schiacciarsi. */
+      @media (max-width: 520px) {
+        #classi { flex-direction: column; }
+      }
 
       #collegamento { display: flex; align-items: center; justify-content: center; }
       #collegamento[hidden] { display: none; }
@@ -101,7 +123,9 @@
       #modulo button { background: #ffc65c; color: #05070c; border: 0; font-weight: 600; }
       #modulo small { color: #ff5d5d; min-height: 16px; font-size: 12px; }
 
-      canvas {
+      /* Solo la tela del gioco: prima questa regola prendeva anche le
+         anteprime del menu e le stirava a tutta scheda. */
+      #gioco {
         display: block;
         width: 100%;
         height: 100%;

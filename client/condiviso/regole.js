@@ -211,6 +211,21 @@ export const IMPULSO_SONAR = 1.6;
  * affollato. La tensione sta dentro il settore, non fra un settore e l'altro:
  * a ogni passaggio si riparte con la vita piena.
  */
+/**
+ * L'allarme. Acceso l'ultimo nucleo, il settore si sveglia: tutti sanno
+ * grosso modo dove siete e vengono. Il tratto di ritorno era il piu' lungo e
+ * il piu' noioso — camminare a ritroso su una mappa gia' vista — e questo lo
+ * trasforma nel momento in cui la serata si decide.
+ *
+ * Nessun conto alla rovescia: non si perde per il tempo, si perde se si
+ * inciampa. La fretta la mette la sirena, non un numero.
+ */
+export const ALLARME = {
+  richiamo: 3.2, // ogni quanto i nemici si aggiornano su dove siete
+  rinforzi: 6, // secondi fra un rinforzo e l'altro, invece di dodici
+  memoria: 8, // quanto a lungo continuano a cercarvi dopo il richiamo
+};
+
 export const SPEDIZIONE = {
   nucleiBase: 2,
   nucleiMax: 4,

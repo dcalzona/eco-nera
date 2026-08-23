@@ -453,6 +453,26 @@ export class Disegno {
     return giaVisto(memoria, Math.floor(punto.x / TILE), Math.floor(punto.y / TILE));
   }
 
+  /**
+   * L'allarme: il bordo dello schermo pulsa di rosso. Pulsa il bordo e non
+   * tutto lo schermo perche' il gioco si vede gia' poco di suo — coprirlo di
+   * rosso lo renderebbe illeggibile proprio nel momento in cui serve vedere.
+   */
+  allarme(intensita = 1) {
+    const c = this.ctx;
+    const battito = 0.5 + 0.5 * Math.sin(performance.now() / 260);
+    const forza = (0.16 + 0.26 * battito) * intensita;
+
+    const bordo = c.createRadialGradient(
+      this.w / 2, this.h / 2, Math.min(this.w, this.h) * 0.18,
+      this.w / 2, this.h / 2, Math.max(this.w, this.h) * 0.66,
+    );
+    bordo.addColorStop(0, 'rgba(255,40,40,0)');
+    bordo.addColorStop(1, `rgba(255,40,40,${forza.toFixed(3)})`);
+    c.fillStyle = bordo;
+    c.fillRect(0, 0, this.w, this.h);
+  }
+
   /** A che punto e' la missione, in alto. E dove sta l'uscita, quando conta. */
   missione(ob, io) {
     if (!ob) return;
@@ -461,10 +481,14 @@ export class Disegno {
     const totale = ob.nuclei.length;
 
     c.textAlign = 'center';
-    c.font = '13px system-ui, sans-serif';
-    c.fillStyle = ob.es.a ? COLORI.uscita : COLORI.testo;
+    c.font = ob.al ? 'bold 14px system-ui, sans-serif' : '13px system-ui, sans-serif';
+    c.fillStyle = ob.al ? COLORI.critico : ob.es.a ? COLORI.uscita : COLORI.testo;
     c.fillText(
-      ob.es.a ? `Settore ${ob.settore} — torna all'uscita` : `Settore ${ob.settore} — nuclei ${accesi}/${totale}`,
+      ob.al
+        ? `ALLARME — torna all'uscita`
+        : ob.es.a
+          ? `Settore ${ob.settore} — torna all'uscita`
+          : `Settore ${ob.settore} — nuclei ${accesi}/${totale}`,
       this.w / 2,
       24,
     );
