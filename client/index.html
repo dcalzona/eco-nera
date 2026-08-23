@@ -182,85 +182,68 @@
     <div id="menu" hidden>
       <div id="menuDentro">
         <h1>Eco Nera</h1>
-        <p class="sottotitolo">Scegli chi sei. Nel buio, da soli, non si va da nessuna parte.</p>
+        <p class="sottotitolo" data-t="menu.sottotitolo"></p>
         <div id="classi"></div>
         <label class="compagnia">
+          <span data-t="menu.lingua"></span>
+          <select id="lingua"></select>
+        </label>
+        <label class="compagnia">
           <input id="daSolo" type="checkbox" />
-          <span>Gioco da solo — niente compagno automatico, e qualche nemico in meno</span>
+          <span data-t="menu.daSolo"></span>
         </label>
         <div class="pulsantiera">
-          <button id="avvio" type="button" disabled>Entra</button>
-          <button id="apriGuida" type="button" class="secondario">Come si gioca</button>
+          <button id="avvio" type="button" data-t="menu.entra" disabled></button>
+          <button id="apriGuida" type="button" class="secondario" data-t="menu.guida"></button>
         </div>
       </div>
     </div>
 
     <div id="pausa" hidden>
       <div id="pausaDentro">
-        <h1>Pausa</h1>
-        <p class="avvisoPausa">La partita non si ferma: il server va avanti e il compagno anche.</p>
+        <h1 data-t="pausa.titolo"></h1>
+        <p class="avvisoPausa" data-t="pausa.avviso"></p>
         <div class="pulsantiera">
-          <button id="riprendi" type="button">Riprendi</button>
-          <button id="esciAlMenu" type="button" class="secondario">Esci al menu</button>
+          <button id="riprendi" type="button" data-t="pausa.riprendi"></button>
+          <button id="esciAlMenu" type="button" class="secondario" data-t="pausa.esci"></button>
         </div>
       </div>
     </div>
 
     <div id="fine" hidden>
       <div id="fineDentro">
-        <h1>Spedizione perduta</h1>
+        <h1 data-t="fine.titolo"></h1>
         <p id="fineDettaglio"></p>
         <p id="avvisoVersione" class="avvisoPausa" hidden></p>
-        <button id="tornaAlMenu" type="button">Torna al menu</button>
+        <button id="tornaAlMenu" type="button" data-t="fine.torna"></button>
       </div>
     </div>
 
     <div id="guida" hidden>
       <div id="guidaDentro">
-        <h1>Come si gioca</h1>
+        <h1 data-t="guida.titolo"></h1>
 
-        <h2>Il buio</h2>
-        <p>
-          Vedi solo quello che la tua torcia illumina — piu' quello che illumina
-          il tuo compagno. I due campi visivi si sommano: in due si vede quasi
-          il doppio. Quello che hai gia' visto resta disegnato spento, come un
-          ricordo.
-        </p>
+        <h2 data-t="guida.buio.titolo"></h2>
+        <p data-t="guida.buio.testo"></p>
 
-        <h2>Comandi</h2>
+        <h2 data-t="guida.comandi.titolo"></h2>
         <ul>
-          <li><b>Dito a sinistra</b> — ti muovi.</li>
-          <li><b>Dito a destra</b> — punti, e spari tenendo premuto.</li>
-          <li><b>TORCIA</b> — la spegni. Vedi pochissimo, ma i nemici ti individuano a meno della meta' della distanza. La carica dura ventiquattro secondi.</li>
-          <li><b>Il secondo pulsante</b> — l'abilita' della tua classe.</li>
+          <li data-t="guida.comandi.muovere"></li>
+          <li data-t="guida.comandi.sparare"></li>
+          <li data-t="guida.comandi.torcia"></li>
+          <li data-t="guida.comandi.abilita"></li>
         </ul>
 
-        <h2>Il rumore</h2>
-        <p>
-          I rumori girano per i corridoi, non attraverso i muri: uno sparo in
-          una stanza chiusa non si sente. Quello che senti arriva dall'orecchio
-          giusto, e un archetto sul bordo dello schermo ti dice da dove. Sai
-          <i>dove</i>, non sai <i>cosa</i>. Ogni arma fa un baccano diverso: il
-          fucile a canne mozze sveglia mezzo settore, quello di precisione
-          molto meno.
-        </p>
+        <h2 data-t="guida.rumore.titolo"></h2>
+        <p data-t="guida.rumore.testo"></p>
 
-        <h2>A terra, non morti</h2>
-        <p>
-          A zero vita resti a terra trenta secondi e ti trascini piano. Il
-          compagno puo' raggiungerti e rimetterti in piedi restandoti vicino
-          tre secondi. Se non resta nessuno in piedi, la spedizione ricomincia.
-        </p>
+        <h2 data-t="guida.terra.titolo"></h2>
+        <p data-t="guida.terra.testo"></p>
 
-        <h2>La spedizione</h2>
-        <p>
-          Ogni settore: accendi i nuclei sparsi nelle stanze — tre secondi
-          fermo accanto, in due la meta' — e poi torna all'ingresso. Si esce
-          <b>insieme</b>: se uno solo e' fuori dal cerchio non si parte. Il
-          settore dopo e' un po' piu' affollato.
-        </p>
+        <h2 data-t="guida.spedizione.titolo"></h2>
+        <p data-t="guida.spedizione.testo"></p>
 
-        <button id="chiudiGuida" type="button">Ho capito</button>
+        <button id="chiudiGuida" type="button" data-t="guida.chiudi"></button>
       </div>
     </div>
 
@@ -269,7 +252,7 @@
     <div id="collegamento" hidden>
       <form id="modulo">
         <h1>Eco Nera</h1>
-        <p>Scrivi l'indirizzo che il server stampa sul PC.</p>
+        <p data-t="server.istruzione"></p>
         <input
           id="indirizzo"
           type="text"
@@ -280,7 +263,7 @@
           spellcheck="false"
           placeholder="192.168.2.46:5190"
         />
-        <button type="submit">Collegati</button>
+        <button type="submit" data-t="server.collega"></button>
         <small id="nota"></small>
       </form>
     </div>

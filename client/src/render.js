@@ -4,6 +4,7 @@
 
 import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA } from '../condiviso/regole.js';
 import { giaVisto } from './visione.js';
+import { t } from './lingue.js';
 import { RAGGIO_STICK } from './input.js';
 
 const COLORI = {
@@ -502,10 +503,10 @@ export class Disegno {
     c.fillStyle = ob.al ? COLORI.critico : ob.es.a ? COLORI.uscita : COLORI.testo;
     c.fillText(
       ob.al
-        ? `ALLARME — torna all'uscita`
+        ? t('gioco.allarme')
         : ob.es.a
-          ? `Settore ${ob.settore} — torna all'uscita`
-          : `Settore ${ob.settore} — nuclei ${accesi}/${totale}`,
+          ? t('gioco.tornaUscita', { settore: ob.settore })
+          : t('gioco.nuclei', { settore: ob.settore, accesi, totale }),
       this.w / 2,
       24,
     );
@@ -582,7 +583,9 @@ export class Disegno {
     c.fillStyle = pronta ? COLORI.testo : COLORI.testoSpento;
     c.font = '10px system-ui, sans-serif';
     c.textAlign = 'center';
-    c.fillText(regola.tipo === 'marchio' ? 'MARCA' : 'FUOCO', b.abilita.x, b.abilita.y + 4);
+    // L'etichetta segue l'abilita' vera: prima diceva ancora MARCA e FUOCO,
+    // che sono i nomi di due abilita' che non esistono piu'.
+    c.fillText(t(`abilita.${regola.tipo}.breve`), b.abilita.x, b.abilita.y + 4);
 
     // Torcia: il pulsante mostra la carica come un anello che si consuma.
     const accesa = mio.l === 1;
@@ -593,7 +596,7 @@ export class Disegno {
     c.arc(b.torcia.x, b.torcia.y, b.torcia.r - 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (mio.ca ?? 1));
     c.stroke();
     c.fillStyle = accesa ? COLORI.testo : COLORI.testoSpento;
-    c.fillText('TORCIA', b.torcia.x, b.torcia.y + 4);
+    c.fillText(t('gioco.torcia'), b.torcia.x, b.torcia.y + 4);
   }
 
   /**
@@ -620,9 +623,9 @@ export class Disegno {
       c.fillStyle = compagno.st === STATO.CRITICO ? COLORI.critico : COLORI.testoSpento;
       c.fillText(
         compagno.st === STATO.CRITICO
-          ? `${compagno.n} e' a terra — ${compagno.tc}s`
+          ? t('gioco.compagnoATerra', { nome: compagno.n, secondi: compagno.tc })
           : compagno.st === STATO.MORTO
-            ? `${compagno.n} rientra fra ${compagno.tc}s`
+            ? t('gioco.compagnoRientra', { nome: compagno.n, secondi: compagno.tc })
             : compagno.n,
         108,
         yc + 6,
@@ -644,11 +647,11 @@ export class Disegno {
       c.textAlign = 'center';
       c.fillStyle = COLORI.critico;
       c.font = '15px system-ui, sans-serif';
-      c.fillText(`A TERRA — ${mio.tc}s`, this.w / 2, 34);
+      c.fillText(t('gioco.aTerra', { secondi: mio.tc }), this.w / 2, 34);
       if ((mio.rn ?? 0) > 0) {
         c.fillStyle = COLORI.testo;
         c.font = '11px system-ui, sans-serif';
-        c.fillText('ti stanno rialzando…', this.w / 2, 52);
+        c.fillText(t('gioco.tiRialzano'), this.w / 2, 52);
       }
     } else if (mio.st === STATO.MORTO) {
       c.fillStyle = 'rgba(5,7,12,0.6)';
@@ -656,7 +659,7 @@ export class Disegno {
       c.textAlign = 'center';
       c.fillStyle = COLORI.testo;
       c.font = '17px system-ui, sans-serif';
-      c.fillText(`Fuori gioco — rientri fra ${mio.tc}s`, this.w / 2, this.h / 2);
+      c.fillText(t('gioco.fuoriGioco', { secondi: mio.tc }), this.w / 2, this.h / 2);
     }
   }
 

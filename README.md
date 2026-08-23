@@ -122,6 +122,23 @@ passi che il telefono non ha fatto.
 `client/condiviso/` e' importata da tutti e due: mappa, regole e fisica sono un
 codice solo.
 
+## Le lingue
+
+Italiano, inglese, francese, spagnolo, russo e olandese. Si scelgono dal menu e
+la scelta resta; alla prima apertura il gioco prova a indovinare dalla lingua
+del telefono.
+
+I testi stanno tutti in `src/lingue.js`, un dizionario per lingua con le stesse
+chiavi. Non c'e' niente di automatico, ed e' voluto: una prova confronta ogni
+lingua con l'italiano e si lamenta se manca una chiave, se un testo e' rimasto
+uguale all'italiano per pigrizia (con le poche eccezioni in cui la parola
+coincide davvero, come "Pausa" in spagnolo) o se in una traduzione e' sparito
+un segnaposto — perche' `{settore}` dimenticato vuol dire un numero che non si
+vede piu'.
+
+I nomi delle tre classi non si traducono: sono nomi propri. Si traduce quello
+che raccontano.
+
 ## Il buio
 
 Lo schermo e' nero. Si vede solo quello che una torcia illumina — la propria o

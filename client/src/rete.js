@@ -150,7 +150,7 @@ export class Rete {
       // l'indirizzo sia sbagliato che non che la rete sia lenta: si richiede.
       if (inApp() && this.tentativi >= 4 && this.io === null) {
         this.stato = 'senzaIndirizzo';
-        this.chiediIndirizzo?.('Non risponde nessuno a questo indirizzo.');
+        this.chiediIndirizzo?.('server.nessuno');
         return;
       }
       // Riprova da sola: il telefono che si blocca in tasca non deve

@@ -10,6 +10,7 @@ import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.j
 import { Suoni } from './audio.js';
 import { disegnaOmino, coloreDi, armaDi } from './render.js';
 import { CLASSI, ABILITA, VERSIONE } from '../condiviso/regole.js';
+import { LINGUE, t, impostaLingua, linguaCorrente, traduciPagina } from './lingue.js';
 
 const canvas = document.getElementById('gioco');
 const disegno = new Disegno(canvas);
@@ -34,9 +35,10 @@ const modulo = document.getElementById('modulo');
 const campo = document.getElementById('indirizzo');
 const nota = document.getElementById('nota');
 
-rete.chiediIndirizzo = (messaggio = '') => {
+rete.chiediIndirizzo = (chiave = '') => {
+  traduciPagina();
   pannelloMenu.hidden = true; // prima il server, poi la scelta della classe
-  nota.textContent = messaggio;
+  nota.textContent = chiave ? t(chiave) : '';
   campo.value = localStorage.getItem('ecoNera.server') ?? '';
   pannello.hidden = false;
   setTimeout(() => campo.focus(), 50);
@@ -45,7 +47,7 @@ rete.chiediIndirizzo = (messaggio = '') => {
 modulo.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!rete.usaIndirizzo(campo.value)) {
-    nota.textContent = 'Scrivi qualcosa tipo 192.168.2.46:5190';
+    nota.textContent = t('server.sbagliato');
     return;
   }
   nota.textContent = '';
@@ -91,16 +93,18 @@ function costruisciMenu() {
     const intestazione = document.createElement('div');
     intestazione.className = 'intestazione';
     intestazione.append(tela);
+    // I nomi delle classi non si traducono, sono nomi propri: si traduce
+    // quello che raccontano.
     intestazione.insertAdjacentHTML(
       'beforeend',
       `<div><div class="nome">${classe.nome}</div>
-       <div class="arma">${classe.arma}</div></div>`,
+       <div class="arma">${t(`classe.${id}.arma`)} · ${t(`classe.${id}.ruolo`)}</div></div>`,
     );
     scheda.append(intestazione);
     scheda.insertAdjacentHTML(
       'beforeend',
-      `<div class="desc">${classe.descrizione}</div>
-       <div class="abilita">${nomeAbilita(abilita.tipo)} · ${abilita.ricarica} s</div>`,
+      `<div class="desc">${t(`classe.${id}.desc`)}</div>
+       <div class="abilita">${t(`abilita.${abilita.tipo}`)} · ${abilita.ricarica} s</div>`,
     );
 
     scheda.addEventListener('click', () => {
@@ -115,11 +119,21 @@ function costruisciMenu() {
   bottoneAvvio.disabled = !classeScelta;
 }
 
-function nomeAbilita(tipo) {
-  if (tipo === 'kit') return 'kit medico a terra';
-  if (tipo === 'sonar') return 'sonar a terra';
-  return 'scatto';
+// --- La lingua -------------------------------------------------------------
+const sceltaLingua = document.getElementById('lingua');
+for (const [codice, nome] of Object.entries(LINGUE)) {
+  const opzione = document.createElement('option');
+  opzione.value = codice;
+  opzione.textContent = nome;
+  sceltaLingua.append(opzione);
 }
+sceltaLingua.value = linguaCorrente();
+sceltaLingua.addEventListener('change', () => {
+  impostaLingua(sceltaLingua.value);
+  traduciPagina();
+  costruisciMenu(); // le schede delle classi hanno testo dentro
+  avvisaSeDisallineato();
+});
 
 const spuntaSolo = document.getElementById('daSolo');
 spuntaSolo.checked = localStorage.getItem('ecoNera.solo') === '1';
@@ -168,6 +182,7 @@ document.getElementById('chiudiGuida').addEventListener('click', () => {
   pannelloGuida.hidden = true;
 });
 
+traduciPagina();
 costruisciMenu();
 rete.chiediClasse = () => {
   pannelloMenu.hidden = false;
@@ -189,9 +204,10 @@ function avvisaSeDisallineato() {
     return;
   }
   avviso.hidden = false;
-  avviso.textContent =
-    `Attenzione: il server e' alla versione ${rete.versioneServer}, l'app alla ${VERSIONE}. ` +
-    'Riavvia il server sul PC, altrimenti mancheranno pezzi di gioco.';
+  avviso.textContent = t('menu.versioneVecchia', {
+    server: rete.versioneServer,
+    client: VERSIONE,
+  });
   document.getElementById('menuDentro').append(avviso);
 }
 rete.avvia();
@@ -231,9 +247,7 @@ function giro(ora) {
   if (rete.stato !== 'dentro' || !rete.mappa) {
     if (rete.stato === 'senzaIndirizzo') return; // parla il pannello
     disegno.scena({ larghezza: 0, altezza: 0, griglia: [] }, [], 0, null, null);
-    disegno.messaggio(
-      rete.stato === 'caduto' ? 'Connessione persa — riprovo…' : 'Mi collego al server…',
-    );
+    disegno.messaggio(t(rete.stato === 'caduto' ? 'gioco.caduta' : 'gioco.collegamento'));
     return;
   }
   if (!pannello.hidden) pannello.hidden = true;
@@ -366,7 +380,7 @@ function giro(ora) {
   // Spedizione perduta: lo dice una schermata, non un ritorno improvviso al
   // primo settore senza aver capito cosa e' successo.
   if (ob?.fine && pannelloFine.hidden) {
-    fineDettaglio.textContent = `Siete arrivati al settore ${ob.settore}. Nessuno e' rimasto in piedi.`;
+    fineDettaglio.textContent = t('fine.dettaglio', { settore: ob.settore });
     pannelloFine.hidden = false;
     suoni.sirena(false);
     suoni.evento('aTerra');
@@ -379,8 +393,11 @@ function giro(ora) {
     disegno.lampoAllarme(lampo);
   }
   disegno.missione(ob, disegnato);
-  disegno.hud([`ping ${rete.ping} ms   fps ${fps.toFixed(0)}`]);
-  if (stallo) disegno.avviso('Rete interrotta — aspetto…');
+  disegno.hud([
+    `ping ${rete.ping} ms   fps ${fps.toFixed(0)}`,
+    t('gioco.nemiciInVista', { quanti: nemiciVisti.length }),
+  ]);
+  if (stallo) disegno.avviso(t('gioco.stallo'));
 
   aggiornaDiario(dt, scena.some((p) => p.i === rete.io), fps, disegnato);
 }

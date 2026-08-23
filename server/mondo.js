@@ -905,8 +905,12 @@ export class Mondo {
     // sbattere finche' non cambiava idea, che da fuori sembra un compagno
     // scemo o addirittura fermo.
     if (!g.meta || Math.hypot(g.meta.x - g.x, g.meta.y - g.y) < 16) {
+      // Cinque caselle e non otto: da quando aggira i muri ci arriva davvero,
+      // e girando attorno alle pareti un obiettivo a otto caselle in linea
+      // d'aria lo portava a venti di cammino. Un compagno a venti caselle non
+      // illumina piu' niente per te, che e' il motivo per cui esiste.
       const c =
-        this.casellaLiberaVicino(umano, 8) ??
+        this.casellaLiberaVicino(umano, 5) ??
         this.caselleLibere[(Math.random() * this.caselleLibere.length) | 0];
       g.meta = centroCasella(this.mappa, c.tx, c.ty);
     }
