@@ -63,6 +63,9 @@ const TESTI = {
     'guida.terra.titolo': 'A terra, non morti',
     'guida.terra.testo':
       'A zero vita resti a terra trenta secondi e ti trascini piano. Il compagno puo raggiungerti e rimetterti in piedi restandoti vicino tre secondi. Se non resta nessuno in piedi, la spedizione e persa.',
+    'guida.rifornimenti.titolo': 'Armatura e rifornimenti',
+    'guida.rifornimenti.testo':
+      "L'armatura incassa per prima: finita quella i colpi cominciano a fare male sul serio. Si ritrova nelle casse sparse per le stanze, che danno molta armatura e poca salute. La salute vera la rimette a posto solo il kit del medico.",
     'guida.spedizione.titolo': 'La spedizione',
     'guida.spedizione.testo':
       'Ogni settore: accendi i nuclei sparsi nelle stanze, tre secondi fermo accanto, in due la meta. Poi torna all ingresso. Si esce insieme: se uno solo e fuori dal cerchio non si parte. Acceso l ultimo nucleo scatta l allarme e il settore si sveglia.',
@@ -142,6 +145,9 @@ const TESTI = {
     'guida.terra.titolo': 'Down, not dead',
     'guida.terra.testo':
       'At zero health you stay down for thirty seconds, crawling slowly. Your partner can reach you and get you back up by staying close for three seconds. If nobody is left standing, the expedition is lost.',
+    'guida.rifornimenti.titolo': 'Armour and supplies',
+    'guida.rifornimenti.testo':
+      "Armour takes the hits first: once it is gone, shots start to really hurt. You find it in crates scattered through the rooms, which give plenty of armour and little health. Real health only comes back from the medic's kit.",
     'guida.spedizione.titolo': 'The expedition',
     'guida.spedizione.testo':
       'Each sector: switch on the cores scattered through the rooms — three seconds standing next to one, half that with two of you. Then head back to the entrance. You leave together: if one of you is outside the circle, nobody goes. The last core trips the alarm and the sector wakes up.',
@@ -221,6 +227,9 @@ const TESTI = {
     'guida.terra.titolo': 'À terre, pas morts',
     'guida.terra.testo':
       "À zéro de vie tu restes à terre trente secondes et tu rampes lentement. Ton coéquipier peut te rejoindre et te relever en restant près de toi trois secondes. S'il ne reste personne debout, l'expédition est perdue.",
+    'guida.rifornimenti.titolo': 'Armure et ravitaillement',
+    'guida.rifornimenti.testo':
+      "L'armure encaisse en premier : une fois partie, les tirs commencent vraiment à faire mal. On la retrouve dans des caisses dispersées dans les pièces, qui donnent beaucoup d'armure et peu de vie. La vraie vie, seule la trousse du médecin la rend.",
     'guida.spedizione.titolo': "L'expédition",
     'guida.spedizione.testo':
       "Chaque secteur : allume les noyaux dispersés dans les pièces, trois secondes immobile à côté, moitié moins à deux. Puis retourne à l'entrée. On sort ensemble : si l'un est hors du cercle, personne ne part. Le dernier noyau déclenche l'alarme et le secteur se réveille.",
@@ -300,6 +309,9 @@ const TESTI = {
     'guida.terra.titolo': 'En el suelo, no muertos',
     'guida.terra.testo':
       'Con cero de vida te quedas en el suelo treinta segundos y te arrastras despacio. Tu compañero puede alcanzarte y levantarte quedándose cerca tres segundos. Si no queda nadie en pie, la expedición se pierde.',
+    'guida.rifornimenti.titolo': 'Armadura y suministros',
+    'guida.rifornimenti.testo':
+      'La armadura encaja primero: cuando se acaba, los disparos empiezan a doler de verdad. Se encuentra en cajas repartidas por las salas, que dan mucha armadura y poca vida. La vida de verdad solo la devuelve el botiquín del médico.',
     'guida.spedizione.titolo': 'La expedición',
     'guida.spedizione.testo':
       'Cada sector: enciende los núcleos repartidos por las salas, tres segundos quieto al lado, la mitad entre dos. Luego vuelve a la entrada. Se sale juntos: si uno está fuera del círculo, no sale nadie. El último núcleo dispara la alarma y el sector se despierta.',
@@ -379,6 +391,9 @@ const TESTI = {
     'guida.terra.titolo': 'Ранен, а не убит',
     'guida.terra.testo':
       'При нуле здоровья ты лежишь тридцать секунд и медленно ползёшь. Напарник может добраться и поднять тебя, побыв рядом три секунды. Если на ногах никого не осталось — экспедиция проиграна.',
+    'guida.rifornimenti.titolo': 'Броня и снабжение',
+    'guida.rifornimenti.testo':
+      'Броня принимает удары первой: когда она кончается, выстрелы начинают ранить по-настоящему. Её находят в ящиках, разбросанных по комнатам: они дают много брони и мало здоровья. Настоящее здоровье возвращает только аптечка медика.',
     'guida.spedizione.titolo': 'Экспедиция',
     'guida.spedizione.testo':
       'В каждом секторе: включи ядра, разбросанные по комнатам, — три секунды стоя рядом, вдвоём вдвое быстрее. Потом вернись ко входу. Уходят вместе: если один вне круга, не уходит никто. Последнее ядро включает тревогу, и сектор просыпается.',
@@ -458,6 +473,9 @@ const TESTI = {
     'guida.terra.titolo': 'Neer, niet dood',
     'guida.terra.testo':
       'Op nul leven lig je dertig seconden neer en kruip je langzaam. Je partner kan je bereiken en overeind helpen door drie seconden dichtbij te blijven. Blijft er niemand staan, dan is de expeditie verloren.',
+    'guida.rifornimenti.titolo': 'Bepantsering en bevoorrading',
+    'guida.rifornimenti.testo':
+      'De bepantsering vangt de klappen eerst op: is die op, dan doen schoten pas echt pijn. Je vindt haar in kisten verspreid door de kamers, die veel bepantsering en weinig leven geven. Echt leven krijg je alleen terug van de kit van de hospik.',
     'guida.spedizione.titolo': 'De expeditie',
     'guida.spedizione.testo':
       'Elke sector: zet de kernen aan die door de kamers verspreid liggen — drie seconden stil ernaast, met zijn tweeën de helft. Ga daarna terug naar de ingang. Je vertrekt samen: staat er één buiten de cirkel, dan gaat niemand. De laatste kern zet het alarm aan en de sector wordt wakker.',

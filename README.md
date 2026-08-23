@@ -198,6 +198,22 @@ scoperta prima che se ne accorgano.
 Due giocatori possono scegliere la stessa classe: e' una scelta loro, e
 scoprire che due Eco non aprono le porte da soli fa parte dell'imparare.
 
+## Armatura e rifornimenti
+
+Davanti alla salute c'e' **l'armatura**: i colpi la consumano per primi, e
+quello che avanza passa oltre — un colpo grosso su un'armatura quasi finita fa
+comunque male, invece di essere assorbito per intero da un residuo di niente.
+
+La divisione serve a una cosa precisa. Le **casse di rifornimento** sparse per
+le stanze danno molta armatura e poca salute: girando si recupera la capacita'
+di incassare, che e' quello che mancava giocando da soli, senza rendere
+inutile il Faro — che resta l'unico a rimettere in sesto davvero, con il suo
+kit. Ogni cassa vale una volta per ciascuno e sparisce quando l'hanno presa
+tutti: in due se ne puo' lasciare una al compagno che sta peggio.
+
+Si vedono solo dove si e' gia' stati, come i nuclei: trovarle fa parte del
+girare.
+
 ## Il conflitto
 
 Il colpo si **raddrizza da solo** verso il nemico piu' centrato, ma solo entro

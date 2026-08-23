@@ -6,7 +6,7 @@
  * parte (mira assistita, allarme, modalita' in solitaria) e sembra che il
  * gioco sia rotto. Se i numeri non coincidono, ora lo si legge a schermo.
  */
-export const VERSIONE = '0.8';
+export const VERSIONE = '0.9';
 
 // Numeri che server e client devono conoscere allo stesso modo.
 // Questa cartella e' condivisa: il server la importa da ../client/condiviso/,
@@ -112,6 +112,34 @@ export const SPAZIATURA_RAGGI = 3;
 // --- Combattimento ---------------------------------------------------------
 
 export const VITA_MASSIMA = 100;
+
+/**
+ * L'armatura sta davanti alla salute: i colpi la consumano per primi, e
+ * finita quella cominciano a fare male sul serio.
+ *
+ * La divisione serve a una cosa precisa: l'armatura si ritrova nelle casse
+ * sparse per il settore, la salute quasi solo dal kit del medico. Cosi'
+ * girando si recupera la capacita' di incassare — che e' quello che mancava
+ * giocando da soli — senza rendere inutile il Faro, che resta l'unico a
+ * rimettere in sesto davvero.
+ */
+export const ARMATURA_MASSIMA = 100;
+
+/** Con quanta armatura si entra in un settore nuovo. */
+export const ARMATURA_INIZIALE = 60;
+
+/**
+ * Le casse di rifornimento sparse per le stanze. Danno molta armatura e poca
+ * salute, valgono una volta per ciascuno, e spariscono quando le hanno usate
+ * tutti — chi gioca da solo se ne accorge subito, chi gioca in due puo'
+ * lasciarne una al compagno che sta peggio.
+ */
+export const RIFORNIMENTI = {
+  quante: 3,
+  raggio: 34,
+  armatura: 70,
+  salute: 15,
+};
 
 /**
  * Le due armi, in tinta con i due modi di vedere. Il Faro spara una rosa corta

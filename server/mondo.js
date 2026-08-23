@@ -11,6 +11,9 @@ import {
   SOTTOPASSO,
   SOTTOPASSI_PER_TICK,
   VITA_MASSIMA,
+  ARMATURA_MASSIMA,
+  ARMATURA_INIZIALE,
+  RIFORNIMENTI,
   ARMI,
   NEMICI,
   STATO,
@@ -92,6 +95,18 @@ export class Mondo {
       progresso: 0,
     }));
 
+    // Le casse vanno nelle stanze di mezzo: non all'ingresso, dove non
+    // servono, e non tutte addosso ai nuclei, o basterebbe il giro degli
+    // obiettivi per raccoglierle tutte.
+    const perLeCasse = this.mappa.stanze.slice(1);
+    this.rifornimenti = [];
+    for (let k = 0; k < Math.min(RIFORNIMENTI.quante, perLeCasse.length); k++) {
+      const stanza = perLeCasse[(k * 2 + 1) % perLeCasse.length];
+      const tx = stanza.x + 1 + ((k * 3) % Math.max(1, stanza.w - 2));
+      const ty = stanza.y + 1 + ((k * 2) % Math.max(1, stanza.h - 2));
+      this.rifornimenti.push({ ...centroCasella(this.mappa, tx, ty), usatoDa: [] });
+    }
+
     this.estrazione = { ...centroStanza(ingresso), aperta: false, progresso: 0 };
     this.allarme = false;
     this.prossimoRichiamo = 0;
@@ -111,6 +126,7 @@ export class Mondo {
     g.x = p.x;
     g.y = p.y;
     g.vita = VITA_MASSIMA;
+    g.armatura = ARMATURA_INIZIALE;
     g.stato = STATO.VIVO;
     g.rianima = 0;
     g.criticoRimasto = 0;
@@ -136,6 +152,21 @@ export class Mondo {
         g.online = true;
         g.scollegatoDa = null;
         g.soloVoluto = solo;
+
+        // Rientrando si puo' cambiare classe. Prima no: il personaggio si
+        // ritrovava dalla sessione e la classe chiesta veniva ignorata, quindi
+        // sceglierne un'altra nel menu non cambiava niente — nemmeno alla
+        // partita dopo.
+        const voluta = CLASSI[classe] ? classe : null;
+        if (voluta && voluta !== g.ruolo) {
+          const nomeAutomatico = Object.values(CLASSI).some((c) => c.nome === g.nome);
+          g.ruolo = voluta;
+          if (nomeAutomatico) g.nome = CLASSI[voluta].nome;
+          g.ricarica = 0;
+          g.abilitaRicarica = 0;
+          g.scattoResta = 0;
+          console.log(`${g.nome} cambia classe: ora e' ${CLASSI[voluta].nome}.`);
+        }
         return g;
       }
     }
@@ -219,6 +250,7 @@ export class Mondo {
 
     this.curaFeriti(dt);
     this.curaConIKit(dt);
+    this.raccogliRifornimenti();
     this.battonoISonar(dt);
     this.consumaTorce(dt);
 
@@ -318,6 +350,36 @@ export class Mondo {
         g.vita = Math.min(tetto, g.vita + regola.cura);
         kit.usatoDa.push(g.id);
         console.log(`${g.nome} si e' curato: ${Math.round(g.vita)} di vita.`);
+      }
+    }
+  }
+
+  /**
+   * Le casse di rifornimento. Molta armatura e poca salute: quello che si
+   * ritrova girando e' la capacita' di incassare, non la carne — quella la
+   * rimette in sesto solo il medico.
+   */
+  raccogliRifornimenti() {
+    for (let k = this.rifornimenti.length - 1; k >= 0; k--) {
+      const cassa = this.rifornimenti[k];
+      const presenti = [...this.giocatori.values()].filter(
+        (g) => (g.online || g.bot) && g.stato !== STATO.MORTO,
+      );
+
+      for (const g of presenti) {
+        if (g.stato !== STATO.VIVO) continue;
+        if (cassa.usatoDa.includes(g.id)) continue;
+        if (Math.hypot(g.x - cassa.x, g.y - cassa.y) > RIFORNIMENTI.raggio) continue;
+        if (g.armatura >= ARMATURA_MASSIMA && g.vita >= VITA_MASSIMA) continue;
+        g.armatura = Math.min(ARMATURA_MASSIMA, g.armatura + RIFORNIMENTI.armatura);
+        g.vita = Math.min(VITA_MASSIMA, g.vita + RIFORNIMENTI.salute);
+        cassa.usatoDa.push(g.id);
+        console.log(`${g.nome} si e' rifornito: ${Math.round(g.armatura)} di armatura.`);
+      }
+
+      // Sparisce quando l'hanno presa tutti quelli che c'erano.
+      if (presenti.length && presenti.every((g) => cassa.usatoDa.includes(g.id))) {
+        this.rifornimenti.splice(k, 1);
       }
     }
   }
@@ -675,6 +737,17 @@ export class Mondo {
 
   ferisci(g, danno) {
     if (g.stato !== STATO.VIVO) return;
+
+    // Prima l'armatura, poi la carne. Quello che avanza passa oltre: cosi' un
+    // colpo grosso su un'armatura quasi finita fa comunque male, invece di
+    // essere assorbito per intero da un residuo di niente.
+    if (g.armatura > 0) {
+      const assorbito = Math.min(g.armatura, danno);
+      g.armatura -= assorbito;
+      danno -= assorbito;
+      if (danno <= 0) return;
+    }
+
     g.vita -= danno;
     if (g.vita > 0) return;
     g.vita = 0;
@@ -961,6 +1034,7 @@ export class Mondo {
         b: p.bot ? 1 : 0,
         s: p.ultimoSeq ?? 0, // ultimo comando eseguito: serve al telefono per rifare i conti
         v: Math.round(p.vita),
+        ar: Math.round(p.armatura),
         st: p.stato,
         rn: Math.round(p.rianima * 100) / 100,
         tc: Math.round(p.stato === STATO.CRITICO ? p.criticoRimasto : p.rientroRimasto),
@@ -1026,7 +1100,14 @@ export class Mondo {
       },
     };
 
-    return { t: 'stato', tick: this.tick, ms: ora, g, n, c, fu, so, ob, su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)) };
+    const ri = this.rifornimenti.map((r, i) => ({
+      i,
+      x: Math.round(r.x),
+      y: Math.round(r.y),
+      u: r.usatoDa,
+    }));
+
+    return { t: 'stato', tick: this.tick, ms: ora, g, n, c, fu, so, ri, ob, su: this.rumori.daSpedire([...this.giocatori.values()].filter((p) => p.online)) };
   }
 }
 
@@ -1041,6 +1122,7 @@ function differenzaAngolo(a, b) {
 function statoIniziale() {
   return {
     vita: VITA_MASSIMA,
+    armatura: ARMATURA_INIZIALE,
     stato: STATO.VIVO,
     rianima: 0,
     criticoRimasto: 0,

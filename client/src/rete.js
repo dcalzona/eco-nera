@@ -284,6 +284,11 @@ export class Rete {
     return this.fotografie.at(-1)?.fu ?? [];
   }
 
+  /** Le casse di rifornimento ancora in piedi. */
+  rifornimenti() {
+    return this.fotografie.at(-1)?.ri ?? [];
+  }
+
   /** I sonar posati dall'Eco. */
   sonar() {
     return this.fotografie.at(-1)?.so ?? [];

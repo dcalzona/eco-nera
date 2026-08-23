@@ -355,7 +355,8 @@ function giro(ora) {
   }));
 
   disegno.scena(
-    mappa, scena, rete.io, luci, memoria, nemiciVisti, coni, rete.colpi(), fuochi, rete.sonar(),
+    mappa, scena, rete.io, luci, memoria, nemiciVisti, coni, rete.colpi(), fuochi,
+    rete.sonar(), rete.rifornimenti(), rete.io,
   );
   disegno.stick(comandi);
 
@@ -468,6 +469,7 @@ window.ecoNera = {
 // capita a te come avvenimento senza direzione.
 const prima_ = {
   vita: null,
+  armatura: null,
   stato: null,
   nemici: null,
   nuclei: null,
@@ -496,6 +498,7 @@ function suona(dt, mio, dove) {
 
   if (mio) {
     if (prima_.vita !== null && mio.v < prima_.vita) suoni.evento('ferito');
+    if (prima_.armatura !== null && (mio.ar ?? 0) > prima_.armatura) suoni.evento('rifornimento');
     if (prima_.stato !== null && mio.st !== prima_.stato) {
       if (mio.st === STATO.CRITICO) suoni.evento('aTerra');
       if (prima_.stato !== STATO.VIVO && mio.st === STATO.VIVO) suoni.evento('rialzato');
@@ -508,6 +511,7 @@ function suona(dt, mio, dove) {
       suoni.evento('marchio');
     }
     prima_.vita = mio.v;
+    prima_.armatura = mio.ar ?? 0;
     prima_.stato = mio.st;
     prima_.torcia = mio.l;
     prima_.esaurita = mio.es;

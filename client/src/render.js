@@ -2,7 +2,8 @@
 // la propria o quella del compagno — piu' quello che si e' gia' visto prima,
 // che resta disegnato spento, come un ricordo.
 
-import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA } from '../condiviso/regole.js';
+import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA, ARMATURA_MASSIMA }
+  from '../condiviso/regole.js';
 import { giaVisto } from './visione.js';
 import { t } from './lingue.js';
 import { RAGGIO_STICK } from './input.js';
@@ -26,6 +27,8 @@ const COLORI = {
   assalto: '#b6e06a',
   kit: '#7fe0a0',
   sonar: '#8fd0ff',
+  armatura: '#8ab4ff',
+  cassa: '#c8a86a',
   colpo: '#ffe9a8',
   colpoNemico: '#ff7a6a',
   vita: '#5fd08a',
@@ -100,7 +103,7 @@ export class Disegno {
     return { x: this.cam.x - mezzaW, y: this.cam.y - mezzaH, w: mezzaW * 2, h: mezzaH * 2 };
   }
 
-  scena(mappa, personaggi, io, luci, memoria, nemici = [], coni = [], colpi = [], oggetti = [], sonar = []) {
+  scena(mappa, personaggi, io, luci, memoria, nemici = [], coni = [], colpi = [], oggetti = [], sonar = [], casse = [], mioId = null) {
     const c = this.ctx;
     c.fillStyle = COLORI.fondo;
     c.fillRect(0, 0, this.w, this.h);
@@ -140,6 +143,7 @@ export class Disegno {
 
     // 3b. Le cose lasciate per terra: kit e sonar.
     for (const s of sonar) this.sonarATerra(s);
+    for (const cassa of casse) this.cassaRifornimento(cassa, memoria, mioId);
     for (const o of oggetti) this.kitMedico(o);
 
     // 4. I personaggi. I compagni si vedono sempre: si sa dov'e' il proprio,
@@ -161,6 +165,40 @@ export class Disegno {
     this.contorno(cono);
     c.fillStyle = cono.umore === UMORE.PATTUGLIA ? 'rgba(224,90,90,0.07)' : 'rgba(255,160,60,0.13)';
     c.fill();
+    c.restore();
+  }
+
+  /**
+   * Una cassa di rifornimento. Si vede solo dove si e' gia' stati, come i
+   * nuclei: trovarle fa parte del girare. Se l'hai gia' presa tu resta
+   * disegnata spenta — al compagno serve ancora.
+   */
+  cassaRifornimento(cassa, memoria, mioId) {
+    if (memoria && !this.scoperto(cassa, memoria)) return;
+    const c = this.ctx;
+    const presa = mioId !== null && cassa.u?.includes(mioId);
+    c.save();
+    c.globalAlpha = presa ? 0.28 : 1;
+
+    c.fillStyle = COLORI.cassa;
+    stondato(c, cassa.x - 9, cassa.y - 7, 18, 14, 3);
+    c.fill();
+    c.strokeStyle = 'rgba(5,7,12,0.7)';
+    c.lineWidth = 1.2;
+    c.stroke();
+
+    // La fascia chiara sul coperchio: la fa leggere come una cassa e non come
+    // una macchia sul pavimento.
+    c.fillStyle = COLORI.armatura;
+    c.fillRect(cassa.x - 9, cassa.y - 2, 18, 3.4);
+
+    if (!presa) {
+      c.strokeStyle = tinta(COLORI.armatura, 0.35 + 0.25 * Math.sin(performance.now() / 400));
+      c.lineWidth = 1.6;
+      c.beginPath();
+      c.arc(cassa.x, cassa.y, 14, 0, Math.PI * 2);
+      c.stroke();
+    }
     c.restore();
   }
 
@@ -404,7 +442,7 @@ export class Disegno {
     c.translate(-this.cam.x, -this.cam.y);
 
     for (const nucleo of ob.nuclei) {
-      if (!this.scoperto(nucleo, memoria, mappa)) continue;
+      if (!this.scoperto(nucleo, memoria)) continue;
       const colore = nucleo.a ? COLORI.nucleoAcceso : COLORI.nucleo;
       c.strokeStyle = colore;
       c.lineWidth = 2.5;
@@ -428,7 +466,7 @@ export class Disegno {
     }
 
     const uscita = ob.es;
-    if (uscita.a || this.scoperto(uscita, memoria, mappa)) {
+    if (uscita.a || this.scoperto(uscita, memoria)) {
       const battito = uscita.a ? 0.55 + 0.45 * Math.sin(performance.now() / 260) : 0.3;
       c.strokeStyle = COLORI.uscita;
       c.globalAlpha = battito;
@@ -449,7 +487,7 @@ export class Disegno {
     c.restore();
   }
 
-  scoperto(punto, memoria, mappa) {
+  scoperto(punto, memoria) {
     if (!memoria) return false;
     return giaVisto(memoria, Math.floor(punto.x / TILE), Math.floor(punto.y / TILE));
   }
@@ -613,6 +651,12 @@ export class Disegno {
     c.font = '11px ui-monospace, Consolas, monospace';
     c.textAlign = 'left';
     c.fillText(`${Math.max(0, mio.v)}`, 158, y + 9);
+
+    // L'armatura sta sopra la salute, piu' sottile: e' il primo strato a
+    // consumarsi, e si legge nell'ordine in cui se ne va.
+    if ((mio.ar ?? 0) > 0) {
+      barra(c, 12, y - 8, 140, 5, mio.ar / ARMATURA_MASSIMA, COLORI.armatura);
+    }
 
     // Il compagno: come sta e se ha bisogno.
     const compagno = tutti.find((p) => p.i !== mio.i);

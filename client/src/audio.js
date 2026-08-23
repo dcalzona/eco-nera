@@ -360,6 +360,14 @@ export class Suoni {
           setTimeout(() => this.nota({ frequenza: f, a: f, durata: 0.4, volume: 0.26 }), k * 1000);
         }
         break;
+      case 'rifornimento':
+        // Due note che salgono, metalliche: si sente che si e' raccolto
+        // qualcosa di solido, non che ci si e' curati.
+        this.botta({ durata: 0.09, taglio: 3200, discesa: 900, volume: 0.3 });
+        for (const [k, f] of [[0, 330], [0.08, 494]]) {
+          setTimeout(() => this.nota({ frequenza: f, a: f, durata: 0.22, volume: 0.2, forma: 'square' }), k * 1000);
+        }
+        break;
       case 'nemicoAbbattuto':
         this.nota({ frequenza: 420, a: 130, durata: 0.28, volume: 0.22, forma: 'square' });
         break;
