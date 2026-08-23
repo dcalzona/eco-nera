@@ -106,7 +106,25 @@ export class Rete {
     return true;
   }
 
+  /**
+    * Spegne il collegamento per sempre. Non basta chiudere la presa: la
+    * chiusura fa scattare il tentativo di riconnessione, e passando alla
+    * partita senza server il telefono si sarebbe ricollegato da solo un
+    * secondo dopo, riaprendo una partita in casa mentre se ne gioca una fuori.
+    */
+  spegni() {
+    this.spento = true;
+    clearInterval(this.battito);
+    clearInterval(this.battitoLocale);
+    try {
+      this.ws?.close();
+    } catch {
+      /* gia' chiusa */
+    }
+  }
+
   avvia() {
+    if (this.spento) return;
     const url = indirizzo();
     if (!url) {
       this.stato = 'senzaIndirizzo';
@@ -144,6 +162,7 @@ export class Rete {
 
     ws.onclose = () => {
       clearInterval(this.battito);
+      if (this.spento) return;
       this.stato = 'caduto';
       this.tentativi++;
       // Nell'app, dopo qualche tentativo a vuoto, e' molto piu' probabile che

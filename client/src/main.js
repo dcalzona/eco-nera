@@ -4,6 +4,7 @@ import { muovi, angolo, velocitaFraIRipari } from '../condiviso/fisica.js';
 import { SOTTOPASSO, STATO, UMORE, VELOCITA, VELOCITA_CRITICO, NEMICI, VITA_MASSIMA, ECO_SECONDI }
   from '../condiviso/regole.js';
 import { Rete } from './rete.js';
+import { ReteLocale } from './rete-locale.js';
 import { Comandi } from './input.js';
 import { Disegno } from './render.js';
 import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
@@ -16,8 +17,14 @@ import { disegnaBriefing } from './briefing.js';
 const canvas = document.getElementById('gioco');
 const disegno = new Disegno(canvas);
 const comandi = new Comandi(canvas);
-const rete = new Rete();
 const suoni = new Suoni();
+
+// Due modi di giocare, stesso gioco. In casa il mondo gira sul PC e il telefono
+// e' un terminale; fuori casa il mondo gira dentro il telefono. Cambia solo chi
+// tiene la simulazione: tutto il resto — previsione, riconciliazione, buio,
+// missioni — e' lo stesso identico codice.
+let senzaServer = localStorage.getItem('ecoNera.offline') === '1';
+let rete = creaRete(senzaServer);
 
 // I browser non fanno suonare niente prima di un gesto: si accende al primo
 // dito sullo schermo, e da li' in poi resta acceso.
@@ -36,14 +43,48 @@ const modulo = document.getElementById('modulo');
 const campo = document.getElementById('indirizzo');
 const nota = document.getElementById('nota');
 
-rete.chiediIndirizzo = (chiave = '') => {
+function chiediIndirizzo(chiave = '') {
   traduciPagina();
   pannelloMenu.hidden = true; // prima il server, poi la scelta della classe
   nota.textContent = chiave ? t(chiave) : '';
   campo.value = localStorage.getItem('ecoNera.server') ?? '';
   pannello.hidden = false;
   setTimeout(() => campo.focus(), 50);
-};
+}
+
+/**
+ * Il collegamento giusto per il modo scelto. Le tre chiamate all'indietro sono
+ * le stesse: chi le riceve non sa e non deve sapere se il mondo sta sul PC o
+ * dentro il telefono.
+ */
+function creaRete(offline) {
+  const r = offline ? new ReteLocale() : new Rete();
+  r.chiediIndirizzo = chiediIndirizzo;
+  r.chiediClasse = () => {
+    pannelloMenu.hidden = false;
+    avvisaSeDisallineato();
+  };
+  r.alSaluto = () => avvisaSeDisallineato();
+  return r;
+}
+
+/** Si cambia modo dal menu: si spegne quello di prima e si riparte pulito. */
+function usaModo(offline) {
+  senzaServer = offline;
+  localStorage.setItem('ecoNera.offline', offline ? '1' : '0');
+  rete.spegni();
+  rete = creaRete(offline);
+  window.ecoNera.rete = rete;
+  // Il mondo e' un altro: si buttano ricordo, previsione e comandi in volo.
+  memoria = null;
+  io = null;
+  prima = null;
+  pendenti = [];
+  versioneMappaVista = -1;
+  briefingMostrato = null;
+  pannello.hidden = true;
+  rete.avvia();
+}
 
 modulo.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -139,6 +180,34 @@ sceltaLingua.addEventListener('change', () => {
 const spuntaSolo = document.getElementById('daSolo');
 spuntaSolo.checked = localStorage.getItem('ecoNera.solo') === '1';
 
+// Senza server si gioca per forza da soli: non c'e' nessun posto dove il
+// compagno potrebbe collegarsi.
+const spuntaOffline = document.getElementById('offline');
+spuntaOffline.checked = senzaServer;
+function adeguaSpunte() {
+  if (spuntaOffline.checked) {
+    spuntaSolo.checked = true;
+    spuntaSolo.disabled = true;
+  } else {
+    spuntaSolo.disabled = false;
+  }
+}
+adeguaSpunte();
+spuntaOffline.addEventListener('change', () => {
+  adeguaSpunte();
+  suoni.avvia();
+  usaModo(spuntaOffline.checked);
+});
+
+// E dal pannello dell'indirizzo si puo' rinunciare al server: e' li' che uno
+// si accorge di non essere a casa.
+document.getElementById('senzaServer').addEventListener('click', () => {
+  spuntaOffline.checked = true;
+  adeguaSpunte();
+  pannello.hidden = true;
+  usaModo(true);
+});
+
 bottoneAvvio.addEventListener('click', () => {
   if (!classeScelta) return;
   suoni.avvia();
@@ -189,6 +258,55 @@ document.getElementById('briefingVai').addEventListener('click', () => {
   prontoDetto = true;
   rete.mandaPronto();
 });
+
+/**
+ * I tasti del controller che non riguardano il personaggio: options apre e
+ * chiude il menu di pausa, e durante il briefing options e croce dicono
+ * tutti e due la stessa cosa — sono pronto. Con un pad in mano nessuno vuole
+ * allungare il dito sullo schermo per un pulsante.
+ */
+function tastiDiServizio() {
+  const menu = comandi.menuPremuto;
+  const conferma = comandi.confermaPremuta;
+  comandi.menuPremuto = false;
+  comandi.confermaPremuta = false;
+  if (!menu && !conferma) return;
+
+  if (!pannelloBriefing.hidden) {
+    document.getElementById('briefingVai').click();
+    // La croce ha gia' fatto il suo mestiere: non deve anche piantare un
+    // riparo nella stanza d'ingresso mentre si legge.
+    comandi.abilita = false;
+    return;
+  }
+  if (menu) pannelloPausa.hidden = !pannelloPausa.hidden;
+}
+
+/**
+ * Nel menu si dice se un controller si e' fatto vedere. Serve davvero: finche'
+ * non si preme un tasto il browser non lo mostra affatto, e senza questa riga
+ * uno resterebbe a chiedersi se il gioco lo veda o no.
+ */
+function controllerNelMenu() {
+  const riga = document.getElementById('controller');
+  if (!riga) return;
+  const pad = comandi.padCollegato();
+  if (!pad) {
+    riga.hidden = true;
+    return;
+  }
+  riga.hidden = false;
+  // Se il telefono non lo presenta in mappatura standard i tasti sono ai posti
+  // sbagliati e non c'e' modo di indovinarli: meglio dirlo subito invece di
+  // lasciar credere che il gioco non veda il pad.
+  const chiave = pad.mapping === 'standard' ? 'menu.controller' : 'menu.controllerStrano';
+  riga.textContent = t(chiave, { nome: nomeDelPad(pad.id) });
+}
+
+/** "Wireless Controller (STANDARD GAMEPAD Vendor: 054c...)" → "Wireless Controller". */
+function nomeDelPad(id) {
+  return String(id || '').split(' (')[0].slice(0, 28) || '?';
+}
 
 function aggiornaBriefing(ob) {
   if (!ob || !(ob.pr > 0)) {
@@ -242,13 +360,8 @@ document.getElementById('chiudiGuida').addEventListener('click', () => {
 
 traduciPagina();
 costruisciMenu();
-rete.chiediClasse = () => {
-  pannelloMenu.hidden = false;
-  avvisaSeDisallineato();
-};
-
-// Il saluto del server puo' arrivare prima o dopo l'apertura del menu.
-rete.alSaluto = () => avvisaSeDisallineato();
+// Le chiamate all'indietro (menu, saluto, richiesta dell'indirizzo) le mette
+// gia' creaRete: sono le stesse per il mondo sul PC e per quello nel telefono.
 
 /**
  * Un server rimasto acceso da prima parla una lingua piu' vecchia e fa
@@ -299,6 +412,7 @@ function giro(ora) {
   if (rete.stato === 'menu') {
     if (pannelloMenu.hidden) pannelloMenu.hidden = false;
     if (!bottonePausa.hidden) bottonePausa.hidden = true;
+    controllerNelMenu();
     return; // parla il menu
   }
 
@@ -336,6 +450,7 @@ function giro(ora) {
   comandi.misura(disegno.w, disegno.h);
   const centro = disegno.schermo(io.x, io.y);
   const c = comandi.leggi(centro);
+  tastiDiServizio();
 
   // Se le fotografie non arrivano piu', si sta fermi. Camminare per due
   // secondi mentre il server non riceve i comandi non fa avanzare di un

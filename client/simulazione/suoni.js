@@ -9,7 +9,7 @@
 // linea retta e' a due passi — e girare largo per non farsi sentire diventa
 // una cosa che si puo' davvero fare.
 
-import { SUONI, TILE } from '../client/condiviso/regole.js';
+import { SUONI, TILE } from '../condiviso/regole.js';
 import { campo } from './navigazione.js';
 
 let prossimoId = 1;

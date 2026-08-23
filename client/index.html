@@ -190,6 +190,7 @@
       }
       #modulo input { background: #0c1017; color: #dfe6f5; }
       #modulo button { background: #ffc65c; color: #05070c; border: 0; font-weight: 600; }
+      #modulo button.secondario { background: #1b2434; color: #dfe6f5; }
       #modulo small { color: #ff5d5d; min-height: 16px; font-size: 12px; }
 
       /* Solo la tela del gioco: prima questa regola prendeva anche le
@@ -230,6 +231,11 @@
           <input id="daSolo" type="checkbox" />
           <span data-t="menu.daSolo"></span>
         </label>
+        <label class="compagnia">
+          <input id="offline" type="checkbox" />
+          <span data-t="menu.offline"></span>
+        </label>
+        <p id="controller" class="avvisoPausa" hidden></p>
         <div class="pulsantiera">
           <button id="avvio" type="button" data-t="menu.entra" disabled></button>
           <button id="apriGuida" type="button" class="secondario" data-t="menu.guida"></button>
@@ -301,6 +307,12 @@
         <h2 data-t="guida.riparo.titolo"></h2>
         <p data-t="guida.riparo.testo"></p>
 
+        <h2 data-t="guida.controller.titolo"></h2>
+        <p data-t="guida.controller.testo"></p>
+
+        <h2 data-t="guida.offline.titolo"></h2>
+        <p data-t="guida.offline.testo"></p>
+
         <h2 data-t="guida.modalita.titolo"></h2>
         <ul>
           <li data-t="guida.modalita.sabotaggio"></li>
@@ -332,6 +344,7 @@
           placeholder="192.168.2.46:5190"
         />
         <button type="submit" data-t="server.collega"></button>
+        <button id="senzaServer" type="button" class="secondario" data-t="server.senza"></button>
         <small id="nota"></small>
       </form>
     </div>

@@ -127,6 +127,19 @@ const TESTI = {
     'guida.modalita.bomba':
       'Ordigno — portalo sul punto segnato e difendilo finche non scoppia.',
     'guida.modalita.dominio': 'Dominio — entra nella zona segnata e restaci mentre arrivano.',
+
+    'menu.offline':
+      'Senza server — il gioco gira tutto nel telefono, da solo, anche fuori casa',
+    'menu.controller': 'Controller collegato: {nome}',
+    'server.senza': 'Gioca senza server',
+    'guida.controller.titolo': 'Il controller',
+    'guida.controller.testo':
+      "Se al telefono e attaccato un controller — un DualShock, un DualSense — comanda quello: stick sinistro per muoverti, destro per mirare, R2 o R1 per sparare. Col pad mirare non e sparare: decide il grilletto. L2 o L1 accendono e spengono la torcia, croce o quadrato usano l'abilita, options apre il menu. Premi un tasto qualsiasi perche il telefono se ne accorga.",
+    'guida.offline.titolo': 'Fuori casa',
+    'guida.offline.testo':
+      "Spuntando «senza server» il gioco gira tutto dentro il telefono: non servono ne il PC ne il Wi-Fi, e si puo giocare in treno. E lo stesso identico gioco — stessa simulazione, stesse missioni, stesso buio — ma da soli, perche senza server non c'e nessun posto dove il compagno potrebbe collegarsi. La partita di fuori e sua e resta nel telefono: quella in casa, sul server, non la tocca.",
+    'menu.controllerStrano':
+      'Controller collegato: {nome} — mappatura non standard, i comandi potrebbero essere sbagliati',
   },
 
   en: {
@@ -237,6 +250,18 @@ const TESTI = {
     'guida.modalita.bomba':
       'Bomb — carry it to the marked spot and defend it until it goes off.',
     'guida.modalita.dominio': 'Hold — get into the marked zone and stay there while they come.',
+
+    'menu.offline': 'No server — the whole game runs on the phone, alone, even away from home',
+    'menu.controller': 'Controller connected: {nome}',
+    'server.senza': 'Play without a server',
+    'guida.controller.titolo': 'The controller',
+    'guida.controller.testo':
+      'If a controller is attached to the phone — a DualShock, a DualSense — it takes over: left stick to move, right stick to aim, R2 or R1 to shoot. With a pad, aiming is not shooting: the trigger decides. L2 or L1 toggle the torch, cross or square use the ability, options opens the menu. Press any button so the phone notices it.',
+    'guida.offline.titolo': 'Away from home',
+    'guida.offline.testo':
+      'Tick “no server” and the whole game runs inside the phone: no PC, no Wi-Fi, playable on a train. It is the same game — same simulation, same missions, same dark — but alone, because without a server there is nowhere for your partner to connect. The away game is its own and stays on the phone: the one at home, on the server, is untouched.',
+    'menu.controllerStrano':
+      'Controller connected: {nome} — non-standard mapping, the controls may come out wrong',
   },
 
   fr: {
@@ -348,6 +373,19 @@ const TESTI = {
       "Bombe — porte-la jusqu'au point marqué et défends-la jusqu'à l'explosion.",
     'guida.modalita.dominio':
       "Contrôle — entre dans la zone marquée et restes-y pendant qu'ils arrivent.",
+
+    'menu.offline':
+      'Sans serveur — tout le jeu tourne sur le téléphone, en solo, même hors de chez toi',
+    'menu.controller': 'Manette connectée : {nome}',
+    'server.senza': 'Jouer sans serveur',
+    'guida.controller.titolo': 'La manette',
+    'guida.controller.testo':
+      "Si une manette est reliée au téléphone — DualShock, DualSense — c'est elle qui commande : stick gauche pour se déplacer, droit pour viser, R2 ou R1 pour tirer. À la manette, viser n'est pas tirer : c'est la gâchette qui décide. L2 ou L1 allument et éteignent la lampe, croix ou carré utilisent la capacité, options ouvre le menu. Appuie sur n'importe quelle touche pour que le téléphone la voie.",
+    'guida.offline.titolo': 'Hors de chez toi',
+    'guida.offline.testo':
+      "Coche « sans serveur » et tout le jeu tourne dans le téléphone : ni PC ni Wi-Fi, jouable dans le train. C'est exactement le même jeu — même simulation, mêmes missions, même noir — mais en solo, parce que sans serveur ton coéquipier n'a nulle part où se connecter. La partie hors de chez toi lui appartient et reste dans le téléphone : celle à la maison, sur le serveur, n'y touche pas.",
+    'menu.controllerStrano':
+      'Manette connectée : {nome} — mappage non standard, les commandes peuvent être fausses',
   },
 
   es: {
@@ -457,6 +495,19 @@ const TESTI = {
       'Sabotaje — apaga los servidores apoyados en las paredes de las salas del fondo.',
     'guida.modalita.bomba': 'Bomba — llévalo al punto marcado y defiéndelo hasta que estalle.',
     'guida.modalita.dominio': 'Control — entra en la zona marcada y quédate mientras llegan.',
+
+    'menu.offline':
+      'Sin servidor — el juego entero corre en el teléfono, en solitario, también fuera de casa',
+    'menu.controller': 'Mando conectado: {nome}',
+    'server.senza': 'Jugar sin servidor',
+    'guida.controller.titolo': 'El mando',
+    'guida.controller.testo':
+      'Si hay un mando conectado al teléfono — un DualShock, un DualSense — manda él: stick izquierdo para moverte, derecho para apuntar, R2 o R1 para disparar. Con mando, apuntar no es disparar: decide el gatillo. L2 o L1 encienden y apagan la linterna, cruz o cuadrado usan la habilidad, options abre el menú. Pulsa cualquier botón para que el teléfono lo vea.',
+    'guida.offline.titolo': 'Fuera de casa',
+    'guida.offline.testo':
+      'Marcando «sin servidor» el juego entero corre dentro del teléfono: no hacen falta ni el PC ni el Wi-Fi, y se puede jugar en el tren. Es el mismo juego — misma simulación, mismas misiones, misma oscuridad — pero en solitario, porque sin servidor no hay ningún sitio donde tu compañero pueda conectarse. La partida de fuera es suya y se queda en el teléfono: la de casa, en el servidor, no se toca.',
+    'menu.controllerStrano':
+      'Mando conectado: {nome} — mapeo no estándar, los controles pueden salir mal',
   },
 
   ru: {
@@ -565,6 +616,18 @@ const TESTI = {
     'guida.modalita.sabotaggio': 'Саботаж — выключи серверы у стен дальних комнат.',
     'guida.modalita.bomba': 'Бомба — донеси её до отмеченной точки и держи, пока не взорвётся.',
     'guida.modalita.dominio': 'Захват — войди в отмеченную зону и держись, пока они идут.',
+
+    'menu.offline': 'Без сервера — вся игра идёт в телефоне, в одиночку, даже вне дома',
+    'menu.controller': 'Геймпад подключён: {nome}',
+    'server.senza': 'Играть без сервера',
+    'guida.controller.titolo': 'Геймпад',
+    'guida.controller.testo':
+      'Если к телефону подключён геймпад — DualShock, DualSense — командует он: левый стик двигает, правый целится, R2 или R1 стреляют. С геймпадом целиться не значит стрелять: решает курок. L2 или L1 включают и выключают фонарь, крестик или квадрат — умение, options открывает меню. Нажми любую кнопку, чтобы телефон его заметил.',
+    'guida.offline.titolo': 'Вне дома',
+    'guida.offline.testo':
+      'Поставь галочку «без сервера» — и вся игра идёт внутри телефона: не нужны ни ПК, ни Wi-Fi, можно играть в поезде. Это та же самая игра — та же симуляция, те же задания, та же темнота — но в одиночку, потому что без сервера напарнику некуда подключаться. Партия вне дома живёт отдельно и остаётся в телефоне: домашнюю, на сервере, она не трогает.',
+    'menu.controllerStrano':
+      'Геймпад подключён: {nome} — нестандартная раскладка, управление может быть неверным',
   },
 
   nl: {
@@ -676,6 +739,19 @@ const TESTI = {
       'Bom — breng hem naar de gemarkeerde plek en verdedig hem tot hij afgaat.',
     'guida.modalita.dominio':
       'Bezetting — ga de gemarkeerde zone in en blijf er terwijl ze komen.',
+
+    'menu.offline':
+      'Zonder server — het hele spel draait op de telefoon, alleen, ook buitenshuis',
+    'menu.controller': 'Controller verbonden: {nome}',
+    'server.senza': 'Spelen zonder server',
+    'guida.controller.titolo': 'De controller',
+    'guida.controller.testo':
+      'Zit er een controller aan de telefoon — een DualShock, een DualSense — dan neemt die het over: linkerstick om te lopen, rechter om te richten, R2 of R1 om te schieten. Met een controller is richten niet schieten: de trigger beslist. L2 of L1 zetten de zaklamp aan en uit, kruis of vierkant gebruiken de vaardigheid, options opent het menu. Druk op een willekeurige knop zodat de telefoon hem ziet.',
+    'guida.offline.titolo': 'Buitenshuis',
+    'guida.offline.testo':
+      'Vink “zonder server” aan en het hele spel draait in de telefoon: geen pc, geen wifi, speelbaar in de trein. Het is precies hetzelfde spel — dezelfde simulatie, dezelfde missies, hetzelfde donker — maar alleen, want zonder server is er nergens waar je maat kan inloggen. Het potje van onderweg is van zichzelf en blijft in de telefoon: dat thuis, op de server, blijft ongemoeid.',
+    'menu.controllerStrano':
+      'Controller verbonden: {nome} — niet-standaard indeling, de besturing kan verkeerd uitvallen',
   },
 };
 

@@ -3,9 +3,9 @@
 // puo' giocare — se non si intuisce cosa sta per fare, morire sembra ingiusto.
 
 import { NEMICI, OBLIO_SECONDI, UMORE, TILE, SCONTO_AL_BUIO, ALLARME, RIPARO }
-  from '../client/condiviso/regole.js';
-import { PARTENZE, pavimenti, centroCasella } from '../client/condiviso/mappa.js';
-import { scorri, suUnRiparo } from '../client/condiviso/fisica.js';
+  from '../condiviso/regole.js';
+import { PARTENZE, pavimenti, centroCasella } from '../condiviso/mappa.js';
+import { scorri, suUnRiparo } from '../condiviso/fisica.js';
 import { campo, passoVerso, lineaLibera } from './navigazione.js';
 
 /** Quanto si allontana dal proprio posto quando pattuglia, in caselle. */

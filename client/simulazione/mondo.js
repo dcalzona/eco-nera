@@ -3,9 +3,9 @@
 // scrive e si controlla da questo lato, con i messaggi nel terminale,
 // invece che dentro una WebView su un telefono.
 
-import { centroCasella, pavimenti, muro } from '../client/condiviso/mappa.js';
-import { generaMappa, centroStanza } from '../client/condiviso/generatore.js';
-import { muovi, limita, angolo, scorri, velocitaFraIRipari } from '../client/condiviso/fisica.js';
+import { centroCasella, pavimenti, muro } from '../condiviso/mappa.js';
+import { generaMappa, centroStanza } from '../condiviso/generatore.js';
+import { muovi, limita, angolo, scorri, velocitaFraIRipari } from '../condiviso/fisica.js';
 import {
   TILE,
   SOTTOPASSO,
@@ -43,7 +43,7 @@ import {
   CLASSI,
   CLASSE_PREDEFINITA,
   IMPULSO_SONAR,
-} from '../client/condiviso/regole.js';
+} from '../condiviso/regole.js';
 import { creaNemici, passoNemici, chiVede } from './nemici.js';
 import { creaColpo, passoProiettili } from './proiettili.js';
 import { campo, passoVerso, lineaLibera } from './navigazione.js';

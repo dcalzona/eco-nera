@@ -12,7 +12,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 
-import { Mondo } from './mondo.js';
+import { Mondo } from '../client/simulazione/mondo.js';
 import { TICK_HZ, VERSIONE } from '../client/condiviso/regole.js';
 
 const QUI = path.dirname(fileURLToPath(import.meta.url));

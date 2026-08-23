@@ -5,8 +5,9 @@ Si vede solo quello che illumina la propria torcia — piu' quello che illumina
 il compagno. Solo PvE.
 
 Il server gira sul PC, i giocatori stanno sui telefoni Android collegati al
-Wi-Fi di casa. Come Dragon Tower: JavaScript puro, moduli ES nativi, Canvas 2D,
-**nessun passo di compilazione**.
+Wi-Fi di casa. Fuori casa il server sta **dentro il telefono**, e si gioca da
+soli senza niente attorno. Come Dragon Tower: JavaScript puro, moduli ES
+nativi, Canvas 2D, **nessun passo di compilazione**.
 
 ## Come provarlo
 
@@ -83,22 +84,92 @@ e scrive da se' tutte le densita' dentro `android/app/src/main/res`.
 | Torcia | pulsante in basso a destra | L |
 | Silenziare | — | M |
 
+## Il controller
+
+Se al telefono e' attaccato un controller — un DualShock, un DualSense, ma va
+bene qualunque pad che il telefono presenti in mappatura standard — comanda
+quello, e i due stick sullo schermo restano dove sono per quando serve.
+
+| | |
+| --- | --- |
+| stick sinistro / croce direzionale | muoversi |
+| stick destro | mirare |
+| R2 o R1 | sparare |
+| L2 o L1 | torcia |
+| croce o quadrato | abilita' della classe |
+| options | menu di pausa, e "sono pronto" nel briefing |
+
+Col pad **mirare non e' sparare**. Sullo schermo lo e' per forza — un terzo
+dito non c'e', e un pulsante di fuoco separato costringerebbe a lasciare la
+mira — ma con un controller in mano ci sono i grilletti, e tenere separate le
+due cose e' meta' del motivo per cui giocare col pad e' un'altra cosa.
+
+Il browser non fa vedere un controller finche' non gli si preme un tasto: e'
+una difesa contro le pagine che riconoscono chi le guarda. Per questo il menu
+dice **quale pad ha visto**, appena lo vede: senza quella riga uno resta li' a
+chiedersi se il gioco lo senta.
+
+Lo stick vero non torna mai esattamente a zero, quindi c'e' una zona morta del
+diciotto per cento — e appena fuori si riparte da fermo, non da meta'
+velocita', o il minimo tocco farebbe uno scatto.
+
+## Fuori casa: il server dentro il telefono
+
+Spuntando **«senza server»** nel menu, il mondo gira dentro l'app: niente PC,
+niente Wi-Fi, si gioca in treno. Si gioca **da soli**, perche' senza server non
+c'e' nessun posto dove il compagno potrebbe collegarsi.
+
+Non e' una versione ridotta del gioco, ed e' il punto: e' lo **stesso identico
+`Mondo`**. La simulazione era gia' scritta in JavaScript puro e non usa niente
+di Node — solo numeri, griglie e `Math.random` — quindi gira tal quale dentro
+una WebView. Per questo vive in `client/simulazione/`: non e' piu' codice "del
+server", e' codice del gioco, e il server e' solo uno dei due posti dove puo'
+girare.
+
+`ReteLocale` estende `Rete` e cambia **solo il trasporto**: invece di mandare i
+comandi su una presa WebSocket li passa a `mondo.input()`, e invece di ricevere
+fotografie dalla rete le prende da `mondo.istantanea()` venti volte al secondo,
+con lo stesso accumulo a passi fissi del server vero. Tutto il resto —
+previsione, interpolazione a cento millisecondi, riconciliazione, briefing — e'
+il codice di prima, non toccato. Se il buio fuori casa si comportasse anche
+solo un po' diversamente da quello in casa, ci sarebbero due giochi da
+sistemare invece di uno.
+
+Anche i comandi restano arrotondati a tre decimali come li arrotonderebbe la
+rete: e' uno scarto minuscolo, ma esiste in casa, e allora deve esistere anche
+qui.
+
+Uscendo al menu il mondo **si ferma** e riprende da dov'era quando si rientra.
+Lasciarlo girare mentre si guarda il menu vorrebbe dire tornare e trovarsi i
+nemici addosso senza capire perche' — e su un telefono vorrebbe anche dire
+mangiare batteria per niente.
+
+Quanto costa: un tick misurato sul PC sta a **0,04 ms** di mediana e 0,31 al
+99esimo, contro i 50 di budget. Anche dieci volte piu' lento resta sotto l'uno
+per cento di un core.
+
 ## Com'e' fatto
 
 ```
-server/     la simulazione, gira solo sul PC
-  server.js      serve il gioco ai telefoni + ciclo a 20 passi al secondo
-  mondo.js       personaggi, movimento, combattimento, fantoccio
-  nemici.js      i tre umori: pattuglia, cerca, caccia
-  suoni.js       come si propaga un rumore
-  navigazione.js come si aggirano i muri, e chi vede chi
-  proiettili.js  i colpi in volo
-client/     quello che finisce sui telefoni (e nell'APK)
-  condiviso/  regole, mappa, generatore e fisica: li usano sia server sia client
-  src/        rete, comandi, visione, disegno
+server/       l'unica parte che vuole Node
+  server.js        serve il gioco ai telefoni + ciclo a 20 passi al secondo
+client/       quello che finisce sui telefoni (e nell'APK)
+  condiviso/    regole, mappa, generatore e fisica: le usano tutti
+  simulazione/  il mondo. Gira sul PC quando c'e' il server, dentro il
+    mondo.js         telefono quando non c'e'
+    nemici.js        i tre umori: pattuglia, cerca, caccia
+    suoni.js         come si propaga un rumore
+    navigazione.js   come si aggirano i muri, e chi vede chi
+    proiettili.js    i colpi in volo
+  src/          rete, comandi, visione, disegno, briefing
 ```
 
-Il server e' l'unico a sapere la verita': i telefoni mandano comandi e ricevono
+La simulazione sta sotto `client/` e non sotto `server/` per una ragione
+precisa: **non e' codice del server, e' codice del gioco**. Il server e' solo
+uno dei due posti in cui puo' girare — l'altro e' dentro l'app, quando si gioca
+fuori casa. `server/server.js` e' l'unico file che importa qualcosa di Node.
+
+Chi ospita il mondo e' l'unico a sapere la verita': i telefoni mandano comandi e ricevono
 venti fotografie al secondo. Gli altri giocatori si disegnano 100 ms nel passato
 interpolando fra due fotografie; il proprio personaggio si prevede in locale,
 cosi' il dito risponde subito.
@@ -468,3 +539,4 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **5. La spedizione** — mappe generate, obiettivi, estrazione
 - [x] **6. L'app** — APK con Capacitor
 - [x] **7. Le missioni** — tre modalita' con briefing, e il riparo dell'Assalto
+- [x] **8. Fuori casa** — controller, e il server dentro il telefono

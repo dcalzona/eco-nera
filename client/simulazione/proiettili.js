@@ -6,8 +6,8 @@
 // una casella e mezza, e controllando solo il punto d'arrivo attraverserebbe
 // i muri sottili senza accorgersene.
 
-import { TILE } from '../client/condiviso/regole.js';
-import { muro } from '../client/condiviso/mappa.js';
+import { TILE } from '../condiviso/regole.js';
+import { muro } from '../condiviso/mappa.js';
 
 /** Lunghezza massima di un pezzetto di volo, in pixel. */
 const PEZZO = 6;

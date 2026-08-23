@@ -7,8 +7,8 @@
 // di mille caselle — e con piu' sorgenti insieme ognuno insegue il giocatore
 // piu' vicino senza doverlo decidere.
 
-import { TILE } from '../client/condiviso/regole.js';
-import { muro } from '../client/condiviso/mappa.js';
+import { TILE } from '../condiviso/regole.js';
+import { muro } from '../condiviso/mappa.js';
 
 const IRRAGGIUNGIBILE = 30000;
 
