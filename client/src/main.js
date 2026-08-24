@@ -15,6 +15,14 @@ import { disegnaOmino, coloreDi, armaDi } from './render.js';
 import { CLASSI, ABILITA, VERSIONE, BOMBA } from '../condiviso/regole.js';
 import { LINGUE, t, impostaLingua, linguaCorrente, traduciPagina } from './lingue.js';
 import { disegnaBriefing } from './briefing.js';
+import {
+  creaStanza,
+  leggiStanza,
+  lasciaRisposta,
+  aspettaRisposta,
+  indirizzoSegnalatore,
+  cambiaSegnalatore,
+} from './segnalatore.js';
 
 const canvas = document.getElementById('gioco');
 const disegno = new Disegno(canvas);
@@ -288,6 +296,12 @@ const invitoStato = document.getElementById('invitoStato');
 const passoCrea = document.getElementById('passoCrea');
 const passoMio = document.getElementById('passoMio');
 const passoSuo = document.getElementById('passoSuo');
+const passoCodice = document.getElementById('passoCodice');
+const passoChiedi = document.getElementById('passoChiedi');
+const campoCodice = document.getElementById('campoCodice');
+const codiceGrande = document.getElementById('codiceGrande');
+/** Chiudendo il pannello si smette di aspettare, invece di continuare a chiedere. */
+let annullato = false;
 
 function apriPannelloInvito() {
   traduciPagina(pannelloInvito);
@@ -295,38 +309,96 @@ function apriPannelloInvito() {
   document.getElementById('invitoIncollaEtichetta').textContent = t(`invito.incolla.${modo}`);
   document.getElementById('usaCodice').textContent =
     t(modo === 'ospite' ? 'invito.collega' : 'invito.rispondi');
-  // Chi ospita comincia creando l'invito; chi e' invitato comincia
-  // incollando quello che ha ricevuto.
+  document.getElementById('campoServizio').value = indirizzoSegnalatore();
+
+  // Chi ospita si fa dare un numero; chi e' invitato lo scrive.
   passoCrea.hidden = modo !== 'ospite';
+  passoCodice.hidden = true;
+  passoChiedi.hidden = modo === 'ospite';
   passoMio.hidden = true;
-  passoSuo.hidden = modo === 'ospite';
+  passoSuo.hidden = false;
   mioCodice.value = '';
   suoCodice.value = '';
+  campoCodice.value = '';
+  codiceGrande.textContent = '';
   invitoStato.textContent = '';
+  annullato = false;
   pannelloMenu.hidden = true;
   pannelloInvito.hidden = false;
 }
 
 document.getElementById('chiudiInvito').addEventListener('click', () => {
+  annullato = true;
   pannelloInvito.hidden = true;
   pannelloMenu.hidden = false;
   aggiornaStatoServer();
 });
 
+document.getElementById('campoServizio').addEventListener('change', (e) => {
+  cambiaSegnalatore(e.target.value);
+});
+
+/**
+ * Chi ospita: prepara l'offerta, la lascia al servizio, mostra il numero e
+ * aspetta. Il numero e' l'unica cosa che deve arrivare all'altro, e ci arriva
+ * a voce — che e' il modo piu' veloce che esista.
+ */
 document.getElementById('creaInvito').addEventListener('click', async () => {
   suoni.avvia();
   invitoStato.textContent = t('invito.stato.preparo');
+  let offerta;
   try {
-    mioCodice.value = await rete.apriInvito();
-    passoCrea.hidden = true;
-    passoMio.hidden = false;
-    passoSuo.hidden = false;
-    invitoStato.textContent = t('invito.stato.mandalo');
-  } catch (e) {
+    offerta = await rete.apriInvito();
+  } catch {
     invitoStato.textContent = t('invito.stato.errore');
+    return;
+  }
+
+  // Lo scambio a mano resta pronto sotto, per quando il servizio non risponde.
+  mioCodice.value = offerta;
+  passoMio.hidden = false;
+
+  try {
+    invitoStato.textContent = t('invito.stato.creo');
+    const numero = await creaStanza(offerta);
+    passoCrea.hidden = true;
+    passoCodice.hidden = false;
+    codiceGrande.textContent = `${numero.slice(0, 3)} ${numero.slice(3)}`;
+    invitoStato.textContent = t('invito.stato.dilloEAspetta');
+
+    const risposta = await aspettaRisposta(numero, { fermati: () => annullato });
+    await rete.chiudiInvito(risposta);
+    invitoStato.textContent = t('invito.stato.attesa');
+  } catch (e) {
+    // Il servizio non c'e' o non risponde: si puo' ancora fare a mano, e lo si
+    // dice invece di lasciare chi gioca davanti a un pulsante che non fa nulla.
+    passoCrea.hidden = true;
+    invitoStato.textContent = t('invito.stato.servizioGiu');
+    document.getElementById('aMano').open = true;
   }
 });
 
+/** Chi e' invitato: scrive il numero, e il resto succede da solo. */
+document.getElementById('usaNumero').addEventListener('click', async () => {
+  suoni.avvia();
+  const numero = campoCodice.value.replace(/\D/g, '');
+  if (numero.length < 6) {
+    invitoStato.textContent = t('invito.stato.codiceCorto');
+    return;
+  }
+  try {
+    invitoStato.textContent = t('invito.stato.cerco');
+    const stanza = await leggiStanza(numero);
+    const risposta = await rete.rispondi(stanza.offerta);
+    await lasciaRisposta(numero, risposta);
+    invitoStato.textContent = t('invito.stato.attesa');
+  } catch (e) {
+    invitoStato.textContent = t('invito.stato.servizioGiu');
+    document.getElementById('aMano').open = true;
+  }
+});
+
+// --- La via di riserva: i due codici lunghi, a mano ---------------------
 document.getElementById('usaCodice').addEventListener('click', async () => {
   suoni.avvia();
   const codice = suoCodice.value.trim();

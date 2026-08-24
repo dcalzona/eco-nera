@@ -151,19 +151,25 @@ rimedio. Le fotografie si possono perdere, i comandi no.
 Chi legge le fotografie butta quelle **fuori ordine**: su un canale non
 ordinato una vecchia rimessa in coda manderebbe l'interpolazione a ritroso.
 
-### Come si trovano
+### Come si trovano: un numero di sei cifre
 
 WebRTC sa collegare due telefoni in capo al mondo, ma non sa come farli
 incontrare la prima volta: quel primo scambio se lo deve inventare chi scrive il
-gioco. Qui l'invenzione e' la piu' semplice possibile — la descrizione di ognuno
-diventa un codice di testo (compresso e in lettere: circa 700 caratteri) e ve lo
-passate come vi pare, con un messaggio qualsiasi. Due copia-e-incolla a partita.
+gioco.
 
-E' scomodo, e si vede. Ma non c'e' **niente** da tenere acceso, niente da
-pagare e niente da configurare, quindi funziona anche in treno. Piu' avanti quei
-due scambi diventeranno un codice di quattro cifre, e a quel punto servira' un
-servizietto in mezzo: la forma del collegamento pero' resta questa, e sotto non
-cambiera' piu' niente.
+Chi ospita si fa dare un **codice di sei cifre** e lo dice all'altro, che lo
+scrive. Fine. Dietro c'e' `segnalatore/`, una funzione che sta su Vercel e fa
+una cosa sola: tiene da parte due stringhe per tre minuti sotto quel numero.
+
+Non e' un server di gioco e non sa niente del gioco. Finito lo scambio i due
+telefoni si parlano diretti, e **se lo spegnessero a meta' partita non se ne
+accorgerebbe nessuno**. Al servizio arrivano solo le descrizioni WebRTC —
+indirizzi e chiavi — mai un dato di gioco. Una partita sono tre richieste in
+tutto: sta nel piano gratuito con quattro ordini di grandezza di margine.
+
+Resta anche **lo scambio a mano**, sotto una piega del pannello: i due codici
+lunghi da passarsi con un messaggio. Serve quando il servizio non risponde, ed
+e' li' apposta perche' una serata non debba dipendere da un servizio.
 
 Gli unici estranei sono i server **STUN**, che servono a dire a un telefono qual
 e' il suo indirizzo visto da fuori. Non ci passa nessun dato di gioco. Quando
@@ -222,6 +228,9 @@ per cento di un core.
 ```
 server/       l'unica parte che vuole Node
   server.js        serve il gioco ai telefoni + ciclo a 20 passi al secondo
+segnalatore/  fa incontrare due telefoni sotto un codice di sei cifre
+  api/stanza.js    la funzione che va su Vercel
+  locale.js        la stessa, in casa, per provarla senza pubblicarla
 client/       quello che finisce sui telefoni (e nell'APK)
   condiviso/    regole, mappa, generatore e fisica: le usano tutti
   simulazione/  il mondo. Gira sul PC quando c'e' il server, dentro il
@@ -688,4 +697,4 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **6. L'app** — APK con Capacitor
 - [x] **7. Le missioni** — tre modalita' con briefing, e il riparo dell'Assalto
 - [x] **8. Fuori casa** — controller, e il server dentro il telefono
-- [x] **9. In due ovunque** — i due telefoni si parlano da soli, senza server
+- [x] **9. In due ovunque** — i due telefoni si parlano da soli, con un codice di sei cifre

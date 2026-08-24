@@ -101,6 +101,26 @@
         word-break: break-all;
       }
       #invitoStato { font-size: 12px; min-height: 18px; margin-top: 8px; color: #ffc65c; }
+      /* Il codice: grande, perche' si legge a voce da una stanza all'altra. */
+      #codiceGrande {
+        font: 700 40px ui-monospace, Consolas, monospace;
+        letter-spacing: 0.14em; color: #ffc65c; margin: 6px 0;
+      }
+      #campoCodice {
+        font: 700 30px ui-monospace, Consolas, monospace;
+        letter-spacing: 0.14em; text-align: center;
+        width: 100%; max-width: 260px; padding: 8px;
+        background: #0c1017; color: #dfe6f5;
+        border: 1px solid #2a3550; border-radius: 10px;
+      }
+      #aMano { margin-top: 16px; }
+      #aMano summary { font-size: 12px; color: #78849f; cursor: pointer; }
+      #rigaServizio { margin-top: 14px; font-size: 11px; color: #5c6780; }
+      #rigaServizio input {
+        font: 11px ui-monospace, Consolas, monospace; width: 100%;
+        background: #0c1017; color: #98a3bd;
+        border: 1px solid #1c2434; border-radius: 6px; padding: 5px 7px; margin-top: 3px;
+      }
       .passo { margin-top: 12px; }
       .passo[hidden] { display: none; }
 
@@ -304,30 +324,54 @@
         <h1 data-t="invito.titolo"></h1>
         <p id="invitoSpiega"></p>
 
+        <!-- Chi ospita: un pulsante, e viene fuori un numero da dire a voce. -->
         <div class="passo" id="passoCrea">
           <div class="pulsantiera">
             <button id="creaInvito" type="button" data-t="invito.crea"></button>
           </div>
         </div>
-
-        <div class="passo" id="passoMio" hidden>
-          <p data-t="invito.mandaQuesto"></p>
-          <textarea id="mioCodice" readonly></textarea>
-          <div class="pulsantiera">
-            <button id="copiaCodice" type="button" data-t="invito.copia"></button>
-            <button id="condividiCodice" type="button" class="secondario" data-t="invito.condividi"></button>
-          </div>
+        <div class="passo" id="passoCodice" hidden>
+          <p data-t="invito.codice.tuo"></p>
+          <div id="codiceGrande"></div>
         </div>
 
-        <div class="passo" id="passoSuo" hidden>
-          <p id="invitoIncollaEtichetta"></p>
-          <textarea id="suoCodice" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+        <!-- Chi e' invitato: scrive quel numero. -->
+        <div class="passo" id="passoChiedi" hidden>
+          <p data-t="invito.codice.chiedi"></p>
+          <input id="campoCodice" type="text" inputmode="numeric" autocomplete="off"
+                 maxlength="7" placeholder="000000" />
           <div class="pulsantiera">
-            <button id="usaCodice" type="button"></button>
+            <button id="usaNumero" type="button" data-t="invito.collega"></button>
           </div>
         </div>
 
         <p id="invitoStato"></p>
+
+        <!-- La via di riserva, se il servizio non risponde. -->
+        <details id="aMano">
+          <summary data-t="invito.aMano"></summary>
+          <div class="passo" id="passoMio" hidden>
+            <p data-t="invito.mandaQuesto"></p>
+            <textarea id="mioCodice" readonly></textarea>
+            <div class="pulsantiera">
+              <button id="copiaCodice" type="button" data-t="invito.copia"></button>
+              <button id="condividiCodice" type="button" class="secondario" data-t="invito.condividi"></button>
+            </div>
+          </div>
+          <div class="passo" id="passoSuo">
+            <p id="invitoIncollaEtichetta"></p>
+            <textarea id="suoCodice" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+            <div class="pulsantiera">
+              <button id="usaCodice" type="button"></button>
+            </div>
+          </div>
+          <label id="rigaServizio">
+            <span data-t="invito.servizio"></span>
+            <input id="campoServizio" type="text" inputmode="url" autocomplete="off"
+                   autocapitalize="off" spellcheck="false" />
+          </label>
+        </details>
+
         <div class="pulsantiera">
           <button id="chiudiInvito" type="button" class="secondario" data-t="invito.chiudi"></button>
         </div>

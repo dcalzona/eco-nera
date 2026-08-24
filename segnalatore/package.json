@@ -1,0 +1,10 @@
+{
+  "name": "eco-nera-segnalatore",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fa incontrare due telefoni sotto un codice di sei cifre. Non sa niente del gioco.",
+  "type": "module",
+  "scripts": {
+    "locale": "node locale.js"
+  }
+}

@@ -152,10 +152,10 @@ const TESTI = {
     'menu.invito': 'Scambia il codice dell invito',
     'invito.titolo': 'In due, senza nessun server',
     'invito.spiega.ospite':
-      "Il mondo gira in questo telefono e l'altro si collega direttamente qui. Crea l'invito, mandaglielo come ti pare — messaggio, WhatsApp, quello che usate — e incolla qui sotto la risposta che ti rimanda.",
+      "Il mondo gira in questo telefono e l'altro si collega direttamente qui. Fatti dare un codice di sei cifre e diglielo: al servizio non passa nessun dato di gioco, solo quel numero.",
     'invito.spiega.invitato':
-      "Il mondo gira nel telefono di chi ti ha invitato. Incolla qui l'invito che ti ha mandato, e rimandagli il codice di risposta che compare.",
-    'invito.crea': "Crea l'invito",
+      'Il mondo gira nel telefono di chi ti ha invitato. Fatti dire il suo codice di sei cifre e scrivilo qui.',
+    'invito.crea': 'Fatti dare un codice',
     'invito.collega': 'Collega',
     'invito.rispondi': 'Rispondi',
     'invito.copia': 'Copia',
@@ -177,6 +177,16 @@ const TESTI = {
     'guida.invito.titolo': 'In due senza server',
     'guida.invito.testo':
       "Uno dei due ospita: il mondo gira nel suo telefono e l'altro si collega direttamente li', senza niente in mezzo. Ci si scambia due codici — uno per parte — con un messaggio qualsiasi, e da li' in poi i due telefoni si parlano da soli. Chi ospita fa da server, quindi conviene che sia quello con la connessione migliore.",
+
+    'invito.codice.tuo': "Dillo all'altro, e aspetta:",
+    'invito.codice.chiedi': 'Scrivi il codice che ti hanno detto:',
+    'invito.aMano': 'Non funziona? Scambio a mano, senza il servizio',
+    'invito.servizio': 'Indirizzo del servizio',
+    'invito.stato.creo': 'mi faccio dare un codice…',
+    'invito.stato.cerco': 'cerco quel codice…',
+    'invito.stato.dilloEAspetta': 'diglielo — aspetto che si colleghi',
+    'invito.stato.codiceCorto': 'il codice e di sei cifre',
+    'invito.stato.servizioGiu': 'il servizio non risponde: provate lo scambio a mano qui sotto',
   },
 
   en: {
@@ -312,10 +322,10 @@ const TESTI = {
     'menu.invito': 'Exchange the invite code',
     'invito.titolo': 'Two players, no server at all',
     'invito.spiega.ospite':
-      'The world runs on this phone and the other one connects straight to it. Create the invite, send it however you like — a message, WhatsApp, whatever you use — and paste below the reply they send back.',
+      'The world runs on this phone and the other one connects straight to it. Get a six-digit code and tell it to them: no game data reaches the service, only that number.',
     'invito.spiega.invitato':
-      'The world runs on the phone of whoever invited you. Paste the invite they sent here, and send back the reply code that appears.',
-    'invito.crea': 'Create the invite',
+      'The world runs on the phone of whoever invited you. Ask them for their six-digit code and type it here.',
+    'invito.crea': 'Get a code',
     'invito.collega': 'Connect',
     'invito.rispondi': 'Reply',
     'invito.copia': 'Copy',
@@ -337,6 +347,16 @@ const TESTI = {
     'guida.invito.titolo': 'Two players, no server',
     'guida.invito.testo':
       'One of you hosts: the world runs on their phone and the other connects straight to it, with nothing in between. You swap two codes — one each — over any messaging app, and from then on the two phones talk by themselves. Whoever hosts is the server, so it should be the one with the better connection.',
+
+    'invito.codice.tuo': 'Tell it to the other player, and wait:',
+    'invito.codice.chiedi': 'Type the code they told you:',
+    'invito.aMano': 'Not working? Swap by hand, without the service',
+    'invito.servizio': 'Service address',
+    'invito.stato.creo': 'getting a code…',
+    'invito.stato.cerco': 'looking for that code…',
+    'invito.stato.dilloEAspetta': 'tell them — waiting for the connection',
+    'invito.stato.codiceCorto': 'the code has six digits',
+    'invito.stato.servizioGiu': 'the service is not answering: try the manual swap below',
   },
 
   fr: {
@@ -473,10 +493,10 @@ const TESTI = {
     'menu.invito': "Échanger le code d'invitation",
     'invito.titolo': 'À deux, sans aucun serveur',
     'invito.spiega.ospite':
-      "Le monde tourne sur ce téléphone et l'autre s'y connecte directement. Crée l'invitation, envoie-la comme tu veux — message, WhatsApp, ce que vous utilisez — et colle ci-dessous la réponse qu'on te renvoie.",
+      "Le monde tourne sur ce téléphone et l'autre s'y connecte directement. Prends un code à six chiffres et dis-le-lui : aucune donnée de jeu n'arrive au service, seulement ce numéro.",
     'invito.spiega.invitato':
-      "Le monde tourne sur le téléphone de celui qui t'a invité. Colle ici l'invitation reçue, et renvoie-lui le code de réponse qui apparaît.",
-    'invito.crea': "Créer l'invitation",
+      "Le monde tourne sur le téléphone de celui qui t'a invité. Demande-lui son code à six chiffres et écris-le ici.",
+    'invito.crea': 'Obtenir un code',
     'invito.collega': 'Connecter',
     'invito.rispondi': 'Répondre',
     'invito.copia': 'Copier',
@@ -498,6 +518,17 @@ const TESTI = {
     'guida.invito.titolo': 'À deux sans serveur',
     'guida.invito.testo':
       "L'un des deux héberge : le monde tourne sur son téléphone et l'autre s'y connecte directement, sans rien au milieu. Vous échangez deux codes — un chacun — par n'importe quelle messagerie, et ensuite les deux téléphones se parlent tout seuls. Celui qui héberge fait office de serveur : autant que ce soit celui qui a la meilleure connexion.",
+
+    'invito.codice.tuo': "Dis-le à l'autre, et attends :",
+    'invito.codice.chiedi': "Écris le code qu'on t'a donné :",
+    'invito.aMano': 'Ça ne marche pas ? Échange à la main, sans le service',
+    'invito.servizio': 'Adresse du service',
+    'invito.stato.creo': 'je demande un code…',
+    'invito.stato.cerco': 'je cherche ce code…',
+    'invito.stato.dilloEAspetta': "dis-le-lui — j'attends la connexion",
+    'invito.stato.codiceCorto': 'le code fait six chiffres',
+    'invito.stato.servizioGiu':
+      "le service ne répond pas : essayez l'échange à la main ci-dessous",
   },
 
   es: {
@@ -632,10 +663,10 @@ const TESTI = {
     'menu.invito': 'Intercambiar el código de invitación',
     'invito.titolo': 'Entre dos, sin ningún servidor',
     'invito.spiega.ospite':
-      'El mundo corre en este teléfono y el otro se conecta directamente aquí. Crea la invitación, mándasela como quieras — un mensaje, WhatsApp, lo que uséis — y pega abajo la respuesta que te devuelva.',
+      'El mundo corre en este teléfono y el otro se conecta directamente aquí. Pide un código de seis cifras y díselo: al servicio no llega ningún dato de juego, solo ese número.',
     'invito.spiega.invitato':
-      'El mundo corre en el teléfono de quien te ha invitado. Pega aquí la invitación que te ha mandado y devuélvele el código de respuesta que aparece.',
-    'invito.crea': 'Crear la invitación',
+      'El mundo corre en el teléfono de quien te ha invitado. Pídele su código de seis cifras y escríbelo aquí.',
+    'invito.crea': 'Pedir un código',
     'invito.collega': 'Conectar',
     'invito.rispondi': 'Responder',
     'invito.copia': 'Copiar',
@@ -657,6 +688,17 @@ const TESTI = {
     'guida.invito.titolo': 'Entre dos sin servidor',
     'guida.invito.testo':
       'Uno de los dos aloja: el mundo corre en su teléfono y el otro se conecta directamente allí, sin nada en medio. Os intercambiáis dos códigos — uno cada uno — por cualquier mensajería, y a partir de ahí los dos teléfonos hablan solos. Quien aloja hace de servidor, así que mejor que sea el que tenga mejor conexión.',
+
+    'invito.codice.tuo': 'Díselo al otro y espera:',
+    'invito.codice.chiedi': 'Escribe el código que te han dicho:',
+    'invito.aMano': 'No funciona? Intercambio a mano, sin el servicio',
+    'invito.servizio': 'Dirección del servicio',
+    'invito.stato.creo': 'pidiendo un código…',
+    'invito.stato.cerco': 'buscando ese código…',
+    'invito.stato.dilloEAspetta': 'díselo — espero la conexión',
+    'invito.stato.codiceCorto': 'el código es de seis cifras',
+    'invito.stato.servizioGiu':
+      'el servicio no responde: probad el intercambio a mano de abajo',
   },
 
   ru: {
@@ -790,10 +832,10 @@ const TESTI = {
     'menu.invito': 'Обменяться кодом приглашения',
     'invito.titolo': 'Вдвоём, вообще без сервера',
     'invito.spiega.ospite':
-      'Мир идёт в этом телефоне, а другой подключается прямо сюда. Создай приглашение, отправь его как удобно — сообщением, в WhatsApp, чем пользуетесь — и вставь ниже ответ, который тебе пришлют.',
+      'Мир идёт в этом телефоне, а другой подключается прямо сюда. Получи код из шести цифр и продиктуй его: игровые данные до сервиса не доходят, только этот номер.',
     'invito.spiega.invitato':
-      'Мир идёт в телефоне того, кто тебя пригласил. Вставь сюда присланное приглашение и отправь обратно код ответа, который появится.',
-    'invito.crea': 'Создать приглашение',
+      'Мир идёт в телефоне того, кто тебя пригласил. Спроси у него код из шести цифр и введи его здесь.',
+    'invito.crea': 'Получить код',
     'invito.collega': 'Подключить',
     'invito.rispondi': 'Ответить',
     'invito.copia': 'Копировать',
@@ -815,6 +857,16 @@ const TESTI = {
     'guida.invito.titolo': 'Вдвоём без сервера',
     'guida.invito.testo':
       'Один из двоих принимает: мир идёт в его телефоне, а второй подключается прямо туда, без всего посередине. Вы обмениваетесь двумя кодами — по одному с каждой стороны — любым мессенджером, а дальше телефоны говорят сами. Кто принимает, тот и сервер, поэтому пусть им будет тот, у кого связь лучше.',
+
+    'invito.codice.tuo': 'Продиктуй его другому и жди:',
+    'invito.codice.chiedi': 'Введи код, который тебе назвали:',
+    'invito.aMano': 'Не работает? Обмен вручную, без сервиса',
+    'invito.servizio': 'Адрес сервиса',
+    'invito.stato.creo': 'запрашиваю код…',
+    'invito.stato.cerco': 'ищу этот код…',
+    'invito.stato.dilloEAspetta': 'продиктуй его — жду подключения',
+    'invito.stato.codiceCorto': 'в коде шесть цифр',
+    'invito.stato.servizioGiu': 'сервис не отвечает: попробуйте обмен вручную ниже',
   },
 
   nl: {
@@ -951,10 +1003,10 @@ const TESTI = {
     'menu.invito': 'Uitnodigingscode uitwisselen',
     'invito.titolo': "Met z'n tweeën, zonder server",
     'invito.spiega.ospite':
-      'De wereld draait op deze telefoon en de ander verbindt er rechtstreeks mee. Maak de uitnodiging, stuur hem zoals je wilt — bericht, WhatsApp, wat jullie gebruiken — en plak hieronder het antwoord dat je terugkrijgt.',
+      'De wereld draait op deze telefoon en de ander verbindt er rechtstreeks mee. Vraag een code van zes cijfers en zeg hem voor: er bereiken geen spelgegevens de dienst, alleen dat nummer.',
     'invito.spiega.invitato':
-      'De wereld draait op de telefoon van degene die je uitnodigde. Plak hier de uitnodiging die je kreeg en stuur de antwoordcode terug die verschijnt.',
-    'invito.crea': 'Uitnodiging maken',
+      'De wereld draait op de telefoon van degene die je uitnodigde. Vraag om zijn code van zes cijfers en typ hem hier.',
+    'invito.crea': 'Vraag een code',
     'invito.collega': 'Verbinden',
     'invito.rispondi': 'Antwoorden',
     'invito.copia': 'Kopiëren',
@@ -976,6 +1028,17 @@ const TESTI = {
     'guida.invito.titolo': 'Met z’n tweeën zonder server',
     'guida.invito.testo':
       'Een van de twee host: de wereld draait op zijn telefoon en de ander verbindt er rechtstreeks mee, zonder iets ertussen. Jullie wisselen twee codes uit — één elk — via welke berichtenapp dan ook, en daarna praten de twee telefoons vanzelf. Wie host is de server, dus laat dat degene met de beste verbinding zijn.',
+
+    'invito.codice.tuo': 'Zeg hem voor aan de ander en wacht:',
+    'invito.codice.chiedi': 'Typ de code die ze je gaven:',
+    'invito.aMano': 'Werkt het niet? Handmatig uitwisselen, zonder de dienst',
+    'invito.servizio': 'Adres van de dienst',
+    'invito.stato.creo': 'code opvragen…',
+    'invito.stato.cerco': 'die code zoeken…',
+    'invito.stato.dilloEAspetta': 'zeg hem voor — wacht op verbinding',
+    'invito.stato.codiceCorto': 'de code heeft zes cijfers',
+    'invito.stato.servizioGiu':
+      'de dienst antwoordt niet: probeer de handmatige uitwisseling hieronder',
   },
 };
 
