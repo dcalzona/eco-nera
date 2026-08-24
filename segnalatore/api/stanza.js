@@ -18,6 +18,8 @@
 // ne accorgerebbe nessuno.
 
 /** Quanto vive una stanza. Tre minuti: il tempo di dire un codice a voce. */
+import { magazzinoNativo } from './redis-nativo.js';
+
 const DURATA = 180;
 
 /** Sei cifre e non quattro: si leggono al telefono lo stesso, e nessuno le indovina. */
@@ -40,9 +42,10 @@ export default async function handler(req, res) {
     return res.status(500).json({
       errore: 'archivio non collegato',
       spiegazione:
-        'Serve un archivio Redis con la sua API REST, collegato a questo ' +
-        'progetto. Cerco una variabile che finisca per REST_API_URL o ' +
-        'REST_URL, con accanto la sua TOKEN. Nessun prefisso e escluso.',
+        'Serve un archivio Redis collegato a questo progetto. Vanno bene tutti ' +
+        'e due i modi: una coppia REST (una variabile che finisce per ' +
+        'REST_API_URL o REST_URL con accanto la sua TOKEN) oppure un semplice ' +
+        'indirizzo che comincia per redis:// o rediss://. Nessun prefisso e escluso.',
       variabiliCheVedo: nomiInteressanti(),
     });
   }
@@ -144,6 +147,11 @@ function corpo(req) {
 function scegliMagazzino() {
   const trovato = cercaCredenziali();
   if (!trovato) return null;
+  // L'archivio puo' offrire la REST oppure solo il protocollo nativo: a
+  // seconda del fornitore c'e' l'una o l'altro, e a chi collega l'archivio
+  // dalla finestra di Vercel non viene chiesto di scegliere. Si prende quello
+  // che c'e'.
+  if (trovato.tipo === 'nativo') return magazzinoNativo(trovato.url);
   const { url, chiave } = trovato;
 
   const comanda = async (comando) => {
@@ -167,7 +175,7 @@ function scegliMagazzino() {
   };
 }
 
-/** L'indirizzo REST e la sua chiave, comunque si chiamino le variabili. */
+/** Come si arriva all'archivio, comunque si chiamino le variabili. */
 function cercaCredenziali() {
   const ambiente = process.env;
 
@@ -178,7 +186,9 @@ function cercaCredenziali() {
     ['REDIS_REST_API_URL', 'REDIS_REST_API_TOKEN'],
   ];
   for (const [u, t] of note) {
-    if (ambiente[u] && ambiente[t]) return { url: ambiente[u], chiave: ambiente[t] };
+    if (ambiente[u] && ambiente[t]) {
+      return { tipo: 'rest', url: ambiente[u], chiave: ambiente[t] };
+    }
   }
 
   // Poi qualunque prefisso: `PIPPO_REST_API_URL` + `PIPPO_REST_API_TOKEN`.
@@ -200,7 +210,16 @@ function cercaCredenziali() {
       `${radice}_TOKEN`,
     ];
     for (const t of possibili) {
-      if (ambiente[t]) return { url: valore, chiave: ambiente[t] };
+      if (ambiente[t]) return { tipo: 'rest', url: valore, chiave: ambiente[t] };
+    }
+  }
+
+  // Nessuna REST: va benissimo un indirizzo nativo, comunque si chiami la
+  // variabile che lo contiene. Si guarda il valore, non il nome.
+  for (const nome of Object.keys(ambiente)) {
+    const valore = ambiente[nome];
+    if (typeof valore === 'string' && /^rediss?:\/\//.test(valore)) {
+      return { tipo: 'nativo', url: valore };
     }
   }
 

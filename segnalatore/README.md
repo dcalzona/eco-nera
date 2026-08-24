@@ -31,6 +31,11 @@ Serve un archivio Redis perché le due richieste — quella di chi ospita e quel
 di chi è invitato — finiscono su due esecuzioni diverse della funzione, che non
 si ricordano niente l'una dell'altra.
 
+**Va bene qualunque Redis**, di qualunque fornitore. Il servizio sa parlare in
+tutti e due i modi: l'API REST su HTTPS (Upstash, il «KV» di Vercel) oppure il
+protocollo nativo su TCP, cioè un semplice indirizzo `redis://` o `rediss://`.
+Sceglie da sé in base a quello che trova.
+
 1. Su **vercel.com**, *Add New → Project*, e collega il repository
    `dcalzona/eco-nera`.
 2. In **Root Directory** scegli `segnalatore`. È il passo che si dimentica:
@@ -51,9 +56,19 @@ cerca **e quali variabili vede** (solo i nomi, mai i valori). Da lì si capisce
 in dieci secondi se manca l'archivio o se è solo questione di rinfrescare il
 deploy.
 
-Attenzione a una cosa: serve l'archivio con **API REST**. Un semplice
-`REDIS_URL` che comincia per `redis://` non basta — quello è il protocollo
-nativo, e una funzione serverless non lo può usare.
+### I due modi di arrivarci
+
+| l'archivio offre | il servizio usa |
+| --- | --- |
+| `..._REST_API_URL` + `..._TOKEN` | l'API REST su HTTPS |
+| `REDIS_URL` = `redis://...` | il protocollo nativo su TCP |
+
+Il protocollo nativo è implementato a mano in `api/redis-nativo.js`: settanta
+righe, tre comandi, nessuna dipendenza. Il pezzo delicato non è scrivere, è
+leggere — TCP consegna byte, non messaggi, e una risposta può arrivare spezzata
+in due pacchetti o due risposte attaccate in una. Per questo `finto-redis.js`
+sa rispondere **un byte alla volta**: è il modo più cattivo possibile, ed è
+l'unico modo onesto di scoprire se il lettore è scritto bene.
 
 ## Quanto costa
 
