@@ -128,8 +128,6 @@ const TESTI = {
       'Ordigno — portalo sul punto segnato e difendilo finche non scoppia.',
     'guida.modalita.dominio': 'Dominio — entra nella zona segnata e restaci mentre arrivano.',
 
-    'menu.offline':
-      'Senza server — il gioco gira tutto nel telefono, da solo, anche fuori casa',
     'menu.controller': 'Controller collegato: {nome}',
     'server.senza': 'Gioca senza server',
     'guida.controller.titolo': 'Il controller',
@@ -145,6 +143,40 @@ const TESTI = {
     'menu.serverCerco': 'Server: sto cercando…',
     'menu.serverNiente':
       'Server: non risponde — tocca per cambiare indirizzo, o spunta «senza server» qui sotto',
+
+    'menu.dove': 'Dove si gioca',
+    'menu.dove.casa': 'Sul PC di casa',
+    'menu.dove.telefono': 'Da solo, in questo telefono',
+    'menu.dove.ospite': 'Ospito io — invito qualcuno',
+    'menu.dove.invitato': 'Mi collego a un invito',
+    'menu.invito': 'Scambia il codice dell invito',
+    'invito.titolo': 'In due, senza nessun server',
+    'invito.spiega.ospite':
+      "Il mondo gira in questo telefono e l'altro si collega direttamente qui. Crea l'invito, mandaglielo come ti pare — messaggio, WhatsApp, quello che usate — e incolla qui sotto la risposta che ti rimanda.",
+    'invito.spiega.invitato':
+      "Il mondo gira nel telefono di chi ti ha invitato. Incolla qui l'invito che ti ha mandato, e rimandagli il codice di risposta che compare.",
+    'invito.crea': "Crea l'invito",
+    'invito.collega': 'Collega',
+    'invito.rispondi': 'Rispondi',
+    'invito.copia': 'Copia',
+    'invito.condividi': 'Condividi',
+    'invito.chiudi': 'Torna al menu',
+    'invito.mandaQuesto': "Manda questo codice all'altro:",
+    'invito.incolla.ospite': 'E incolla qui la risposta che ti rimanda:',
+    'invito.incolla.invitato': "Incolla qui l'invito che hai ricevuto:",
+    'invito.stato.preparo': "preparo l'invito…",
+    'invito.stato.mandalo': 'mandalo, e aspetta la risposta',
+    'invito.stato.rimandalo': 'rimandagli questo codice',
+    'invito.stato.attesa': 'aspetto che si colleghi…',
+    'invito.stato.copiato': 'copiato',
+    'invito.stato.errore': 'codice non valido, o rete che non collabora',
+    'invito.stato.nessuno': 'nessuno collegato',
+    'invito.stato.invitato': 'invito creato — aspetto la risposta',
+    'invito.stato.collegato': 'collegato!',
+    'invito.stato.caduto': 'il filo e caduto',
+    'guida.invito.titolo': 'In due senza server',
+    'guida.invito.testo':
+      "Uno dei due ospita: il mondo gira nel suo telefono e l'altro si collega direttamente li', senza niente in mezzo. Ci si scambia due codici — uno per parte — con un messaggio qualsiasi, e da li' in poi i due telefoni si parlano da soli. Chi ospita fa da server, quindi conviene che sia quello con la connessione migliore.",
   },
 
   en: {
@@ -256,7 +288,6 @@ const TESTI = {
       'Bomb — carry it to the marked spot and defend it until it goes off.',
     'guida.modalita.dominio': 'Hold — get into the marked zone and stay there while they come.',
 
-    'menu.offline': 'No server — the whole game runs on the phone, alone, even away from home',
     'menu.controller': 'Controller connected: {nome}',
     'server.senza': 'Play without a server',
     'guida.controller.titolo': 'The controller',
@@ -272,6 +303,40 @@ const TESTI = {
     'menu.serverCerco': 'Server: looking…',
     'menu.serverNiente':
       'Server: no answer — tap to change the address, or tick “no server” below',
+
+    'menu.dove': 'Where the game runs',
+    'menu.dove.casa': 'On the PC at home',
+    'menu.dove.telefono': 'Alone, on this phone',
+    'menu.dove.ospite': 'I host — I invite someone',
+    'menu.dove.invitato': 'I join an invite',
+    'menu.invito': 'Exchange the invite code',
+    'invito.titolo': 'Two players, no server at all',
+    'invito.spiega.ospite':
+      'The world runs on this phone and the other one connects straight to it. Create the invite, send it however you like — a message, WhatsApp, whatever you use — and paste below the reply they send back.',
+    'invito.spiega.invitato':
+      'The world runs on the phone of whoever invited you. Paste the invite they sent here, and send back the reply code that appears.',
+    'invito.crea': 'Create the invite',
+    'invito.collega': 'Connect',
+    'invito.rispondi': 'Reply',
+    'invito.copia': 'Copy',
+    'invito.condividi': 'Share',
+    'invito.chiudi': 'Back to the menu',
+    'invito.mandaQuesto': 'Send this code to the other player:',
+    'invito.incolla.ospite': 'And paste the reply they send back:',
+    'invito.incolla.invitato': 'Paste the invite you received:',
+    'invito.stato.preparo': 'preparing the invite…',
+    'invito.stato.mandalo': 'send it, then wait for the reply',
+    'invito.stato.rimandalo': 'send this code back to them',
+    'invito.stato.attesa': 'waiting for the connection…',
+    'invito.stato.copiato': 'copied',
+    'invito.stato.errore': 'invalid code, or the network is not cooperating',
+    'invito.stato.nessuno': 'nobody connected',
+    'invito.stato.invitato': 'invite created — waiting for the reply',
+    'invito.stato.collegato': 'connected!',
+    'invito.stato.caduto': 'the link dropped',
+    'guida.invito.titolo': 'Two players, no server',
+    'guida.invito.testo':
+      'One of you hosts: the world runs on their phone and the other connects straight to it, with nothing in between. You swap two codes — one each — over any messaging app, and from then on the two phones talk by themselves. Whoever hosts is the server, so it should be the one with the better connection.',
   },
 
   fr: {
@@ -384,8 +449,6 @@ const TESTI = {
     'guida.modalita.dominio':
       "Contrôle — entre dans la zone marquée et restes-y pendant qu'ils arrivent.",
 
-    'menu.offline':
-      'Sans serveur — tout le jeu tourne sur le téléphone, en solo, même hors de chez toi',
     'menu.controller': 'Manette connectée : {nome}',
     'server.senza': 'Jouer sans serveur',
     'guida.controller.titolo': 'La manette',
@@ -401,6 +464,40 @@ const TESTI = {
     'menu.serverCerco': 'Serveur : recherche…',
     'menu.serverNiente':
       'Serveur : pas de réponse — touche pour changer l’adresse, ou coche « sans serveur » ci-dessous',
+
+    'menu.dove': 'Où tourne le jeu',
+    'menu.dove.casa': 'Sur le PC à la maison',
+    'menu.dove.telefono': 'En solo, sur ce téléphone',
+    'menu.dove.ospite': "J'héberge — j'invite quelqu'un",
+    'menu.dove.invitato': 'Je rejoins une invitation',
+    'menu.invito': "Échanger le code d'invitation",
+    'invito.titolo': 'À deux, sans aucun serveur',
+    'invito.spiega.ospite':
+      "Le monde tourne sur ce téléphone et l'autre s'y connecte directement. Crée l'invitation, envoie-la comme tu veux — message, WhatsApp, ce que vous utilisez — et colle ci-dessous la réponse qu'on te renvoie.",
+    'invito.spiega.invitato':
+      "Le monde tourne sur le téléphone de celui qui t'a invité. Colle ici l'invitation reçue, et renvoie-lui le code de réponse qui apparaît.",
+    'invito.crea': "Créer l'invitation",
+    'invito.collega': 'Connecter',
+    'invito.rispondi': 'Répondre',
+    'invito.copia': 'Copier',
+    'invito.condividi': 'Partager',
+    'invito.chiudi': 'Retour au menu',
+    'invito.mandaQuesto': "Envoie ce code à l'autre :",
+    'invito.incolla.ospite': 'Et colle ici la réponse renvoyée :',
+    'invito.incolla.invitato': "Colle ici l'invitation reçue :",
+    'invito.stato.preparo': "je prépare l'invitation…",
+    'invito.stato.mandalo': 'envoie-la, puis attends la réponse',
+    'invito.stato.rimandalo': 'renvoie-lui ce code',
+    'invito.stato.attesa': 'en attente de la connexion…',
+    'invito.stato.copiato': 'copié',
+    'invito.stato.errore': 'code invalide, ou le réseau ne coopère pas',
+    'invito.stato.nessuno': 'personne de connecté',
+    'invito.stato.invitato': "invitation créée — j'attends la réponse",
+    'invito.stato.collegato': 'connecté !',
+    'invito.stato.caduto': 'le lien est tombé',
+    'guida.invito.titolo': 'À deux sans serveur',
+    'guida.invito.testo':
+      "L'un des deux héberge : le monde tourne sur son téléphone et l'autre s'y connecte directement, sans rien au milieu. Vous échangez deux codes — un chacun — par n'importe quelle messagerie, et ensuite les deux téléphones se parlent tout seuls. Celui qui héberge fait office de serveur : autant que ce soit celui qui a la meilleure connexion.",
   },
 
   es: {
@@ -511,8 +608,6 @@ const TESTI = {
     'guida.modalita.bomba': 'Bomba — llévalo al punto marcado y defiéndelo hasta que estalle.',
     'guida.modalita.dominio': 'Control — entra en la zona marcada y quédate mientras llegan.',
 
-    'menu.offline':
-      'Sin servidor — el juego entero corre en el teléfono, en solitario, también fuera de casa',
     'menu.controller': 'Mando conectado: {nome}',
     'server.senza': 'Jugar sin servidor',
     'guida.controller.titolo': 'El mando',
@@ -528,6 +623,40 @@ const TESTI = {
     'menu.serverCerco': 'Servidor: buscando…',
     'menu.serverNiente':
       'Servidor: no responde — toca para cambiar la dirección, o marca «sin servidor» aquí abajo',
+
+    'menu.dove': 'Dónde corre el juego',
+    'menu.dove.casa': 'En el PC de casa',
+    'menu.dove.telefono': 'En solitario, en este teléfono',
+    'menu.dove.ospite': 'Alojo yo — invito a alguien',
+    'menu.dove.invitato': 'Me uno a una invitación',
+    'menu.invito': 'Intercambiar el código de invitación',
+    'invito.titolo': 'Entre dos, sin ningún servidor',
+    'invito.spiega.ospite':
+      'El mundo corre en este teléfono y el otro se conecta directamente aquí. Crea la invitación, mándasela como quieras — un mensaje, WhatsApp, lo que uséis — y pega abajo la respuesta que te devuelva.',
+    'invito.spiega.invitato':
+      'El mundo corre en el teléfono de quien te ha invitado. Pega aquí la invitación que te ha mandado y devuélvele el código de respuesta que aparece.',
+    'invito.crea': 'Crear la invitación',
+    'invito.collega': 'Conectar',
+    'invito.rispondi': 'Responder',
+    'invito.copia': 'Copiar',
+    'invito.condividi': 'Compartir',
+    'invito.chiudi': 'Volver al menú',
+    'invito.mandaQuesto': 'Manda este código al otro:',
+    'invito.incolla.ospite': 'Y pega aquí la respuesta que te devuelva:',
+    'invito.incolla.invitato': 'Pega aquí la invitación que has recibido:',
+    'invito.stato.preparo': 'preparando la invitación…',
+    'invito.stato.mandalo': 'mándala y espera la respuesta',
+    'invito.stato.rimandalo': 'devuélvele este código',
+    'invito.stato.attesa': 'esperando la conexión…',
+    'invito.stato.copiato': 'copiado',
+    'invito.stato.errore': 'código no válido, o la red no colabora',
+    'invito.stato.nessuno': 'nadie conectado',
+    'invito.stato.invitato': 'invitación creada — espero la respuesta',
+    'invito.stato.collegato': '¡conectado!',
+    'invito.stato.caduto': 'la conexión se ha caído',
+    'guida.invito.titolo': 'Entre dos sin servidor',
+    'guida.invito.testo':
+      'Uno de los dos aloja: el mundo corre en su teléfono y el otro se conecta directamente allí, sin nada en medio. Os intercambiáis dos códigos — uno cada uno — por cualquier mensajería, y a partir de ahí los dos teléfonos hablan solos. Quien aloja hace de servidor, así que mejor que sea el que tenga mejor conexión.',
   },
 
   ru: {
@@ -637,7 +766,6 @@ const TESTI = {
     'guida.modalita.bomba': 'Бомба — донеси её до отмеченной точки и держи, пока не взорвётся.',
     'guida.modalita.dominio': 'Захват — войди в отмеченную зону и держись, пока они идут.',
 
-    'menu.offline': 'Без сервера — вся игра идёт в телефоне, в одиночку, даже вне дома',
     'menu.controller': 'Геймпад подключён: {nome}',
     'server.senza': 'Играть без сервера',
     'guida.controller.titolo': 'Геймпад',
@@ -653,6 +781,40 @@ const TESTI = {
     'menu.serverCerco': 'Сервер: ищу…',
     'menu.serverNiente':
       'Сервер: не отвечает — нажми, чтобы сменить адрес, или поставь галочку «без сервера» ниже',
+
+    'menu.dove': 'Где идёт игра',
+    'menu.dove.casa': 'На домашнем ПК',
+    'menu.dove.telefono': 'В одиночку, в этом телефоне',
+    'menu.dove.ospite': 'Принимаю я — приглашаю кого-то',
+    'menu.dove.invitato': 'Подключаюсь по приглашению',
+    'menu.invito': 'Обменяться кодом приглашения',
+    'invito.titolo': 'Вдвоём, вообще без сервера',
+    'invito.spiega.ospite':
+      'Мир идёт в этом телефоне, а другой подключается прямо сюда. Создай приглашение, отправь его как удобно — сообщением, в WhatsApp, чем пользуетесь — и вставь ниже ответ, который тебе пришлют.',
+    'invito.spiega.invitato':
+      'Мир идёт в телефоне того, кто тебя пригласил. Вставь сюда присланное приглашение и отправь обратно код ответа, который появится.',
+    'invito.crea': 'Создать приглашение',
+    'invito.collega': 'Подключить',
+    'invito.rispondi': 'Ответить',
+    'invito.copia': 'Копировать',
+    'invito.condividi': 'Поделиться',
+    'invito.chiudi': 'Назад в меню',
+    'invito.mandaQuesto': 'Отправь этот код другому:',
+    'invito.incolla.ospite': 'И вставь сюда присланный ответ:',
+    'invito.incolla.invitato': 'Вставь сюда полученное приглашение:',
+    'invito.stato.preparo': 'готовлю приглашение…',
+    'invito.stato.mandalo': 'отправь и жди ответ',
+    'invito.stato.rimandalo': 'отправь ему этот код обратно',
+    'invito.stato.attesa': 'жду подключения…',
+    'invito.stato.copiato': 'скопировано',
+    'invito.stato.errore': 'неверный код, или сеть не даёт соединиться',
+    'invito.stato.nessuno': 'никто не подключён',
+    'invito.stato.invitato': 'приглашение создано — жду ответ',
+    'invito.stato.collegato': 'подключено!',
+    'invito.stato.caduto': 'связь оборвалась',
+    'guida.invito.titolo': 'Вдвоём без сервера',
+    'guida.invito.testo':
+      'Один из двоих принимает: мир идёт в его телефоне, а второй подключается прямо туда, без всего посередине. Вы обмениваетесь двумя кодами — по одному с каждой стороны — любым мессенджером, а дальше телефоны говорят сами. Кто принимает, тот и сервер, поэтому пусть им будет тот, у кого связь лучше.',
   },
 
   nl: {
@@ -765,8 +927,6 @@ const TESTI = {
     'guida.modalita.dominio':
       'Bezetting — ga de gemarkeerde zone in en blijf er terwijl ze komen.',
 
-    'menu.offline':
-      'Zonder server — het hele spel draait op de telefoon, alleen, ook buitenshuis',
     'menu.controller': 'Controller verbonden: {nome}',
     'server.senza': 'Spelen zonder server',
     'guida.controller.titolo': 'De controller',
@@ -782,6 +942,40 @@ const TESTI = {
     'menu.serverCerco': 'Server: zoeken…',
     'menu.serverNiente':
       'Server: geen antwoord — tik om het adres te wijzigen, of vink “zonder server” hieronder aan',
+
+    'menu.dove': 'Waar het spel draait',
+    'menu.dove.casa': 'Op de pc thuis',
+    'menu.dove.telefono': 'Alleen, op deze telefoon',
+    'menu.dove.ospite': 'Ik host — ik nodig iemand uit',
+    'menu.dove.invitato': 'Ik sluit aan bij een uitnodiging',
+    'menu.invito': 'Uitnodigingscode uitwisselen',
+    'invito.titolo': "Met z'n tweeën, zonder server",
+    'invito.spiega.ospite':
+      'De wereld draait op deze telefoon en de ander verbindt er rechtstreeks mee. Maak de uitnodiging, stuur hem zoals je wilt — bericht, WhatsApp, wat jullie gebruiken — en plak hieronder het antwoord dat je terugkrijgt.',
+    'invito.spiega.invitato':
+      'De wereld draait op de telefoon van degene die je uitnodigde. Plak hier de uitnodiging die je kreeg en stuur de antwoordcode terug die verschijnt.',
+    'invito.crea': 'Uitnodiging maken',
+    'invito.collega': 'Verbinden',
+    'invito.rispondi': 'Antwoorden',
+    'invito.copia': 'Kopiëren',
+    'invito.condividi': 'Delen',
+    'invito.chiudi': 'Terug naar het menu',
+    'invito.mandaQuesto': 'Stuur deze code naar de ander:',
+    'invito.incolla.ospite': 'En plak hier het antwoord dat terugkomt:',
+    'invito.incolla.invitato': 'Plak hier de uitnodiging die je kreeg:',
+    'invito.stato.preparo': 'uitnodiging voorbereiden…',
+    'invito.stato.mandalo': 'stuur hem en wacht op antwoord',
+    'invito.stato.rimandalo': 'stuur deze code terug',
+    'invito.stato.attesa': 'wachten op verbinding…',
+    'invito.stato.copiato': 'gekopieerd',
+    'invito.stato.errore': 'ongeldige code, of het netwerk werkt niet mee',
+    'invito.stato.nessuno': 'niemand verbonden',
+    'invito.stato.invitato': 'uitnodiging gemaakt — wacht op antwoord',
+    'invito.stato.collegato': 'verbonden!',
+    'invito.stato.caduto': 'de verbinding viel weg',
+    'guida.invito.titolo': 'Met z’n tweeën zonder server',
+    'guida.invito.testo':
+      'Een van de twee host: de wereld draait op zijn telefoon en de ander verbindt er rechtstreeks mee, zonder iets ertussen. Jullie wisselen twee codes uit — één elk — via welke berichtenapp dan ook, en daarna praten de twee telefoons vanzelf. Wie host is de server, dus laat dat degene met de beste verbinding zijn.',
   },
 };
 

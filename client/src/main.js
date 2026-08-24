@@ -5,6 +5,8 @@ import { SOTTOPASSO, STATO, UMORE, VELOCITA, VELOCITA_CRITICO, NEMICI, VITA_MASS
   from '../condiviso/regole.js';
 import { Rete } from './rete.js';
 import { ReteLocale } from './rete-locale.js';
+import { ReteOspite } from './rete-ospite.js';
+import { ReteRemota } from './rete-remota.js';
 import { Comandi } from './input.js';
 import { Disegno } from './render.js';
 import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
@@ -19,12 +21,21 @@ const disegno = new Disegno(canvas);
 const comandi = new Comandi(canvas);
 const suoni = new Suoni();
 
-// Due modi di giocare, stesso gioco. In casa il mondo gira sul PC e il telefono
-// e' un terminale; fuori casa il mondo gira dentro il telefono. Cambia solo chi
-// tiene la simulazione: tutto il resto — previsione, riconciliazione, buio,
-// missioni — e' lo stesso identico codice.
-let senzaServer = localStorage.getItem('ecoNera.offline') === '1';
-let rete = creaRete(senzaServer);
+/**
+ * Quattro modi di giocare, un gioco solo. Cambia unicamente CHI tiene la
+ * simulazione: il PC di casa, questo telefono, questo telefono che ne serve
+ * anche un altro, oppure il telefono di qualcun altro. Tutto il resto —
+ * previsione, riconciliazione, buio, missioni — e' lo stesso identico codice,
+ * e deve restarlo: quattro varianti del gioco sarebbero quattro giochi da
+ * sistemare ogni volta.
+ */
+const MODI = ['casa', 'telefono', 'ospite', 'invitato'];
+let modo = localStorage.getItem('ecoNera.modo');
+if (!MODI.includes(modo)) {
+  // Chi arriva dalla versione di prima aveva solo una spunta.
+  modo = localStorage.getItem('ecoNera.offline') === '1' ? 'telefono' : 'casa';
+}
+let rete = creaRete(modo);
 
 // I browser non fanno suonare niente prima di un gesto: si accende al primo
 // dito sullo schermo, e da li' in poi resta acceso.
@@ -57,8 +68,16 @@ function chiediIndirizzo(chiave = '') {
  * le stesse: chi le riceve non sa e non deve sapere se il mondo sta sul PC o
  * dentro il telefono.
  */
-function creaRete(offline) {
-  const r = offline ? new ReteLocale() : new Rete();
+function creaRete(quale) {
+  const r =
+    quale === 'telefono'
+      ? new ReteLocale()
+      : quale === 'ospite'
+        ? new ReteOspite()
+        : quale === 'invitato'
+          ? new ReteRemota()
+          : new Rete();
+  r.alCambioOspite = () => aggiornaStatoServer();
   r.chiediIndirizzo = chiediIndirizzo;
   r.chiediClasse = () => {
     pannelloMenu.hidden = false;
@@ -69,11 +88,11 @@ function creaRete(offline) {
 }
 
 /** Si cambia modo dal menu: si spegne quello di prima e si riparte pulito. */
-function usaModo(offline) {
-  senzaServer = offline;
-  localStorage.setItem('ecoNera.offline', offline ? '1' : '0');
+function usaModo(quale) {
+  modo = quale;
+  localStorage.setItem('ecoNera.modo', quale);
   rete.spegni();
-  rete = creaRete(offline);
+  rete = creaRete(quale);
   window.ecoNera.rete = rete;
   // Il mondo e' un altro: si buttano ricordo, previsione e comandi in volo.
   memoria = null;
@@ -83,7 +102,9 @@ function usaModo(offline) {
   versioneMappaVista = -1;
   briefingMostrato = null;
   pannello.hidden = true;
+  pannelloInvito.hidden = true;
   rete.avvia();
+  adeguaMenuAlModo();
 }
 
 modulo.addEventListener('submit', (e) => {
@@ -180,11 +201,31 @@ sceltaLingua.addEventListener('change', () => {
 // Come sta il server. Sta nel menu e non su una schermata a parte: e' li' che
 // si decide se giocare in casa o nel telefono, e la decisione vuole saperlo.
 const rigaServer = document.getElementById('statoServer');
-rigaServer.addEventListener('click', () => chiediIndirizzo());
+rigaServer.addEventListener('click', () => {
+  if (modo === 'casa') chiediIndirizzo();
+  else if (modo !== 'telefono') apriPannelloInvito();
+});
 
 function aggiornaStatoServer() {
-  if (rete.locale) {
+  if (modo === 'telefono') {
     rigaServer.hidden = true;
+    return;
+  }
+  if (modo === 'ospite') {
+    // Chi ospita non cerca nessuno: aspetta che arrivi qualcuno.
+    const come = rete.statoOspite ?? 'nessuno';
+    rigaServer.hidden = false;
+    rigaServer.textContent = t(`invito.stato.${come}`);
+    rigaServer.classList.toggle('guasto', come === 'caduto');
+    return;
+  }
+  if (modo === 'invitato') {
+    const come = rete.collegamento;
+    rigaServer.hidden = false;
+    rigaServer.textContent = t(
+      come === 'aperto' ? 'invito.stato.collegato' : come === 'collego' ? 'invito.stato.attesa' : 'invito.stato.nessuno',
+    );
+    rigaServer.classList.toggle('guasto', come === 'caduto');
     return;
   }
   const come = rete.collegamento;
@@ -198,32 +239,128 @@ function aggiornaStatoServer() {
 const spuntaSolo = document.getElementById('daSolo');
 spuntaSolo.checked = localStorage.getItem('ecoNera.solo') === '1';
 
-// Senza server si gioca per forza da soli: non c'e' nessun posto dove il
-// compagno potrebbe collegarsi.
-const spuntaOffline = document.getElementById('offline');
-spuntaOffline.checked = senzaServer;
-function adeguaSpunte() {
-  if (spuntaOffline.checked) {
-    spuntaSolo.checked = true;
-    spuntaSolo.disabled = true;
-  } else {
-    spuntaSolo.disabled = false;
-  }
+// Dove si gioca. Le altre tre scelte implicano tutte "da soli sul PC": o il
+// PC non c'e' proprio, o il compagno arriva da un'altra strada.
+const sceltaDove = document.getElementById('dove');
+for (const quale of MODI) {
+  const opzione = document.createElement('option');
+  opzione.value = quale;
+  sceltaDove.append(opzione);
 }
-adeguaSpunte();
-spuntaOffline.addEventListener('change', () => {
-  adeguaSpunte();
+sceltaDove.value = modo;
+
+const bottoneInvito = document.getElementById('apriInvito');
+bottoneInvito.addEventListener('click', () => apriPannelloInvito());
+
+function adeguaMenuAlModo() {
+  sceltaDove.value = modo;
+  for (const opzione of sceltaDove.options) opzione.textContent = t(`menu.dove.${opzione.value}`);
+  // La spunta "da solo" ha senso solo con il server di casa: negli altri modi
+  // o si e' da soli per forza, o il compagno arriva da un invito.
+  spuntaSolo.disabled = modo !== 'casa';
+  if (modo !== 'casa') spuntaSolo.checked = modo !== 'ospite' && modo !== 'invitato';
+  bottoneInvito.hidden = modo !== 'ospite' && modo !== 'invitato';
+  bottoneInvito.textContent = t('menu.invito');
+  aggiornaStatoServer();
+}
+adeguaMenuAlModo();
+
+sceltaDove.addEventListener('change', () => {
   suoni.avvia();
-  usaModo(spuntaOffline.checked);
+  usaModo(sceltaDove.value);
 });
 
 // E dal pannello dell'indirizzo si puo' rinunciare al server: e' li' che uno
 // si accorge di non essere a casa.
 document.getElementById('senzaServer').addEventListener('click', () => {
-  spuntaOffline.checked = true;
-  adeguaSpunte();
   pannello.hidden = true;
-  usaModo(true);
+  usaModo('telefono');
+});
+
+// --- Lo scambio dell'invito ---------------------------------------------
+// Due codici, uno per parte. E' la parte piu' scomoda di tutto il gioco, e si
+// vede: ma e' anche l'unica che non chiede nessun server acceso da nessuna
+// parte, e quindi funziona anche in treno.
+const pannelloInvito = document.getElementById('invito');
+const mioCodice = document.getElementById('mioCodice');
+const suoCodice = document.getElementById('suoCodice');
+const invitoStato = document.getElementById('invitoStato');
+const passoCrea = document.getElementById('passoCrea');
+const passoMio = document.getElementById('passoMio');
+const passoSuo = document.getElementById('passoSuo');
+
+function apriPannelloInvito() {
+  traduciPagina(pannelloInvito);
+  document.getElementById('invitoSpiega').textContent = t(`invito.spiega.${modo}`);
+  document.getElementById('invitoIncollaEtichetta').textContent = t(`invito.incolla.${modo}`);
+  document.getElementById('usaCodice').textContent =
+    t(modo === 'ospite' ? 'invito.collega' : 'invito.rispondi');
+  // Chi ospita comincia creando l'invito; chi e' invitato comincia
+  // incollando quello che ha ricevuto.
+  passoCrea.hidden = modo !== 'ospite';
+  passoMio.hidden = true;
+  passoSuo.hidden = modo === 'ospite';
+  mioCodice.value = '';
+  suoCodice.value = '';
+  invitoStato.textContent = '';
+  pannelloMenu.hidden = true;
+  pannelloInvito.hidden = false;
+}
+
+document.getElementById('chiudiInvito').addEventListener('click', () => {
+  pannelloInvito.hidden = true;
+  pannelloMenu.hidden = false;
+  aggiornaStatoServer();
+});
+
+document.getElementById('creaInvito').addEventListener('click', async () => {
+  suoni.avvia();
+  invitoStato.textContent = t('invito.stato.preparo');
+  try {
+    mioCodice.value = await rete.apriInvito();
+    passoCrea.hidden = true;
+    passoMio.hidden = false;
+    passoSuo.hidden = false;
+    invitoStato.textContent = t('invito.stato.mandalo');
+  } catch (e) {
+    invitoStato.textContent = t('invito.stato.errore');
+  }
+});
+
+document.getElementById('usaCodice').addEventListener('click', async () => {
+  suoni.avvia();
+  const codice = suoCodice.value.trim();
+  if (!codice) return;
+  try {
+    if (modo === 'ospite') {
+      await rete.chiudiInvito(codice);
+      invitoStato.textContent = t('invito.stato.attesa');
+    } else {
+      mioCodice.value = await rete.rispondi(codice);
+      passoMio.hidden = false;
+      invitoStato.textContent = t('invito.stato.rimandalo');
+    }
+  } catch (e) {
+    invitoStato.textContent = t('invito.stato.errore');
+  }
+});
+
+document.getElementById('copiaCodice').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(mioCodice.value);
+    invitoStato.textContent = t('invito.stato.copiato');
+  } catch {
+    // Senza permesso per gli appunti si ripiega sulla selezione: si copia a mano.
+    mioCodice.select();
+  }
+});
+
+document.getElementById('condividiCodice').addEventListener('click', async () => {
+  try {
+    await navigator.share({ text: mioCodice.value });
+  } catch {
+    /* annullato, o non si puo' */
+  }
 });
 
 bottoneAvvio.addEventListener('click', () => {

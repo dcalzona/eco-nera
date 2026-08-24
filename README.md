@@ -113,6 +113,64 @@ Lo stick vero non torna mai esattamente a zero, quindi c'e' una zona morta del
 diciotto per cento — e appena fuori si riparte da fermo, non da meta'
 velocita', o il minimo tocco farebbe uno scatto.
 
+## In due senza server: i telefoni si parlano
+
+Uno dei due ospita: il mondo gira nel suo telefono, e l'altro si collega
+**direttamente li'**, senza niente in mezzo. E' il modo in cui fanno i giochi
+cooperativi — Deep Rock Galactic, Valheim, Terraria: nessuno di loro paga
+server dedicati per ogni gruppetto di amici. I server dedicati servono al PvP
+fra sconosciuti, dove uno deve difendersi dall'altro; qui state giocando
+insieme contro il computer.
+
+`ReteOspite` estende `ReteLocale` — il mondo dentro il telefono, scritto per
+giocare fuori casa — e ci aggiunge una porta per un'altra persona. `ReteRemota`
+estende `Rete` e cambia solo la presa: al posto della WebSocket c'e' un canale
+WebRTC. Nessuna delle due riscrive niente: previsione, riconciliazione, cuscino
+elastico e comandi raggruppati sono lo stesso codice di sempre, ed e' il punto —
+quattro varianti del gioco sarebbero quattro giochi da sistemare ogni volta.
+
+### Due canali, e la differenza e' tutto il motivo
+
+| | `controllo` | `gioco` |
+| --- | --- | --- |
+| | affidabile e ordinato | ne' l'uno ne' l'altro |
+| cosa passa | benvenuto, pianta, settore, **comandi** | solo le fotografie |
+
+Le fotografie stanno sul canale che perde. Non e' una rinuncia: per una
+fotografia **arrivare tardi e' peggio che non arrivare**, perche' quella dopo la
+rimpiazza fra cinquanta millisecondi. Su un canale ordinato un pacchetto perso
+blocca tutti quelli dietro finche' non viene rimandato — ed e' esattamente cio'
+che sulla rete mobile si vede come scatto. E' la cosa che con le WebSocket non
+si puo' avere, ed e' la ragione tecnica per cui questa strada e' migliore.
+
+I **comandi** invece restano sul canale sicuro, ed e' una scelta da dire: un
+comando perso lascerebbe un buco nella catena dei sottopassi, e la previsione
+del telefono e la verita' di chi ospita prenderebbero strade diverse senza
+rimedio. Le fotografie si possono perdere, i comandi no.
+
+Chi legge le fotografie butta quelle **fuori ordine**: su un canale non
+ordinato una vecchia rimessa in coda manderebbe l'interpolazione a ritroso.
+
+### Come si trovano
+
+WebRTC sa collegare due telefoni in capo al mondo, ma non sa come farli
+incontrare la prima volta: quel primo scambio se lo deve inventare chi scrive il
+gioco. Qui l'invenzione e' la piu' semplice possibile — la descrizione di ognuno
+diventa un codice di testo (compresso e in lettere: circa 700 caratteri) e ve lo
+passate come vi pare, con un messaggio qualsiasi. Due copia-e-incolla a partita.
+
+E' scomodo, e si vede. Ma non c'e' **niente** da tenere acceso, niente da
+pagare e niente da configurare, quindi funziona anche in treno. Piu' avanti quei
+due scambi diventeranno un codice di quattro cifre, e a quel punto servira' un
+servizietto in mezzo: la forma del collegamento pero' resta questa, e sotto non
+cambiera' piu' niente.
+
+Gli unici estranei sono i server **STUN**, che servono a dire a un telefono qual
+e' il suo indirizzo visto da fuori. Non ci passa nessun dato di gioco. Quando
+tutti e due i telefoni stanno dietro un NAT che non collabora — capita con certi
+operatori mobili — la connessione diretta non si stabilisce e servirebbe un
+relay, che quello si' costerebbe qualcosa. Per adesso non c'e'.
+
 ## Fuori casa: il server dentro il telefono
 
 Spuntando **«senza server»** nel menu, il mondo gira dentro l'app: niente PC,
@@ -630,3 +688,4 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **6. L'app** — APK con Capacitor
 - [x] **7. Le missioni** — tre modalita' con briefing, e il riparo dell'Assalto
 - [x] **8. Fuori casa** — controller, e il server dentro il telefono
+- [x] **9. In due ovunque** — i due telefoni si parlano da soli, senza server

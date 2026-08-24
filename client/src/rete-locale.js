@@ -111,26 +111,32 @@ export class ReteLocale extends Rete {
       this.oraSim += PASSO_MS;
       this.mondo.passo(PASSO_MS / 1000);
 
-      // Settore nuovo: prima la mappa, poi le fotografie. Nell'ordine
-      // contrario si disegnerebbero per un istante i personaggi nuovi sulla
-      // pianta vecchia.
+      // Settore nuovo: prima la mappa, poi la pianta, poi le fotografie.
+      // Nell'ordine contrario si disegnerebbero per un istante i personaggi
+      // nuovi sulla pianta vecchia.
       if (this.mondo.mappaCambiata) {
         this.mondo.mappaCambiata = false;
-        this.mappa = this.mondo.mappa;
-        this.settore = this.mondo.settore;
-        this.fotografie.length = 0;
-        this.versioneMappa++;
+        this.pubblica({ t: 'settore', numero: this.mondo.settore, mappa: this.mondo.mappa });
       }
-
-      // La pianta prima della fotografia, come fa il server vero: la
-      // fotografia parla per posizioni che solo la pianta conosce.
       if (this.mondo.piantaCambiata) {
         this.mondo.piantaCambiata = false;
-        this.ricevi(this.mondo.pianta());
+        this.pubblica(this.mondo.pianta());
       }
-
-      this.ricevi(this.mondo.istantanea(this.oraSim));
+      this.pubblica(this.mondo.istantanea(this.oraSim));
     }
+  }
+
+  /**
+   * Quello che il mondo ha da dire, detto a chi lo sta guardando.
+   *
+   * Qui c'e' solo se stessi, e per questo e' un metodo di una riga. Ma quando
+   * il telefono ospita anche un altro giocatore (`ReteOspite`) la stessa riga
+   * diventa il punto in cui la fotografia parte anche dall'altra parte — e
+   * parte identica, perche' e' la stessa. Se ci fossero due strade per dire la
+   * stessa cosa, prima o poi direbbero cose diverse.
+   */
+  pubblica(messaggio) {
+    this.ricevi(messaggio);
   }
 
   /**

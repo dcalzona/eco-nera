@@ -80,6 +80,30 @@
         #briefingTitolo { font-size: 19px; }
       }
 
+      /* Lo scambio dei codici per giocare in due senza server. */
+      #invito {
+        position: absolute; inset: 0;
+        background: #05070c; overflow-y: auto;
+        padding: calc(10px + env(safe-area-inset-top, 0px))
+                 calc(14px + env(safe-area-inset-right, 0px))
+                 calc(10px + env(safe-area-inset-bottom, 0px))
+                 calc(14px + env(safe-area-inset-left, 0px));
+      }
+      #invito[hidden] { display: none; }
+      #invitoDentro { max-width: 640px; margin: 0 auto; }
+      #invitoDentro h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.04em; }
+      #invitoDentro p { font-size: 12px; color: #98a3bd; line-height: 1.5; margin: 4px 0 8px; }
+      #invitoDentro textarea {
+        width: 100%; height: 62px; resize: none;
+        font: 11px ui-monospace, Consolas, monospace;
+        background: #0c1017; color: #dfe6f5;
+        border: 1px solid #2a3550; border-radius: 8px; padding: 8px;
+        word-break: break-all;
+      }
+      #invitoStato { font-size: 12px; min-height: 18px; margin-top: 8px; color: #ffc65c; }
+      .passo { margin-top: 12px; }
+      .passo[hidden] { display: none; }
+
       #menu, #guida, #collegamento, #fine, #pausa {
         position: absolute;
         inset: 0;
@@ -243,9 +267,10 @@
           <span data-t="menu.daSolo"></span>
         </label>
         <label class="compagnia">
-          <input id="offline" type="checkbox" />
-          <span data-t="menu.offline"></span>
+          <span data-t="menu.dove"></span>
+          <select id="dove"></select>
         </label>
+        <button id="apriInvito" type="button" class="rigaServer" hidden></button>
         <p id="controller" class="avvisoPausa" hidden></p>
         <button id="statoServer" type="button" class="rigaServer" hidden></button>
         <div class="pulsantiera">
@@ -269,6 +294,43 @@
           </div>
         </div>
         <canvas id="briefingDisegno"></canvas>
+      </div>
+    </div>
+
+    <!-- Giocare in due senza nessun server: ci si scambia due codici e i due
+         telefoni si parlano direttamente. -->
+    <div id="invito" hidden>
+      <div id="invitoDentro">
+        <h1 data-t="invito.titolo"></h1>
+        <p id="invitoSpiega"></p>
+
+        <div class="passo" id="passoCrea">
+          <div class="pulsantiera">
+            <button id="creaInvito" type="button" data-t="invito.crea"></button>
+          </div>
+        </div>
+
+        <div class="passo" id="passoMio" hidden>
+          <p data-t="invito.mandaQuesto"></p>
+          <textarea id="mioCodice" readonly></textarea>
+          <div class="pulsantiera">
+            <button id="copiaCodice" type="button" data-t="invito.copia"></button>
+            <button id="condividiCodice" type="button" class="secondario" data-t="invito.condividi"></button>
+          </div>
+        </div>
+
+        <div class="passo" id="passoSuo" hidden>
+          <p id="invitoIncollaEtichetta"></p>
+          <textarea id="suoCodice" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+          <div class="pulsantiera">
+            <button id="usaCodice" type="button"></button>
+          </div>
+        </div>
+
+        <p id="invitoStato"></p>
+        <div class="pulsantiera">
+          <button id="chiudiInvito" type="button" class="secondario" data-t="invito.chiudi"></button>
+        </div>
       </div>
     </div>
 
@@ -321,6 +383,9 @@
 
         <h2 data-t="guida.controller.titolo"></h2>
         <p data-t="guida.controller.testo"></p>
+
+        <h2 data-t="guida.invito.titolo"></h2>
+        <p data-t="guida.invito.testo"></p>
 
         <h2 data-t="guida.offline.titolo"></h2>
         <p data-t="guida.offline.testo"></p>

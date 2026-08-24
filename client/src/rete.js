@@ -86,6 +86,7 @@ export class Rete {
     this.pianta = null;
     this.versioneMappa = 0; // cambia a ogni settore nuovo
     this.ultimaFotografiaOra = 0;
+    this.ultimoTickVisto = -1;
     this.classe = null;
 
     // Il cuscino di interpolazione, che si allunga se la rete lo chiede.
@@ -98,6 +99,26 @@ export class Rete {
   }
 
   /**
+   * Il filo verso chi ospita il mondo. Sono tre righe sole, ma sono la
+   * giuntura di tutto: `Rete` parla con un server sul PC, `ReteRemota` con un
+   * telefono dall'altra parte dell'Italia, e nessuno degli altri metodi deve
+   * sapere quale delle due cose sta succedendo.
+   */
+  pronta() {
+    return !!this.ws && this.ws.readyState === WebSocket.OPEN;
+  }
+
+  inApertura() {
+    return !!this.ws && this.ws.readyState === WebSocket.CONNECTING;
+  }
+
+  spedisci(oggetto) {
+    if (!this.pronta()) return false;
+    this.ws.send(JSON.stringify(oggetto));
+    return true;
+  }
+
+  /**
    * Entra in partita con la classe scelta. Torna falso se non c'e' proprio
    * nessuno con cui giocare: chi ha premuto deve poterlo sapere e restare nel
    * menu, invece di finire su una scritta che non cambia mai.
@@ -107,8 +128,8 @@ export class Rete {
     this.solo = solo;
     localStorage.setItem('ecoNera.classe', classe);
 
-    const pronta = this.ws && this.ws.readyState === WebSocket.OPEN;
-    const inCorso = this.ws && this.ws.readyState === WebSocket.CONNECTING;
+    const pronta = this.pronta();
+    const inCorso = this.inApertura();
     // Si accetta di aspettare solo il PRIMO tentativo — quello che in casa dura
     // meno di un secondo. Se un tentativo e' gia' andato a vuoto si sa gia'
     // come va a finire, e far aspettare di nuovo vorrebbe dire tenere fermo chi
@@ -120,9 +141,7 @@ export class Rete {
 
     this.stato = 'collego';
     // Se la presa si sta ancora aprendo ci pensa `onopen`: la classe e' segnata.
-    if (pronta) {
-      this.ws.send(JSON.stringify({ t: 'entra', sessione: sessione(), classe, solo }));
-    }
+    if (pronta) this.spedisci({ t: 'entra', sessione: sessione(), classe, solo });
     return true;
   }
 
@@ -133,9 +152,7 @@ export class Rete {
    */
   lascia() {
     this.svuotaComandi();
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ t: 'esci' }));
-    }
+    this.spedisci({ t: 'esci' });
     this.stato = 'menu';
     this.classe = null;
     this.io = null;
@@ -206,11 +223,7 @@ export class Rete {
         this.stato = 'menu';
         this.chiediClasse?.();
       }
-      this.battito = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ t: 'ping', c: performance.now() }));
-        }
-      }, 1000);
+      this.battito = setInterval(() => this.spedisci({ t: 'ping', c: performance.now() }), 1000);
     };
 
     ws.onmessage = (ev) => this.ricevi(JSON.parse(ev.data));
@@ -260,6 +273,7 @@ export class Rete {
       this.mappa = msg.mappa;
       this.settore = msg.numero;
       this.fotografie.length = 0;
+      this.ultimoTickVisto = -1; // il mondo riparte da capo
       this.versioneMappa++;
       return;
     }
@@ -275,6 +289,14 @@ export class Rete {
     }
 
     if (msg.t === 'stato') {
+      // Fuori ordine si butta. Sul filo del PC non capita mai — e' una presa
+      // ordinata — ma fra due telefoni le fotografie viaggiano su un canale
+      // che non garantisce l'ordine, perche' per una fotografia arrivare
+      // tardi e' peggio che non arrivare. Una vecchia rimessa in coda
+      // manderebbe l'interpolazione a ritroso.
+      if (msg.tick <= this.ultimoTickVisto) return;
+      this.ultimoTickVisto = msg.tick;
+
       const arrivo = performance.now();
       const scarto = msg.ms - arrivo;
       // Il pacchetto arrivato con meno ritardo e' quello che dice la verita'
@@ -347,7 +369,7 @@ export class Rete {
    * trasmettere sessanta volte al secondo.
    */
   mandaPasso(seq, io) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (!this.pronta()) return;
     const tondo = (v) => Math.round(v * 1000) / 1000;
     if (!this.daMandare.length) this.primoInAttesa = performance.now();
     this.daMandare.push({
@@ -370,7 +392,7 @@ export class Rete {
   /** Manda via i comandi in attesa, in un pacchetto solo e nell'ordine giusto. */
   svuotaComandi() {
     if (!this.daMandare.length) return;
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+    if (!this.pronta()) {
       this.daMandare.length = 0;
       return;
     }
@@ -382,19 +404,17 @@ export class Rete {
       this.daMandare.length === 1
         ? { t: 'input', ...this.daMandare[0] }
         : { t: 'input', c: this.daMandare };
-    this.ws.send(JSON.stringify(pacchetto));
+    this.spedisci(pacchetto);
     this.daMandare = [];
   }
 
   /** Briefing letto: si puo' cominciare. */
   mandaPronto() {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    this.ws.send(JSON.stringify({ t: 'pronto' }));
+    this.spedisci({ t: 'pronto' });
   }
 
   mandaDiario(dati) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    this.ws.send(JSON.stringify({ t: 'diario', ...dati }));
+    this.spedisci({ t: 'diario', ...dati });
   }
 
   /**
