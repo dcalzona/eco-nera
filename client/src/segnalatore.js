@@ -9,14 +9,25 @@
 // diretti, e se il servizio andasse giu' a meta' partita non se ne
 // accorgerebbe nessuno.
 
-/** Dove sta il servizio. Si puo' cambiare dal telefono, e si ricorda. */
-const PREDEFINITO = 'https://eco-nera-segnalatore.vercel.app';
-
+/**
+ * Dove sta il servizio. Vuoto finche' non lo si dice.
+ *
+ * Prima qui c'era un indirizzo inventato come esempio, e non esisteva: chi
+ * provava a farsi dare un codice si sentiva rispondere "il servizio non
+ * risponde" — che e' vero, ma manda a cercare il guasto dalla parte sbagliata.
+ * Non sapere dov'e' una cosa e trovarla rotta sono due guai diversi e vanno
+ * detti diversi.
+ */
 export function indirizzoSegnalatore() {
   const salvato = typeof localStorage !== 'undefined'
     ? localStorage.getItem('ecoNera.segnalatore')
     : null;
-  return (salvato || PREDEFINITO).replace(/\/+$/, '');
+  return (salvato || '').trim().replace(/\/+$/, '');
+}
+
+/** Vero se qualcuno ci ha detto dove sta il servizio. */
+export function segnalatoreImpostato() {
+  return indirizzoSegnalatore().length > 0;
 }
 
 export function cambiaSegnalatore(indirizzo) {
@@ -27,6 +38,11 @@ export function cambiaSegnalatore(indirizzo) {
 }
 
 async function chiedi(percorso, opzioni) {
+  if (!segnalatoreImpostato()) {
+    const e = new Error('nessun indirizzo del servizio');
+    e.senzaIndirizzo = true;
+    throw e;
+  }
   const r = await fetch(`${indirizzoSegnalatore()}${percorso}`, {
     ...opzioni,
     headers: { 'Content-Type': 'application/json', ...(opzioni?.headers ?? {}) },

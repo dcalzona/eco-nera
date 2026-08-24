@@ -21,6 +21,7 @@ import {
   lasciaRisposta,
   aspettaRisposta,
   indirizzoSegnalatore,
+  segnalatoreImpostato,
   cambiaSegnalatore,
 } from './segnalatore.js';
 
@@ -309,7 +310,13 @@ function apriPannelloInvito() {
   document.getElementById('invitoIncollaEtichetta').textContent = t(`invito.incolla.${modo}`);
   document.getElementById('usaCodice').textContent =
     t(modo === 'ospite' ? 'invito.collega' : 'invito.rispondi');
-  document.getElementById('campoServizio').value = indirizzoSegnalatore();
+  const campoServizio = document.getElementById('campoServizio');
+  campoServizio.value = indirizzoSegnalatore();
+  // Senza indirizzo non c'e' niente da provare: si dice subito e si apre lo
+  // scambio a mano, che funziona comunque.
+  if (!segnalatoreImpostato()) {
+    document.getElementById('aMano').open = true;
+  }
 
   // Chi ospita si fa dare un numero; chi e' invitato lo scrive.
   passoCrea.hidden = modo !== 'ospite';
@@ -370,13 +377,29 @@ document.getElementById('creaInvito').addEventListener('click', async () => {
     await rete.chiudiInvito(risposta);
     invitoStato.textContent = t('invito.stato.attesa');
   } catch (e) {
-    // Il servizio non c'e' o non risponde: si puo' ancora fare a mano, e lo si
-    // dice invece di lasciare chi gioca davanti a un pulsante che non fa nulla.
     passoCrea.hidden = true;
-    invitoStato.textContent = t('invito.stato.servizioGiu');
+    invitoStato.textContent = perche(e);
     document.getElementById('aMano').open = true;
+    if (e.senzaIndirizzo) document.getElementById('campoServizio').focus();
   }
 });
+
+/**
+ * Perche' non ha funzionato, detto in modo che si sappia dove guardare.
+ *
+ * Non sapere dov'e' il servizio e trovarlo rotto sono due guai diversi: il
+ * primo si risolve scrivendo un indirizzo, il secondo guardando Vercel. Dirli
+ * con la stessa frase manda a cercare dalla parte sbagliata — ed e'
+ * esattamente quello che e' successo.
+ */
+function perche(e) {
+  if (e?.senzaIndirizzo) return t('invito.stato.senzaIndirizzo');
+  // Il messaggio del servizio, quando ce n'e' uno, vale piu' di qualunque
+  // frase generica: dice gia' cosa manca.
+  const suo = String(e?.message ?? '');
+  const utile = suo && suo !== 'Failed to fetch' && !suo.startsWith('NetworkError');
+  return utile ? `${t('invito.stato.servizioDice')} ${suo}` : t('invito.stato.servizioGiu');
+}
 
 /** Chi e' invitato: scrive il numero, e il resto succede da solo. */
 document.getElementById('usaNumero').addEventListener('click', async () => {
@@ -393,8 +416,9 @@ document.getElementById('usaNumero').addEventListener('click', async () => {
     await lasciaRisposta(numero, risposta);
     invitoStato.textContent = t('invito.stato.attesa');
   } catch (e) {
-    invitoStato.textContent = t('invito.stato.servizioGiu');
+    invitoStato.textContent = perche(e);
     document.getElementById('aMano').open = true;
+    if (e.senzaIndirizzo) document.getElementById('campoServizio').focus();
   }
 });
 

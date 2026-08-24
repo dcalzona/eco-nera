@@ -365,12 +365,17 @@
               <button id="usaCodice" type="button"></button>
             </div>
           </div>
-          <label id="rigaServizio">
-            <span data-t="invito.servizio"></span>
-            <input id="campoServizio" type="text" inputmode="url" autocomplete="off"
-                   autocapitalize="off" spellcheck="false" />
-          </label>
         </details>
+
+        <!-- L'indirizzo del servizio sta in chiaro e non sotto la piega: senza
+             quello non funziona niente, e nasconderlo vuol dire far cercare a
+             chi gioca la cosa che gli serve per prima. -->
+        <label id="rigaServizio">
+          <span data-t="invito.servizio"></span>
+          <input id="campoServizio" type="text" inputmode="url" autocomplete="off"
+                 autocapitalize="off" spellcheck="false"
+                 placeholder="https://....vercel.app" />
+        </label>
 
         <div class="pulsantiera">
           <button id="chiudiInvito" type="button" class="secondario" data-t="invito.chiudi"></button>

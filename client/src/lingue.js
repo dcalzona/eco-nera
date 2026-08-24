@@ -187,6 +187,10 @@ const TESTI = {
     'invito.stato.dilloEAspetta': 'diglielo — aspetto che si colleghi',
     'invito.stato.codiceCorto': 'il codice e di sei cifre',
     'invito.stato.servizioGiu': 'il servizio non risponde: provate lo scambio a mano qui sotto',
+
+    'invito.stato.senzaIndirizzo':
+      "Manca l'indirizzo del servizio: scrivilo qui sotto. Intanto si puo' fare a mano.",
+    'invito.stato.servizioDice': 'il servizio risponde:',
   },
 
   en: {
@@ -357,6 +361,10 @@ const TESTI = {
     'invito.stato.dilloEAspetta': 'tell them — waiting for the connection',
     'invito.stato.codiceCorto': 'the code has six digits',
     'invito.stato.servizioGiu': 'the service is not answering: try the manual swap below',
+
+    'invito.stato.senzaIndirizzo':
+      'The service address is missing: type it below. Meanwhile you can swap by hand.',
+    'invito.stato.servizioDice': 'the service says:',
   },
 
   fr: {
@@ -529,6 +537,10 @@ const TESTI = {
     'invito.stato.codiceCorto': 'le code fait six chiffres',
     'invito.stato.servizioGiu':
       "le service ne répond pas : essayez l'échange à la main ci-dessous",
+
+    'invito.stato.senzaIndirizzo':
+      "L'adresse du service manque : écris-la ci-dessous. En attendant, on peut échanger à la main.",
+    'invito.stato.servizioDice': 'le service répond :',
   },
 
   es: {
@@ -699,6 +711,10 @@ const TESTI = {
     'invito.stato.codiceCorto': 'el código es de seis cifras',
     'invito.stato.servizioGiu':
       'el servicio no responde: probad el intercambio a mano de abajo',
+
+    'invito.stato.senzaIndirizzo':
+      'Falta la dirección del servicio: escríbela abajo. Mientras tanto se puede hacer a mano.',
+    'invito.stato.servizioDice': 'el servicio responde:',
   },
 
   ru: {
@@ -867,6 +883,10 @@ const TESTI = {
     'invito.stato.dilloEAspetta': 'продиктуй его — жду подключения',
     'invito.stato.codiceCorto': 'в коде шесть цифр',
     'invito.stato.servizioGiu': 'сервис не отвечает: попробуйте обмен вручную ниже',
+
+    'invito.stato.senzaIndirizzo':
+      'Нет адреса сервиса: впиши его ниже. Пока можно обменяться вручную.',
+    'invito.stato.servizioDice': 'сервис отвечает:',
   },
 
   nl: {
@@ -1039,6 +1059,10 @@ const TESTI = {
     'invito.stato.codiceCorto': 'de code heeft zes cijfers',
     'invito.stato.servizioGiu':
       'de dienst antwoordt niet: probeer de handmatige uitwisseling hieronder',
+
+    'invito.stato.senzaIndirizzo':
+      'Het adres van de dienst ontbreekt: typ het hieronder. Ondertussen kan het handmatig.',
+    'invito.stato.servizioDice': 'de dienst zegt:',
   },
 };
 
