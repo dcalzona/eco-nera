@@ -7,7 +7,7 @@
   "scripts": {
     "server": "node server/server.js",
     "sync": "cap sync android",
-    "apk": "cap sync android && cd android && gradlew.bat assembleDebug",
+    "apk": "cap sync android && cd android && set \"JAVA_HOME=C:\\Program Files\\Android\\Android Studio\\jbr\" && .\\gradlew.bat assembleDebug",
     "apri-android": "cap open android",
     "sviluppo": "node --watch server/server.js"
   },
