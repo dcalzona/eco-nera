@@ -44,6 +44,10 @@ Sceglie da sé in base a quello che trova.
 4. Nel progetto appena creato: **Storage → Create Database → Redis** (va bene
    il piano gratuito), e collegalo al progetto.
 5. **Redeploy**, perché le variabili le legge solo alla partenza.
+6. Prendi l'indirizzo **di produzione** (`https://nome.vercel.app`), non
+   quello lungo con la sigla a caso: quello vale per un deploy soltanto, e al
+   push dopo punta a codice vecchio che resta lì acceso e funzionante. Un
+   guasto che funziona è il peggiore da trovare.
 
 Se la finestra di collegamento chiede un **Custom Prefix**, va bene qualunque
 cosa: il codice non indovina i nomi, li cerca. Prende qualunque variabile
@@ -51,10 +55,18 @@ finisca per `_REST_API_URL` o `_REST_URL` con accanto la sua `_TOKEN`, quindi
 `KV_`, `UPSTASH_REDIS_`, `STORAGE_` o quello che avete scritto voi funzionano
 tutti uguale.
 
-Se qualcosa non torna, apri `/api/stanza` nel browser: risponde dicendo cosa
-cerca **e quali variabili vede** (solo i nomi, mai i valori). Da lì si capisce
-in dieci secondi se manca l'archivio o se è solo questione di rinfrescare il
-deploy.
+Se qualcosa non torna, apri `/api/stanza` nel browser. Le risposte si leggono
+così:
+
+| cosa risponde | vuol dire |
+| --- | --- |
+| `{"errore":"stanza scaduta o inesistente"}` | **tutto a posto**: ha parlato con Redis ed è arrivato a cercare |
+| `{"errore":"archivio non collegato"}` | manca l'archivio, e sotto c'è l'elenco delle variabili che vede (solo i nomi, mai i valori) |
+| `{"errore":"archivio: ..."}` | l'archivio c'è ma non risponde |
+| una pagina 404 di Vercel | la **Root Directory** non è `segnalatore` |
+
+Il 404 sulla radice invece è normale: una pagina d'ingresso non c'è, c'è solo
+`/api/stanza`.
 
 ### I due modi di arrivarci
 

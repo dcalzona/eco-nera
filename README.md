@@ -161,6 +161,19 @@ Chi ospita si fa dare un **codice di sei cifre** e lo dice all'altro, che lo
 scrive. Fine. Dietro c'e' `segnalatore/`, una funzione che sta su Vercel e fa
 una cosa sola: tiene da parte due stringhe per tre minuti sotto quel numero.
 
+L'indirizzo del servizio — `https://eco-nera.vercel.app` — e' gia' dentro
+l'app: **sui telefoni non c'e' niente da scrivere**. Il campo nel pannello
+serve solo a chi ne vuole un altro (il proprio, o quello di casa per fare le
+prove); svuotandolo si torna a quello di fabbrica. Se ci si incolla dentro
+l'indirizzo copiato da Vercel col percorso in fondo, il percorso viene tolto:
+`.../api/stanza` che diventa `.../api/stanza/api/stanza` sarebbe un guasto
+invisibile, perche' nel campo si legge una cosa giusta.
+
+Su Vercel va preso l'indirizzo **di produzione** (`eco-nera.vercel.app`), non
+quello lungo con la sigla a caso: quello vale per un deploy soltanto e al push
+dopo punta a codice vecchio, che resta li' acceso e funzionante. Un guasto che
+funziona e' il peggiore da trovare.
+
 Non e' un server di gioco e non sa niente del gioco. Finito lo scambio i due
 telefoni si parlano diretti, e **se lo spegnessero a meta' partita non se ne
 accorgerebbe nessuno**. Al servizio arrivano solo le descrizioni WebRTC —

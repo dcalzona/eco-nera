@@ -10,31 +10,63 @@
 // accorgerebbe nessuno.
 
 /**
- * Dove sta il servizio. Vuoto finche' non lo si dice.
+ * Il servizio nostro, quello che sta su.
  *
  * Prima qui c'era un indirizzo inventato come esempio, e non esisteva: chi
  * provava a farsi dare un codice si sentiva rispondere "il servizio non
  * risponde" — che e' vero, ma manda a cercare il guasto dalla parte sbagliata.
- * Non sapere dov'e' una cosa e trovarla rotta sono due guai diversi e vanno
- * detti diversi.
+ * Non sapere dov'e' una cosa e trovarla rotta sono due guai diversi.
+ *
+ * Poi il campo e' rimasto vuoto, ed era onesto ma scomodo: l'indirizzo andava
+ * scritto a mano su tutti e due i telefoni, sempre uguale, e sbagliarne una
+ * lettera dava lo stesso guasto muto di prima. Adesso ce n'e' uno vero e
+ * provato. Chi ne vuole un altro lo scrive nel campo e quello ha la
+ * precedenza; se lo cancella si torna qui.
  */
+const DI_FABBRICA = 'https://eco-nera.vercel.app';
+
 export function indirizzoSegnalatore() {
   const salvato = typeof localStorage !== 'undefined'
     ? localStorage.getItem('ecoNera.segnalatore')
     : null;
-  return (salvato || '').trim().replace(/\/+$/, '');
+  return pulisci(salvato) || DI_FABBRICA;
 }
 
-/** Vero se qualcuno ci ha detto dove sta il servizio. */
+/** Vero se si sa dove chiamare. Con quello di fabbrica, sempre. */
 export function segnalatoreImpostato() {
   return indirizzoSegnalatore().length > 0;
 }
 
 export function cambiaSegnalatore(indirizzo) {
-  const pulito = String(indirizzo || '').trim().replace(/\/+$/, '');
-  if (!pulito) return false;
+  const pulito = pulisci(indirizzo);
+  // Campo svuotato: si torna a quello di fabbrica, non si resta senza.
+  if (!pulito) {
+    localStorage.removeItem('ecoNera.segnalatore');
+    return false;
+  }
   localStorage.setItem('ecoNera.segnalatore', pulito);
   return true;
+}
+
+/**
+ * L'indirizzo come lo scrive una persona, ridotto a come serve qui.
+ *
+ * Chi copia da Vercel si porta dietro il percorso, e `.../api/stanza` diventa
+ * `.../api/stanza/api/stanza`: un guasto invisibile, perche' quello scritto
+ * nel campo e' giusto. Meglio togliere il di piu' che spiegarlo.
+ */
+function pulisci(testo) {
+  let s = String(testo ?? '').trim();
+  if (!s) return '';
+  s = s.replace(/\/+$/, '').replace(/\/api\/stanza$/i, '').replace(/\/+$/, '');
+  if (!s) return '';
+  if (!/^https?:\/\//i.test(s)) {
+    // In casa si prova sul servizio di rete locale, che parla http; fuori e'
+    // sempre https. Indovinare male qui darebbe un guasto senza spiegazione.
+    const inCasa = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(s);
+    s = (inCasa ? 'http://' : 'https://') + s;
+  }
+  return s;
 }
 
 async function chiedi(percorso, opzioni) {
