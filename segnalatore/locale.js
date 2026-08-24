@@ -16,8 +16,12 @@ const PORTA = Number(process.argv[2]) || 5191;
 
 // Il finto Redis sta sulla stessa porta: l'endpoint ci parla via HTTP come
 // parlerebbe a quello vero.
-process.env.KV_REST_API_URL = `http://127.0.0.1:${PORTA}/finto-redis`;
-process.env.KV_REST_API_TOKEN = 'in-casa';
+// Il nome delle variabili si puo' cambiare da riga di comando: serve a
+// provare che l'endpoint le trovi comunque si chiamino, che e' esattamente il
+// punto in cui ci si e' impantanati collegando l'archivio vero.
+const PREFISSO = process.argv[3] || 'KV';
+process.env[`${PREFISSO}_REST_API_URL`] = `http://127.0.0.1:${PORTA}/finto-redis`;
+process.env[`${PREFISSO}_REST_API_TOKEN`] = 'in-casa';
 
 const { default: stanza } = await import('./api/stanza.js');
 

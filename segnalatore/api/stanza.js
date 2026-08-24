@@ -34,12 +34,16 @@ export default async function handler(req, res) {
 
   const magazzino = scegliMagazzino();
   if (!magazzino) {
+    // Si dice cosa si e' trovato, non solo che manca qualcosa: senza questo
+    // elenco l'unico modo di capire e' indovinare. Solo i NOMI delle
+    // variabili, mai i valori — quelli sono chiavi.
     return res.status(500).json({
-      errore: 'magazzino non configurato',
+      errore: 'archivio non collegato',
       spiegazione:
-        'Serve un archivio Redis collegato al progetto. Cercate le variabili ' +
-        'KV_REST_API_URL e KV_REST_API_TOKEN (oppure UPSTASH_REDIS_REST_URL e ' +
-        'UPSTASH_REDIS_REST_TOKEN): nessuna delle due coppie e presente.',
+        'Serve un archivio Redis con la sua API REST, collegato a questo ' +
+        'progetto. Cerco una variabile che finisca per REST_API_URL o ' +
+        'REST_URL, con accanto la sua TOKEN. Nessun prefisso e escluso.',
+      variabiliCheVedo: nomiInteressanti(),
     });
   }
 
@@ -129,14 +133,18 @@ function corpo(req) {
  * questo servizio non ha nemmeno una dipendenza da installare, come il resto
  * del progetto.
  *
- * I nomi delle variabili sono due coppie perche' a seconda di come si collega
- * l'archivio al progetto Vercel le chiama in un modo o nell'altro: si guardano
- * tutte e due invece di indovinare.
+ * I nomi delle variabili non si indovinano: si CERCANO. A seconda di come si
+ * collega l'archivio, Vercel le chiama `KV_REST_API_URL`,
+ * `UPSTASH_REDIS_REST_URL`, o quello che si e' scritto nel campo "Custom
+ * Prefix" della finestra di collegamento — e chi lo compila non ha nessun
+ * motivo di sapere che da qualche parte c'e' del codice che si aspetta un
+ * nome preciso. Allora si prende qualunque variabile finisca per REST_API_URL
+ * o REST_URL e abbia accanto la sua TOKEN.
  */
 function scegliMagazzino() {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const chiave = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !chiave) return null;
+  const trovato = cercaCredenziali();
+  if (!trovato) return null;
+  const { url, chiave } = trovato;
 
   const comanda = async (comando) => {
     const r = await fetch(url, {
@@ -157,4 +165,54 @@ function scegliMagazzino() {
     scrivi: (chiave_, valore, durata) => comanda(['SET', chiave_, valore, 'EX', String(durata)]),
     leggi: (chiave_) => comanda(['GET', chiave_]),
   };
+}
+
+/** L'indirizzo REST e la sua chiave, comunque si chiamino le variabili. */
+function cercaCredenziali() {
+  const ambiente = process.env;
+
+  // Prima le coppie note, che sono le piu' comuni e non lasciano dubbi.
+  const note = [
+    ['KV_REST_API_URL', 'KV_REST_API_TOKEN'],
+    ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'],
+    ['REDIS_REST_API_URL', 'REDIS_REST_API_TOKEN'],
+  ];
+  for (const [u, t] of note) {
+    if (ambiente[u] && ambiente[t]) return { url: ambiente[u], chiave: ambiente[t] };
+  }
+
+  // Poi qualunque prefisso: `PIPPO_REST_API_URL` + `PIPPO_REST_API_TOKEN`.
+  for (const nome of Object.keys(ambiente)) {
+    const coda = nome.endsWith('_REST_API_URL')
+      ? '_REST_API_URL'
+      : nome.endsWith('_REST_URL')
+        ? '_REST_URL'
+        : null;
+    if (!coda) continue;
+    const valore = ambiente[nome];
+    if (!valore || !/^https?:\/\//.test(valore)) continue;
+
+    const radice = nome.slice(0, -coda.length);
+    const possibili = [
+      `${radice}${coda.replace('_URL', '_TOKEN')}`,
+      `${radice}_REST_API_TOKEN`,
+      `${radice}_REST_TOKEN`,
+      `${radice}_TOKEN`,
+    ];
+    for (const t of possibili) {
+      if (ambiente[t]) return { url: valore, chiave: ambiente[t] };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * I nomi delle variabili che sembrano riguardare un archivio. Serve solo al
+ * messaggio d'errore: si mandano i nomi, mai i valori.
+ */
+function nomiInteressanti() {
+  return Object.keys(process.env)
+    .filter((n) => /(KV|REDIS|UPSTASH|STORAGE|DATABASE)/i.test(n))
+    .sort();
 }

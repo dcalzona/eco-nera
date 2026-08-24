@@ -37,16 +37,23 @@ si ricordano niente l'una dell'altra.
    senza, Vercel guarda nella cartella sbagliata e non trova niente.
 3. Deploy.
 4. Nel progetto appena creato: **Storage → Create Database → Redis** (va bene
-   il piano gratuito). Collegalo al progetto: le variabili
-   `KV_REST_API_URL` e `KV_REST_API_TOKEN` compaiono da sole.
+   il piano gratuito), e collegalo al progetto.
 5. **Redeploy**, perché le variabili le legge solo alla partenza.
 
-Se qualcosa non torna, l'indirizzo `/api/stanza` risponde con un messaggio che
-dice cosa manca invece di un errore muto.
+Se la finestra di collegamento chiede un **Custom Prefix**, va bene qualunque
+cosa: il codice non indovina i nomi, li cerca. Prende qualunque variabile
+finisca per `_REST_API_URL` o `_REST_URL` con accanto la sua `_TOKEN`, quindi
+`KV_`, `UPSTASH_REDIS_`, `STORAGE_` o quello che avete scritto voi funzionano
+tutti uguale.
 
-Il codice legge sia `KV_REST_API_URL`/`KV_REST_API_TOKEN` sia
-`UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`, perché a seconda di come si
-collega l'archivio Vercel le chiama in un modo o nell'altro.
+Se qualcosa non torna, apri `/api/stanza` nel browser: risponde dicendo cosa
+cerca **e quali variabili vede** (solo i nomi, mai i valori). Da lì si capisce
+in dieci secondi se manca l'archivio o se è solo questione di rinfrescare il
+deploy.
+
+Attenzione a una cosa: serve l'archivio con **API REST**. Un semplice
+`REDIS_URL` che comincia per `redis://` non basta — quello è il protocollo
+nativo, e una funzione serverless non lo può usare.
 
 ## Quanto costa
 
