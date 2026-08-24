@@ -16,12 +16,12 @@ import { CLASSI, ABILITA, VERSIONE, BOMBA } from '../condiviso/regole.js';
 import { LINGUE, t, impostaLingua, linguaCorrente, traduciPagina } from './lingue.js';
 import { disegnaBriefing } from './briefing.js';
 import {
-  creaStanza,
-  leggiStanza,
+  entraInStanza,
+  lasciaOfferta,
   lasciaRisposta,
+  aspettaOfferta,
   aspettaRisposta,
   indirizzoSegnalatore,
-  segnalatoreImpostato,
   cambiaSegnalatore,
 } from './segnalatore.js';
 
@@ -31,18 +31,21 @@ const comandi = new Comandi(canvas);
 const suoni = new Suoni();
 
 /**
- * Quattro modi di giocare, un gioco solo. Cambia unicamente CHI tiene la
- * simulazione: il PC di casa, questo telefono, questo telefono che ne serve
- * anche un altro, oppure il telefono di qualcun altro. Tutto il resto —
- * previsione, riconciliazione, buio, missioni — e' lo stesso identico codice,
- * e deve restarlo: quattro varianti del gioco sarebbero quattro giochi da
- * sistemare ogni volta.
+ * Tre modi di giocare, un gioco solo. Cambia unicamente CHI tiene la
+ * simulazione: questo telefono, il PC di casa, o uno dei due telefoni quando
+ * si gioca via internet. Tutto il resto — previsione, riconciliazione, buio,
+ * missioni — e' lo stesso identico codice, e deve restarlo.
+ *
+ * Prima i modi erano quattro, e due chiedevano «ospiti tu o ti colleghi?».
+ * Era una domanda tecnica travestita da scelta di gioco, e per rispondere
+ * bisognava mettersi d'accordo prima. Adesso non la fa piu' nessuno: si entra
+ * tutti e due nella stessa stanza e il servizio dice a ciascuno chi e'.
  */
-const MODI = ['casa', 'telefono', 'ospite', 'invitato'];
+const MODI = ['solo', 'casa', 'rete'];
 let modo = localStorage.getItem('ecoNera.modo');
 if (!MODI.includes(modo)) {
-  // Chi arriva dalla versione di prima aveva solo una spunta.
-  modo = localStorage.getItem('ecoNera.offline') === '1' ? 'telefono' : 'casa';
+  // Chi arriva dalle versioni di prima: i quattro modi di allora diventano tre.
+  modo = { telefono: 'solo', ospite: 'rete', invitato: 'rete' }[modo] ?? 'casa';
 }
 let rete = creaRete(modo);
 
@@ -77,25 +80,23 @@ function chiediIndirizzo(chiave = '') {
  * le stesse: chi le riceve non sa e non deve sapere se il mondo sta sul PC o
  * dentro il telefono.
  */
-function creaRete(quale) {
+function creaRete(quale, ruolo = null) {
   const r =
-    quale === 'telefono'
+    quale === 'solo'
       ? new ReteLocale()
-      : quale === 'ospite'
-        ? new ReteOspite()
-        : quale === 'invitato'
+      : quale === 'rete'
+        ? // Chi ospita fa girare il mondo sul suo telefono, chi e' invitato lo
+          // riceve: due oggetti diversi, e quale serva lo si sa solo dopo aver
+          // parlato con la stanza.
+          ruolo === 'invitato'
           ? new ReteRemota()
-          : new Rete();
-  // Chi ospita: l'altro e' arrivato.
-  r.alCambioOspite = () => {
-    if (r.statoOspite === 'collegato') chiudiPannelloInvito();
-    else aggiornaStatoServer();
-  };
+          : new ReteOspite()
+        : new Rete();
+  r.alCambioOspite = () => aggiornaStatoServer();
   r.chiediIndirizzo = chiediIndirizzo;
-  // Chi e' invitato: il filo si e' teso.
   r.chiediClasse = () => {
-    if (r.collegamento === 'aperto') chiudiPannelloInvito();
     pannelloMenu.hidden = false;
+    aggiornaStatoServer();
     avvisaSeDisallineato();
   };
   r.alSaluto = () => avvisaSeDisallineato();
@@ -106,8 +107,29 @@ function creaRete(quale) {
 function usaModo(quale) {
   modo = quale;
   localStorage.setItem('ecoNera.modo', quale);
+  ruoloStanza = null;
+  pannello.hidden = true;
+  sostituisciRete(creaRete(quale));
+  adeguaMenuAlModo();
+}
+
+/**
+ * Diventare quello che la stanza ha detto.
+ *
+ * E' il prezzo di non far scegliere niente a chi gioca: fino a un attimo fa
+ * non si poteva sapere se serviva il pezzo che ospita o quello che si collega,
+ * e adesso che si sa bisogna cambiarlo sotto. Si paga qui, una volta sola, e
+ * chi gioca non se ne accorge.
+ */
+function usaRuolo(ruolo) {
+  ruoloStanza = ruolo;
+  sostituisciRete(creaRete('rete', ruolo));
+}
+
+/** Un altro collegamento al posto di quello di prima, e tutto quello che ne dipende. */
+function sostituisciRete(nuova) {
   rete.spegni();
-  rete = creaRete(quale);
+  rete = nuova;
   window.ecoNera.rete = rete;
   // Il mondo e' un altro: si buttano ricordo, previsione e comandi in volo.
   memoria = null;
@@ -116,10 +138,7 @@ function usaModo(quale) {
   pendenti = [];
   versioneMappaVista = -1;
   briefingMostrato = null;
-  pannello.hidden = true;
-  pannelloInvito.hidden = true;
   rete.avvia();
-  adeguaMenuAlModo();
 }
 
 modulo.addEventListener('submit', (e) => {
@@ -213,185 +232,159 @@ sceltaLingua.addEventListener('change', () => {
   avvisaSeDisallineato();
 });
 
-// Come sta il server. Sta nel menu e non su una schermata a parte: e' li' che
-// si decide se giocare in casa o nel telefono, e la decisione vuole saperlo.
+// Come sta il collegamento. Sta nel menu e non su una schermata a parte: e'
+// li' che si decide come giocare, e la decisione vuole saperlo.
 const rigaServer = document.getElementById('statoServer');
 rigaServer.addEventListener('click', () => {
   if (modo === 'casa') chiediIndirizzo();
-  else if (modo !== 'telefono') apriPannelloInvito();
 });
 
 function aggiornaStatoServer() {
-  if (modo === 'telefono') {
+  if (modo === 'rete') {
     rigaServer.hidden = true;
+    mostraStanza();
     return;
   }
-  if (modo === 'ospite') {
-    // Chi ospita non cerca nessuno: aspetta che arrivi qualcuno.
-    const come = rete.statoOspite ?? 'nessuno';
-    rigaServer.hidden = false;
-    rigaServer.textContent = t(`invito.stato.${come}`);
-    rigaServer.classList.toggle('guasto', come === 'caduto');
-    return;
-  }
-  if (modo === 'invitato') {
-    const come = rete.collegamento;
-    rigaServer.hidden = false;
-    rigaServer.textContent = t(
-      come === 'aperto' ? 'invito.stato.collegato' : come === 'collego' ? 'invito.stato.attesa' : 'invito.stato.nessuno',
-    );
-    rigaServer.classList.toggle('guasto', come === 'caduto');
+  if (modo === 'solo') {
+    rigaServer.hidden = true;
     return;
   }
   const come = rete.collegamento;
   const chiave =
-    come === 'aperto' ? 'menu.serverPronto' : come === 'collego' ? 'menu.serverCerco' : 'menu.serverNiente';
+    come === 'aperto'
+      ? 'menu.serverPronto'
+      : come === 'collego'
+        ? 'menu.serverCerco'
+        : 'menu.serverNiente';
   rigaServer.hidden = false;
   rigaServer.textContent = t(chiave);
   rigaServer.classList.toggle('guasto', chiave === 'menu.serverNiente');
 }
 
-const spuntaSolo = document.getElementById('daSolo');
-spuntaSolo.checked = localStorage.getItem('ecoNera.solo') === '1';
+// --- I tre modi ------------------------------------------------------------
+const elencoModi = document.getElementById('modi');
 
-// Dove si gioca. Le altre tre scelte implicano tutte "da soli sul PC": o il
-// PC non c'e' proprio, o il compagno arriva da un'altra strada.
-const sceltaDove = document.getElementById('dove');
-for (const quale of MODI) {
-  const opzione = document.createElement('option');
-  opzione.value = quale;
-  sceltaDove.append(opzione);
+function costruisciModi() {
+  elencoModi.textContent = '';
+  for (const quale of MODI) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'modo';
+    b.dataset.modo = quale;
+    b.setAttribute('aria-pressed', String(quale === modo));
+    b.addEventListener('click', () => {
+      suoni.avvia();
+      if (quale !== modo) usaModo(quale);
+    });
+    elencoModi.append(b);
+  }
 }
-sceltaDove.value = modo;
 
-const bottoneInvito = document.getElementById('apriInvito');
-bottoneInvito.addEventListener('click', () => apriPannelloInvito());
+// --- La stanza -------------------------------------------------------------
+// Quattro cifre uguali per tutti e due. Chi arriva primo ospita, e non e' una
+// scelta di nessuno: e' una scrittura che nell'archivio riesce a uno solo.
+const rigaStanza = document.getElementById('rigaStanza');
+const campoStanza = document.getElementById('campoStanza');
+const bottoneStanza = document.getElementById('entraStanza');
+const statoStanza = document.getElementById('statoStanza');
+const rigaServizio = document.getElementById('rigaServizio');
+const campoServizio = document.getElementById('campoServizio');
 
-function adeguaMenuAlModo() {
-  sceltaDove.value = modo;
-  for (const opzione of sceltaDove.options) opzione.textContent = t(`menu.dove.${opzione.value}`);
-  // La spunta "da solo" ha senso solo con il server di casa: negli altri modi
-  // o si e' da soli per forza, o il compagno arriva da un invito.
-  spuntaSolo.disabled = modo !== 'casa';
-  if (modo !== 'casa') spuntaSolo.checked = modo !== 'ospite' && modo !== 'invitato';
-  bottoneInvito.hidden = modo !== 'ospite' && modo !== 'invitato';
-  bottoneInvito.textContent = t('menu.invito');
-  aggiornaStatoServer();
-}
-adeguaMenuAlModo();
-
-sceltaDove.addEventListener('change', () => {
-  suoni.avvia();
-  usaModo(sceltaDove.value);
-});
-
-// E dal pannello dell'indirizzo si puo' rinunciare al server: e' li' che uno
-// si accorge di non essere a casa.
-document.getElementById('senzaServer').addEventListener('click', () => {
-  pannello.hidden = true;
-  usaModo('telefono');
-});
-
-// --- Lo scambio dell'invito ---------------------------------------------
-// Un numero di sei cifre, detto a voce. Prima qui c'erano anche due codici
-// lunghissimi da copiare a mano, come via di riserva quando il servizio non
-// rispondeva: era una porta di servizio messa accanto a quella buona, e non
-// faceva altro che far credere che quella buona non bastasse.
-const pannelloInvito = document.getElementById('invito');
-const invitoStato = document.getElementById('invitoStato');
-const passoCrea = document.getElementById('passoCrea');
-const passoCodice = document.getElementById('passoCodice');
-const passoChiedi = document.getElementById('passoChiedi');
-const campoCodice = document.getElementById('campoCodice');
-const codiceGrande = document.getElementById('codiceGrande');
-/** Chiudendo il pannello si smette di aspettare, invece di continuare a chiedere. */
+let ruoloStanza = null; // 'ospita' | 'invitato' | null
 let annullato = false;
 
-function apriPannelloInvito() {
-  traduciPagina(pannelloInvito);
-  document.getElementById('invitoSpiega').textContent = t(`invito.spiega.${modo}`);
-  document.getElementById('campoServizio').value = indirizzoSegnalatore();
-
-  // Chi ospita si fa dare un numero; chi e' invitato lo scrive.
-  passoCrea.hidden = modo !== 'ospite';
-  passoCodice.hidden = true;
-  passoChiedi.hidden = modo === 'ospite';
-  campoCodice.value = '';
-  codiceGrande.textContent = '';
-  invitoStato.textContent = '';
-  annullato = false;
-  pannelloMenu.hidden = true;
-  pannelloInvito.hidden = false;
-}
-
-/**
- * Il pannello ha finito: si torna al menu.
- *
- * Serve sia a chi rinuncia sia a chi si e' collegato, e per un pezzo l'ha
- * usata solo il primo: il pannello restava aperto a dire "aspetto il
- * collegamento" sopra un menu che sotto diceva gia' "collegato!". I due
- * telefoni si erano trovati, i canali erano aperti, e non si vedeva — che e'
- * il guasto peggiore, perche' non c'e' niente da leggere da nessuna parte.
- */
-function chiudiPannelloInvito() {
-  pannelloInvito.hidden = true;
-  pannelloMenu.hidden = false;
-  aggiornaStatoServer();
-}
-
-document.getElementById('chiudiInvito').addEventListener('click', () => {
-  annullato = true;
-  chiudiPannelloInvito();
-});
-
-document.getElementById('campoServizio').addEventListener('change', (e) => {
+campoStanza.value = localStorage.getItem('ecoNera.stanza') ?? '';
+campoServizio.value = indirizzoSegnalatore();
+campoServizio.addEventListener('change', (e) => {
   cambiaSegnalatore(e.target.value);
+  campoServizio.value = indirizzoSegnalatore();
 });
 
-/**
- * Chi ospita: prepara l'offerta, la lascia al servizio, mostra il numero e
- * aspetta. Il numero e' l'unica cosa che deve arrivare all'altro, e ci arriva
- * a voce — che e' il modo piu' veloce che esista.
- */
-document.getElementById('creaInvito').addEventListener('click', async () => {
+bottoneStanza.addEventListener('click', async () => {
   suoni.avvia();
-  invitoStato.textContent = t('invito.stato.preparo');
-  let offerta;
-  try {
-    offerta = await rete.apriInvito();
-  } catch {
-    invitoStato.textContent = t('invito.stato.errore');
+  const numero = campoStanza.value.replace(/\D/g, '');
+  if (numero.length !== 4) {
+    statoStanza.textContent = t('stanza.quattroCifre');
     return;
   }
-
+  localStorage.setItem('ecoNera.stanza', numero);
+  annullato = false;
+  bottoneStanza.disabled = true;
   try {
-    invitoStato.textContent = t('invito.stato.creo');
-    const numero = await creaStanza(offerta);
-    passoCrea.hidden = true;
-    passoCodice.hidden = false;
-    codiceGrande.textContent = `${numero.slice(0, 3)} ${numero.slice(3)}`;
-    invitoStato.textContent = t('invito.stato.dilloEAspetta');
-
-    const risposta = await aspettaRisposta(numero, { fermati: () => annullato });
-    await rete.chiudiInvito(risposta);
-    invitoStato.textContent = t('invito.stato.attesa');
+    statoStanza.textContent = t('stanza.entro');
+    const ruolo = await entraInStanza(numero);
+    usaRuolo(ruolo);
+    if (ruolo === 'ospita') await faIlPadrone(numero);
+    else await faLOspite(numero);
   } catch (e) {
-    passoCrea.hidden = true;
-    invitoStato.textContent = perche(e);
-    if (e.senzaIndirizzo) document.getElementById('campoServizio').focus();
+    ruoloStanza = null;
+    statoStanza.textContent = perche(e);
+    // L'indirizzo del servizio esce allo scoperto solo adesso: e' l'unico
+    // momento in cui uno ha motivo di guardarlo, e tenerlo sempre in vista
+    // sarebbe una domanda in piu' per chi vuole solo giocare.
+    rigaServizio.hidden = false;
+  } finally {
+    bottoneStanza.disabled = false;
   }
 });
+
+/** Chi e' arrivato primo: apre la porta e aspetta. */
+async function faIlPadrone(numero) {
+  mostraStanza();
+  const offerta = await rete.apriInvito();
+  await lasciaOfferta(numero, offerta);
+  mostraStanza();
+  const risposta = await aspettaRisposta(numero, offerta, { fermati: () => annullato });
+  await rete.chiudiInvito(risposta);
+}
+
+/** Chi e' arrivato secondo: prende l'offerta e risponde. */
+async function faLOspite(numero) {
+  mostraStanza();
+  const offerta = await aspettaOfferta(numero, { fermati: () => annullato });
+  const risposta = await rete.rispondi(offerta);
+  await lasciaRisposta(numero, risposta);
+  mostraStanza();
+}
+
+/**
+ * A che punto sta la stanza — e soprattutto CHI OSPITA.
+ *
+ * Non e' un dettaglio da nascondere: chi ospita fa girare il mondo sul suo
+ * telefono, e quindi la partita dipende da lui. Se se ne va, finisce. Prima lo
+ * si sceglieva e quindi lo si sapeva; adesso lo decide chi ha premuto per
+ * primo, e allora va scritto.
+ */
+function mostraStanza() {
+  if (modo !== 'rete') return;
+  if (!ruoloStanza) {
+    statoStanza.textContent = '';
+    return;
+  }
+  const collegato =
+    ruoloStanza === 'ospita' ? rete.statoOspite === 'collegato' : rete.collegamento === 'aperto';
+  if (collegato) {
+    statoStanza.textContent = t(
+      ruoloStanza === 'ospita' ? 'stanza.collegatoOspiti' : 'stanza.collegatoOspita',
+    );
+    return;
+  }
+  statoStanza.textContent = t(
+    ruoloStanza === 'ospita' ? 'stanza.ospitoAspetto' : 'stanza.cercoChiOspita',
+  );
+}
 
 /**
  * Perche' non ha funzionato, detto in modo che si sappia dove guardare.
  *
  * Non sapere dov'e' il servizio e trovarlo rotto sono due guai diversi: il
  * primo si risolve scrivendo un indirizzo, il secondo guardando Vercel. Dirli
- * con la stessa frase manda a cercare dalla parte sbagliata — ed e'
- * esattamente quello che e' successo.
+ * con la stessa frase manda a cercare dalla parte sbagliata.
  */
 function perche(e) {
   if (e?.senzaIndirizzo) return t('invito.stato.senzaIndirizzo');
+  if (/non si e fatto vivo/.test(String(e?.message))) return t('stanza.nessunoLi');
+  if (/nessuno si e collegato/.test(String(e?.message))) return t('stanza.nessunoArrivato');
   // Il messaggio del servizio, quando ce n'e' uno, vale piu' di qualunque
   // frase generica: dice gia' cosa manca.
   const suo = String(e?.message ?? '');
@@ -399,33 +392,39 @@ function perche(e) {
   return utile ? `${t('invito.stato.servizioDice')} ${suo}` : t('invito.stato.servizioGiu');
 }
 
-/** Chi e' invitato: scrive il numero, e il resto succede da solo. */
-document.getElementById('usaNumero').addEventListener('click', async () => {
-  suoni.avvia();
-  const numero = campoCodice.value.replace(/\D/g, '');
-  if (numero.length < 6) {
-    invitoStato.textContent = t('invito.stato.codiceCorto');
-    return;
+function adeguaMenuAlModo() {
+  for (const b of elencoModi.children) {
+    b.setAttribute('aria-pressed', String(b.dataset.modo === modo));
+    b.textContent = t(`menu.modo.${b.dataset.modo}`);
   }
-  try {
-    invitoStato.textContent = t('invito.stato.cerco');
-    const stanza = await leggiStanza(numero);
-    const risposta = await rete.rispondi(stanza.offerta);
-    await lasciaRisposta(numero, risposta);
-    invitoStato.textContent = t('invito.stato.attesa');
-  } catch (e) {
-    invitoStato.textContent = perche(e);
-    if (e.senzaIndirizzo) document.getElementById('campoServizio').focus();
+  rigaStanza.hidden = modo !== 'rete';
+  if (modo !== 'rete') {
+    statoStanza.textContent = '';
+    rigaServizio.hidden = true;
+    annullato = true; // quello che stava aspettando smetta
   }
+  aggiornaStatoServer();
+}
+
+costruisciModi();
+adeguaMenuAlModo();
+document.getElementById('rigaVersione').textContent = `${t('menu.versione')} ${VERSIONE}`;
+
+// E dal pannello dell'indirizzo si puo' rinunciare al server: e' li' che uno
+// si accorge di non essere a casa.
+document.getElementById('senzaServer').addEventListener('click', () => {
+  pannello.hidden = true;
+  usaModo('solo');
 });
 
 bottoneAvvio.addEventListener('click', () => {
   if (!classeScelta) return;
   suoni.avvia();
-  localStorage.setItem('ecoNera.solo', spuntaSolo.checked ? '1' : '0');
+  // "Da solo" non e' piu' una spunta a parte: e' il modo che si e' scelto.
+  // Erano due domande per una cosa sola, e potevano contraddirsi.
   // Se non c'e' nessun server si resta nel menu e lo si dice, invece di
   // spedire chi gioca su una scritta che non cambia mai.
-  if (!rete.entra(classeScelta, spuntaSolo.checked)) {
+  if (!rete.entra(classeScelta, modo === 'solo')) {
     aggiornaStatoServer();
     return;
   }

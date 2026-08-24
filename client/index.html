@@ -80,47 +80,35 @@
         #briefingTitolo { font-size: 19px; }
       }
 
-      /* Lo scambio dei codici per giocare in due senza server. */
-      #invito {
-        position: absolute; inset: 0;
-        background: #05070c; overflow-y: auto;
-        padding: calc(10px + env(safe-area-inset-top, 0px))
-                 calc(14px + env(safe-area-inset-right, 0px))
-                 calc(10px + env(safe-area-inset-bottom, 0px))
-                 calc(14px + env(safe-area-inset-left, 0px));
-      }
-      #invito[hidden] { display: none; }
-      #invitoDentro { max-width: 640px; margin: 0 auto; }
-      #invitoDentro h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.04em; }
-      #invitoDentro p { font-size: 12px; color: #98a3bd; line-height: 1.5; margin: 4px 0 8px; }
-      #invitoDentro textarea {
-        width: 100%; height: 62px; resize: none;
-        font: 11px ui-monospace, Consolas, monospace;
-        background: #0c1017; color: #dfe6f5;
-        border: 1px solid #2a3550; border-radius: 8px; padding: 8px;
-        word-break: break-all;
-      }
-      #invitoStato { font-size: 12px; min-height: 18px; margin-top: 8px; color: #ffc65c; }
-      /* Il codice: grande, perche' si legge a voce da una stanza all'altra. */
-      #codiceGrande {
-        font: 700 40px ui-monospace, Consolas, monospace;
-        letter-spacing: 0.14em; color: #ffc65c; margin: 6px 0;
-      }
-      #campoCodice {
-        font: 700 30px ui-monospace, Consolas, monospace;
-        letter-spacing: 0.14em; text-align: center;
-        width: 100%; max-width: 260px; padding: 8px;
+      /* La stanza: quattro cifre e un pulsante, su una riga sola. Prima era
+         una schermata a parte con dei passi; era una procedura per una cosa
+         che e' un numero. */
+      #rigaStanza { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+      #rigaStanza[hidden] { display: none; }
+      #campoStanza {
+        font: 700 26px ui-monospace, Consolas, monospace;
+        letter-spacing: 0.3em; text-align: center; text-indent: 0.3em;
+        width: 150px; flex: none; padding: 6px 4px;
         background: #0c1017; color: #dfe6f5;
         border: 1px solid #2a3550; border-radius: 10px;
       }
-      #rigaServizio { margin-top: 14px; font-size: 11px; color: #5c6780; }
+      #entraStanza {
+        font: inherit; font-size: 14px; font-weight: 600;
+        padding: 10px 18px; border: 0; border-radius: 9px;
+        background: #1b2434; color: #dfe6f5; cursor: pointer;
+      }
+      #entraStanza:disabled { color: #6a7590; cursor: default; }
+      #statoStanza { font-size: 12px; min-height: 17px; margin-top: 6px; color: #ffc65c; }
+      /* L'indirizzo del servizio non si vede mai, finche' non serve: compare
+         solo se il servizio non risponde, che e' l'unico momento in cui uno
+         ha motivo di cambiarlo. */
+      #rigaServizio { margin-top: 8px; font-size: 11px; color: #5c6780; display: block; }
+      #rigaServizio[hidden] { display: none; }
       #rigaServizio input {
-        font: 11px ui-monospace, Consolas, monospace; width: 100%;
+        font: 11px ui-monospace, Consolas, monospace; width: 100%; max-width: 340px;
         background: #0c1017; color: #98a3bd;
         border: 1px solid #1c2434; border-radius: 6px; padding: 5px 7px; margin-top: 3px;
       }
-      .passo { margin-top: 12px; }
-      .passo[hidden] { display: none; }
 
       #menu, #guida, #collegamento, #fine, #pausa {
         position: absolute;
@@ -166,11 +154,58 @@
       .rigaServer[hidden] { display: none; }
       .rigaServer.guasto { color: #ffa03c; }
 
-      #menuDentro, #guidaDentro { max-width: 900px; margin: 0 auto; }
-      #menuDentro h1, #guidaDentro h1 {
-        font-size: 20px; font-weight: 600; letter-spacing: 0.05em;
-      }
+      #guidaDentro { max-width: 900px; margin: 0 auto; }
+      #guidaDentro h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.05em; }
       .sottotitolo { color: #78849f; font-size: 12px; margin: 3px 0 10px; }
+
+      /* Le scelte a sinistra, la figura a destra, e in fondo a destra le cose
+         che si guardano di rado: versione, guida, lingua. */
+      #menuDentro {
+        max-width: 1020px; margin: 0 auto;
+        min-height: 100%; display: flex; flex-direction: column;
+      }
+      #menuColonne { display: flex; gap: 22px; align-items: flex-start; }
+      #menuScelte { flex: 1 1 0; min-width: 0; }
+      #menuFigura { flex: 0 1 400px; min-width: 0; }
+      #menuFigura svg {
+        display: block; width: 100%; height: auto;
+        border: 1px solid #1c2434; border-radius: 12px;
+      }
+      .etichettaScelta {
+        font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+        color: #78849f; margin: 0 0 6px;
+      }
+      #classi { margin-bottom: 16px; }
+      #modi { display: flex; gap: 8px; }
+      .modo {
+        flex: 1 1 0; min-width: 0;
+        background: #0c1017; border: 2px solid #232d41; border-radius: 10px;
+        padding: 10px 6px; color: #dfe6f5; font: inherit; font-size: 13px;
+        cursor: pointer; text-align: center;
+      }
+      .modo[aria-pressed='true'] { border-color: #ffc65c; background: #141c2a; color: #ffc65c; }
+      #avvio.grande {
+        display: block; width: 100%; margin-top: 14px;
+        font: inherit; font-size: 16px; font-weight: 700;
+        padding: 12px 20px; border: 0; border-radius: 9px;
+        background: #ffc65c; color: #05070c; cursor: pointer;
+      }
+      #avvio.grande:disabled { background: #2a3550; color: #6a7590; cursor: default; }
+      #menuPiede {
+        margin-top: auto; padding-top: 16px;
+        display: flex; justify-content: flex-end; align-items: center; gap: 12px;
+        font-size: 11px; color: #5c6780;
+      }
+      #menuPiede select {
+        font: inherit; font-size: 12px; padding: 6px 8px;
+        background: #0c1017; color: #98a3bd;
+        border: 1px solid #232d41; border-radius: 8px;
+      }
+      #menuPiede button {
+        font: inherit; font-size: 13px; font-weight: 600;
+        padding: 7px 14px; border: 0; border-radius: 8px;
+        background: #1b2434; color: #dfe6f5; cursor: pointer;
+      }
 
       /* Le tre classi in fila, ognuna con la figura accanto al nome. */
       #classi { display: flex; gap: 8px; align-items: stretch; }
@@ -213,15 +248,22 @@
       /* Schermo davvero basso (telefono in orizzontale): si stringe tutto e
          le descrizioni lunghe spariscono, tanto ci sono nella guida. */
       @media (max-height: 420px) {
-        #menuDentro h1 { font-size: 17px; }
-        .sottotitolo { display: none; }
         .classe .desc { display: none; }
         .classe canvas { width: 38px; height: 30px; }
+        #menuFigura { flex-basis: 300px; }
+        #avvio.grande { margin-top: 10px; padding: 10px 20px; }
+        #menuPiede { padding-top: 10px; }
       }
 
-      /* Schermo stretto: le schede vanno in colonna invece di schiacciarsi. */
+      /* Schermo stretto: la figura se ne va prima delle scelte — e' bella, non
+         serve. Poi le schede vanno in colonna invece di schiacciarsi. */
+      @media (max-width: 760px) {
+        #menuFigura { display: none; }
+      }
       @media (max-width: 520px) {
         #classi { flex-direction: column; }
+        #modi { flex-wrap: wrap; }
+        #campoStanza { width: 120px; font-size: 22px; }
       }
 
       #collegamento { display: flex; align-items: center; justify-content: center; }
@@ -273,27 +315,105 @@
          browser, e su un telefono i tocchi li gestisce gia' lui. -->
     <div id="menu" hidden>
       <div id="menuDentro">
-        <h1>Eco Nera</h1>
-        <p class="sottotitolo" data-t="menu.sottotitolo"></p>
-        <div id="classi"></div>
-        <label class="compagnia">
-          <span data-t="menu.lingua"></span>
-          <select id="lingua"></select>
-        </label>
-        <label class="compagnia">
-          <input id="daSolo" type="checkbox" />
-          <span data-t="menu.daSolo"></span>
-        </label>
-        <label class="compagnia">
-          <span data-t="menu.dove"></span>
-          <select id="dove"></select>
-        </label>
-        <button id="apriInvito" type="button" class="rigaServer" hidden></button>
-        <p id="controller" class="avvisoPausa" hidden></p>
-        <button id="statoServer" type="button" class="rigaServer" hidden></button>
-        <div class="pulsantiera">
-          <button id="avvio" type="button" data-t="menu.entra" disabled></button>
+        <div id="menuColonne">
+          <div id="menuScelte">
+            <p class="etichettaScelta" data-t="menu.scegliClasse"></p>
+            <div id="classi"></div>
+
+            <p class="etichettaScelta" data-t="menu.scegliModo"></p>
+            <div id="modi"></div>
+
+            <!-- Solo per il duo online: quattro cifre uguali per tutti e due,
+                 e il primo che entra ospita. Sta qui e non in un pannello a
+                 parte perche' e' una riga, non una procedura. -->
+            <div id="rigaStanza" hidden>
+              <input id="campoStanza" type="text" inputmode="numeric" autocomplete="off"
+                     maxlength="5" placeholder="0000" />
+              <button id="entraStanza" type="button" data-t="menu.collega"></button>
+            </div>
+            <p id="statoStanza"></p>
+            <label id="rigaServizio" hidden>
+              <span data-t="invito.servizio"></span>
+              <input id="campoServizio" type="text" inputmode="url" autocomplete="off"
+                     autocapitalize="off" spellcheck="false"
+                     placeholder="https://....vercel.app" />
+            </label>
+
+            <button id="statoServer" type="button" class="rigaServer" hidden></button>
+            <p id="controller" class="avvisoPausa" hidden></p>
+
+            <button id="avvio" type="button" class="grande" data-t="menu.entra" disabled></button>
+          </div>
+
+          <!-- Il gioco in una figura: una pianta vista dall'alto di cui si
+               vede solo quello che le due torce illuminano. E' il gioco. -->
+          <div id="menuFigura">
+            <svg viewBox="0 0 400 250" role="img" aria-labelledby="figuraTitolo">
+              <title id="figuraTitolo">Eco Nera</title>
+              <defs>
+                <radialGradient id="luceFaro" cx="20%" cy="76%" r="82%">
+                  <stop offset="0%" stop-color="#ffc65c" stop-opacity="0.42" />
+                  <stop offset="55%" stop-color="#ffc65c" stop-opacity="0.13" />
+                  <stop offset="100%" stop-color="#ffc65c" stop-opacity="0" />
+                </radialGradient>
+                <radialGradient id="luceEco" cx="37%" cy="80%" r="86%">
+                  <stop offset="0%" stop-color="#4ecdc4" stop-opacity="0.34" />
+                  <stop offset="55%" stop-color="#4ecdc4" stop-opacity="0.11" />
+                  <stop offset="100%" stop-color="#4ecdc4" stop-opacity="0" />
+                </radialGradient>
+                <!-- Il cuore del disegno: la pianta esiste tutta, ma si vede
+                     solo dove arriva la luce. Come nel gioco. -->
+                <mask id="soloDoveIlluminano">
+                  <path d="M 80 190 L 97 92 A 100 100 0 0 1 178 207 Z" fill="#fff" />
+                  <path d="M 150 200 L 328 89 A 210 210 0 0 1 358 171 Z" fill="#fff" />
+                </mask>
+              </defs>
+
+              <rect width="400" height="250" fill="#05070c" />
+
+              <g mask="url(#soloDoveIlluminano)">
+                <rect x="30" y="60" width="150" height="120" fill="#1d2637" />
+                <rect x="196" y="40" width="120" height="90" fill="#1d2637" />
+                <rect x="196" y="146" width="170" height="80" fill="#1d2637" />
+                <rect x="180" y="96" width="16" height="26" fill="#8a6a3a" />
+                <rect x="180" y="160" width="16" height="26" fill="#8a6a3a" />
+                <g stroke="#313d5c" stroke-width="3" fill="none">
+                  <rect x="30" y="60" width="150" height="120" />
+                  <rect x="196" y="40" width="120" height="90" />
+                  <rect x="196" y="146" width="170" height="80" />
+                </g>
+                <g stroke="#232d41" stroke-width="1">
+                  <path d="M80 60V180M130 60V180M246 40v90M296 40v90M256 146v80M316 146v80" />
+                </g>
+              </g>
+
+              <path d="M 80 190 L 97 92 A 100 100 0 0 1 178 207 Z" fill="url(#luceFaro)" />
+              <path d="M 150 200 L 328 89 A 210 210 0 0 1 358 171 Z" fill="url(#luceEco)" />
+
+              <!-- I nemici: quelli dentro la luce si vedono, quello fuori e'
+                   un ricordo appena accennato. Sapere che c'e' e non vederlo
+                   e' meta' del gioco. -->
+              <circle cx="141" cy="118" r="6" fill="#e05a5a" />
+              <circle cx="288" cy="131" r="6" fill="#e05a5a" />
+              <circle cx="252" cy="196" r="5.5" fill="#e05a5a" opacity="0.85" />
+              <circle cx="60" cy="96" r="6" fill="#e05a5a" opacity="0.16" />
+
+              <!-- I due giocatori. -->
+              <circle cx="80" cy="190" r="8" fill="#ffc65c" />
+              <circle cx="150" cy="200" r="8" fill="#4ecdc4" />
+
+              <text x="200" y="240" text-anchor="middle"
+                    font-family="ui-monospace, Consolas, monospace"
+                    font-size="17" font-weight="700" letter-spacing="7"
+                    fill="#dfe6f5" opacity="0.72">ECO NERA</text>
+            </svg>
+          </div>
+        </div>
+
+        <div id="menuPiede">
+          <span id="rigaVersione"></span>
           <button id="apriGuida" type="button" class="secondario" data-t="menu.guida"></button>
+          <select id="lingua"></select>
         </div>
       </div>
     </div>
@@ -312,51 +432,6 @@
           </div>
         </div>
         <canvas id="briefingDisegno"></canvas>
-      </div>
-    </div>
-
-    <!-- Giocare in due senza nessun server: uno si fa dare un numero di sei
-         cifre, lo dice all'altro, e i due telefoni si parlano direttamente. -->
-    <div id="invito" hidden>
-      <div id="invitoDentro">
-        <h1 data-t="invito.titolo"></h1>
-        <p id="invitoSpiega"></p>
-
-        <!-- Chi ospita: un pulsante, e viene fuori un numero da dire a voce. -->
-        <div class="passo" id="passoCrea">
-          <div class="pulsantiera">
-            <button id="creaInvito" type="button" data-t="invito.crea"></button>
-          </div>
-        </div>
-        <div class="passo" id="passoCodice" hidden>
-          <p data-t="invito.codice.tuo"></p>
-          <div id="codiceGrande"></div>
-        </div>
-
-        <!-- Chi e' invitato: scrive quel numero. -->
-        <div class="passo" id="passoChiedi" hidden>
-          <p data-t="invito.codice.chiedi"></p>
-          <input id="campoCodice" type="text" inputmode="numeric" autocomplete="off"
-                 maxlength="7" placeholder="000000" />
-          <div class="pulsantiera">
-            <button id="usaNumero" type="button" data-t="invito.collega"></button>
-          </div>
-        </div>
-
-        <p id="invitoStato"></p>
-
-        <!-- L'indirizzo del servizio, per chi ne vuole uno suo. Sta in
-             chiaro perche' senza quello non funziona niente. -->
-        <label id="rigaServizio">
-          <span data-t="invito.servizio"></span>
-          <input id="campoServizio" type="text" inputmode="url" autocomplete="off"
-                 autocapitalize="off" spellcheck="false"
-                 placeholder="https://....vercel.app" />
-        </label>
-
-        <div class="pulsantiera">
-          <button id="chiudiInvito" type="button" class="secondario" data-t="invito.chiudi"></button>
-        </div>
       </div>
     </div>
 

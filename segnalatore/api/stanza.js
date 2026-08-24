@@ -7,23 +7,49 @@
 //
 // Il giro e' questo:
 //
-//   POST  /api/stanza  {offerta}            ->  {codice}
-//   GET   /api/stanza?codice=482913         ->  {offerta, risposta}
-//   PUT   /api/stanza  {codice, risposta}   ->  {ok}
+//   POST  /api/stanza  {stanza}            ->  {ruolo: 'ospita'|'invitato'}
+//   PUT   /api/stanza  {stanza, offerta}   ->  {ok}
+//   GET   /api/stanza?stanza=1234          ->  {offerta, risposta}
+//   PUT   /api/stanza  {stanza, risposta}  ->  {ok}
 //
-// Chi ospita crea la stanza e poi chiede ogni tanto se e' arrivata la
-// risposta. Chi e' invitato legge l'offerta, prepara la sua risposta e la
+// La stanza e' un numero di quattro cifre che si scelgono i due giocatori.
+// Nessuno dichiara di voler ospitare: entrano tutti e due nello stesso numero
+// e il POST dice a ciascuno chi e'. **Il primo che arriva ospita**, e a
+// deciderlo non e' la fortuna ma il `SET NX` dell'archivio: se premono nello
+// stesso millesimo di secondo, uno solo vince la scrittura.
+//
+// Chi ospita lascia la sua offerta e poi chiede ogni tanto se e' arrivata la
+// risposta. Chi e' invitato aspetta l'offerta, prepara la sua risposta e la
 // lascia li'. Finito lo scambio i due telefoni si parlano diretti e questo
 // servizio non c'entra piu' niente: se lo spegnessero a meta' partita non se
 // ne accorgerebbe nessuno.
 
-/** Quanto vive una stanza. Tre minuti: il tempo di dire un codice a voce. */
+/**
+ * Quanto vive una stanza senza che nessuno la tocchi.
+ *
+ * E' piu' corta di prima — un minuto e mezzo invece di tre — e il motivo e'
+ * che adesso il numero lo scegliete voi e lo riusate. Se chi ospita chiude
+ * l'app senza salutare, il suo posto resta occupato da un telefono che non
+ * c'e' piu': chi entra dopo si aggancerebbe a un fantasma e aspetterebbe per
+ * sempre. Scaduta la stanza, il posto torna libero e si riprova.
+ *
+ * Chi ospita la tiene viva riscrivendo la sua offerta mentre aspetta: e' un
+ * battito che non costa un giro di rete in piu', perche' quel giro lo fa gia'.
+ */
 import { magazzinoNativo } from './redis-nativo.js';
 
-const DURATA = 180;
+const DURATA = 90;
 
-/** Sei cifre e non quattro: si leggono al telefono lo stesso, e nessuno le indovina. */
-const CIFRE = 6;
+/**
+ * Quattro cifre, e stavolta scelte da chi gioca.
+ *
+ * Quando il numero lo dava il servizio ne servivano sei, a caso: un codice
+ * vivo e indovinabile lascia rubare l'invito. Uno che scegliete voi e' un'altra
+ * cosa — e la gente sceglie 1234, 0000, l'anno di nascita. Per un cooperativo
+ * contro il computer il danno massimo e' che entri qualcuno di troppo, e si
+ * accetta. Per qualunque cosa che contasse davvero, no.
+ */
+const CIFRE = 4;
 
 export default async function handler(req, res) {
   // L'app gira dentro una WebView con origine `http://localhost`: senza queste
@@ -51,68 +77,78 @@ export default async function handler(req, res) {
   }
 
   try {
-    if (req.method === 'POST') return await creaStanza(req, res, magazzino);
-    if (req.method === 'GET') return await leggiStanza(req, res, magazzino);
-    if (req.method === 'PUT') return await scriviRisposta(req, res, magazzino);
+    if (req.method === 'POST') return await prendiPosto(req, res, magazzino);
+    if (req.method === 'GET') return await guardaStanza(req, res, magazzino);
+    if (req.method === 'PUT') return await lasciaQualcosa(req, res, magazzino);
     return res.status(405).json({ errore: 'metodo non previsto' });
   } catch (e) {
     return res.status(500).json({ errore: String(e?.message ?? e) });
   }
 }
 
-// --- Le tre mosse ----------------------------------------------------------
+// --- Le mosse --------------------------------------------------------------
 
-async function creaStanza(req, res, magazzino) {
-  const { offerta } = corpo(req);
-  if (!offerta || typeof offerta !== 'string' || offerta.length > 20000) {
-    return res.status(400).json({ errore: 'offerta mancante o assurda' });
-  }
+/**
+ * Chi sono io in questa stanza?
+ *
+ * Tutta la domanda sta in una scrittura sola: `SET ... NX` riesce a uno solo.
+ * Chi ci riesce ospita, chi trova occupato e' l'invitato — e non c'e' nessuna
+ * finestra fra il controllo e la decisione in cui possano infilarsi tutti e
+ * due, che e' il motivo per cui non si guarda prima se il posto e' libero.
+ */
+async function prendiPosto(req, res, magazzino) {
+  const stanza = pulisciCodice(corpo(req).stanza ?? '');
+  if (!stanza) return res.status(400).json({ errore: 'numero di stanza non valido' });
 
-  // Si tira un codice e si prova a prenderlo. Se e' gia' occupato se ne tira
-  // un altro: con un milione di codici e due stanze vive capita quasi mai, ma
-  // "quasi mai" senza un rimedio e' la sera in cui non funziona.
-  for (let tentativo = 0; tentativo < 8; tentativo++) {
-    const codice = codiceACaso();
-    const preso = await magazzino.prendi(`stanza:${codice}`, offerta, DURATA);
-    if (preso) return res.status(200).json({ codice, dura: DURATA });
-  }
-  return res.status(503).json({ errore: 'nessun codice libero, riprovate' });
+  const preso = await magazzino.prendi(`stanza:${stanza}:capo`, '1', DURATA);
+  if (!preso) return res.status(200).json({ ruolo: 'invitato', dura: DURATA });
+
+  // Il posto era libero: prima di dire "ospiti tu" si butta via quello che era
+  // rimasto della volta prima. Senza questo, chi entra fra un attimo leggerebbe
+  // l'offerta della partita di ieri e aspetterebbe un telefono spento — con un
+  // numero fisso che si riusa tutte le sere, non e' un caso di scuola.
+  await magazzino.cancella(`stanza:${stanza}`);
+  await magazzino.cancella(`stanza:${stanza}:r`);
+  return res.status(200).json({ ruolo: 'ospita', dura: DURATA });
 }
 
-async function leggiStanza(req, res, magazzino) {
-  const codice = pulisciCodice(req.query?.codice ?? '');
-  if (!codice) return res.status(400).json({ errore: 'codice non valido' });
+/** Cosa c'e' nella stanza: l'offerta di chi ospita, e la risposta se e' arrivata. */
+async function guardaStanza(req, res, magazzino) {
+  const stanza = pulisciCodice(req.query?.stanza ?? '');
+  if (!stanza) return res.status(400).json({ errore: 'numero di stanza non valido' });
 
-  const offerta = await magazzino.leggi(`stanza:${codice}`);
-  if (!offerta) return res.status(404).json({ errore: 'stanza scaduta o inesistente' });
-
-  const risposta = await magazzino.leggi(`stanza:${codice}:r`);
-  return res.status(200).json({ offerta, risposta: risposta ?? null });
+  const [offerta, risposta] = await Promise.all([
+    magazzino.leggi(`stanza:${stanza}`),
+    magazzino.leggi(`stanza:${stanza}:r`),
+  ]);
+  // Stanza vuota non e' un errore: e' il caso normale di chi arriva per primo
+  // e sta aspettando. Chi aspetta ripassa fra un secondo.
+  return res.status(200).json({ offerta: offerta ?? null, risposta: risposta ?? null });
 }
 
-async function scriviRisposta(req, res, magazzino) {
-  const { codice: grezzo, risposta } = corpo(req);
-  const codice = pulisciCodice(grezzo ?? '');
-  if (!codice) return res.status(400).json({ errore: 'codice non valido' });
-  if (!risposta || typeof risposta !== 'string' || risposta.length > 20000) {
-    return res.status(400).json({ errore: 'risposta mancante o assurda' });
+/** L'offerta di chi ospita, o la risposta di chi e' invitato. */
+async function lasciaQualcosa(req, res, magazzino) {
+  const { stanza: grezzo, offerta, risposta } = corpo(req);
+  const stanza = pulisciCodice(grezzo ?? '');
+  if (!stanza) return res.status(400).json({ errore: 'numero di stanza non valido' });
+
+  const roba = offerta ?? risposta;
+  if (!roba || typeof roba !== 'string' || roba.length > 20000) {
+    return res.status(400).json({ errore: 'descrizione mancante o assurda' });
   }
-  // La stanza deve esistere: se e' scaduta, meglio dirlo che lasciare una
-  // risposta a marcire sotto un codice che nessuno leggera' mai.
-  if (!(await magazzino.leggi(`stanza:${codice}`))) {
-    return res.status(404).json({ errore: 'stanza scaduta o inesistente' });
+
+  if (offerta) {
+    // Riscrivere l'offerta rinnova anche il posto: e' il battito di chi ospita
+    // mentre aspetta, e non costa un giro di rete in piu' perche' lo fa gia'.
+    await magazzino.scrivi(`stanza:${stanza}`, offerta, DURATA);
+    await magazzino.scrivi(`stanza:${stanza}:capo`, '1', DURATA);
+  } else {
+    await magazzino.scrivi(`stanza:${stanza}:r`, risposta, DURATA);
   }
-  await magazzino.scrivi(`stanza:${codice}:r`, risposta, DURATA);
   return res.status(200).json({ ok: true });
 }
 
 // --- Cose piccole ----------------------------------------------------------
-
-function codiceACaso() {
-  const massimo = 10 ** CIFRE;
-  const n = Math.floor(Math.random() * massimo);
-  return String(n).padStart(CIFRE, '0');
-}
 
 function pulisciCodice(testo) {
   const solo = String(testo).replace(/\D/g, '');
@@ -166,12 +202,13 @@ function scegliMagazzino() {
   };
 
   return {
-    // Torna vero solo se il codice era libero: e' il "NX" a garantirlo, e
-    // senza quello due stanze potrebbero prendersi lo stesso codice.
+    // Torna vero solo se il posto era libero: e' il "NX" a garantirlo, ed e'
+    // tutto quello su cui si regge "il primo che arriva ospita".
     prendi: async (chiave_, valore, durata) =>
       (await comanda(['SET', chiave_, valore, 'EX', String(durata), 'NX'])) !== null,
     scrivi: (chiave_, valore, durata) => comanda(['SET', chiave_, valore, 'EX', String(durata)]),
     leggi: (chiave_) => comanda(['GET', chiave_]),
+    cancella: (chiave_) => comanda(['DEL', chiave_]),
   };
 }
 

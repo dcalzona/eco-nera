@@ -168,23 +168,81 @@ rimedio. Le fotografie si possono perdere, i comandi no.
 Chi legge le fotografie butta quelle **fuori ordine**: su un canale non
 ordinato una vecchia rimessa in coda manderebbe l'interpolazione a ritroso.
 
-### Come si trovano: un numero di sei cifre
+### Come si trovano: una stanza di quattro cifre
 
 WebRTC sa collegare due telefoni in capo al mondo, ma non sa come farli
 incontrare la prima volta: quel primo scambio se lo deve inventare chi scrive il
 gioco.
 
-Chi ospita si fa dare un **codice di sei cifre** e lo dice all'altro, che lo
-scrive. Fine. Dietro c'e' `segnalatore/`, una funzione che sta su Vercel e fa
-una cosa sola: tiene da parte due stringhe per tre minuti sotto quel numero.
+Ci si mette d'accordo su **quattro cifre** e le scrivono tutti e due. Nessuno
+dichiara di voler ospitare: **il primo che entra ospita**, e il secondo si
+collega a lui. Il gioco lo scrive a schermo — *ospiti tu: il gioco gira qui*
+contro *ospita l'altro telefono* — perche' non e' un dettaglio: chi ospita fa
+girare il mondo sul suo telefono, e se esce la partita finisce.
 
-L'indirizzo del servizio — `https://eco-nera.vercel.app` — e' gia' dentro
-l'app: **sui telefoni non c'e' niente da scrivere**. Il campo nel pannello
-serve solo a chi ne vuole un altro (il proprio, o quello di casa per fare le
-prove); svuotandolo si torna a quello di fabbrica. Se ci si incolla dentro
-l'indirizzo copiato da Vercel col percorso in fondo, il percorso viene tolto:
-`.../api/stanza` che diventa `.../api/stanza/api/stanza` sarebbe un guasto
-invisibile, perche' nel campo si legge una cosa giusta.
+Prima invece bisognava sceglierlo prima, dal menu, con due voci che chiedevano
+«ospiti tu o ti colleghi?». Era una domanda tecnica travestita da scelta di
+gioco, e costringeva a mettersi d'accordo su una cosa che al gioco non
+interessa.
+
+#### Chi arriva primo, senza fortuna di mezzo
+
+Se premete nello stesso millesimo di secondo, uno solo deve vincere. Non si
+guarda se il posto e' libero per poi prenderlo — fra le due mosse c'e' una
+finestra in cui tutti e due si crederebbero i primi, e resterebbero ad aspettare
+l'uno la mossa dell'altro. Si prende e basta, con una scrittura che riesce a uno
+solo:
+
+```
+SET stanza:1234:capo 1 NX EX 90
+```
+
+Chi ottiene la scrittura ospita, chi trova occupato e' l'invitato. La decisione
+la prende l'archivio, in un'operazione sola. Provato con cinque che entrano
+nello stesso istante: uno ospita, quattro no.
+
+#### La stanza di ieri
+
+Con un numero che ve lo scegliete voi e riusate tutte le sere, c'e' un guasto
+che aspetta dietro l'angolo: chi ospita chiude l'app senza salutare, e il suo
+posto resta occupato da un telefono che non c'e' piu'. Chi entra domani
+leggerebbe l'offerta di stasera e aspetterebbe un telefono spento.
+
+Due cose lo evitano. Il posto **scade** dopo un minuto e mezzo, e chi ospita lo
+tiene vivo riscrivendo la sua offerta mentre aspetta — un battito che non costa
+un giro di rete in piu', perche' quel giro lo fa gia' per vedere se e' arrivata
+la risposta. E chi prende il posto **butta via** quello che c'era prima, invece
+di fidarsi che sia roba sua.
+
+Chi entra e non trova nessuno smette dopo venti secondi e lo dice, invece di
+girare in tondo: riprovando, quando il posto sara' scaduto, sara' lui a
+prenderlo.
+
+#### Quattro cifre e non sei
+
+Quando il numero lo dava il servizio ne servivano **sei, a caso**: un codice
+vivo e indovinabile lascia rubare l'invito. Uno che scegliete voi e' un'altra
+cosa — la gente sceglie 1234, 0000, l'anno di nascita, e indovinare diventa
+banale. Per un cooperativo contro il computer il danno massimo e' che entri
+qualcuno di troppo, e si accetta volentieri. Per qualunque cosa che contasse
+davvero, no.
+
+#### Il servizio
+
+Dietro c'e' `segnalatore/`, una funzione che sta su Vercel e fa una cosa sola:
+tiene da parte due stringhe sotto quel numero.
+
+```
+POST  /api/stanza  {stanza}            ->  {ruolo: 'ospita'|'invitato'}
+PUT   /api/stanza  {stanza, offerta}   ->  {ok}
+GET   /api/stanza?stanza=1234          ->  {offerta, risposta}
+PUT   /api/stanza  {stanza, risposta}  ->  {ok}
+```
+
+L'indirizzo — `https://eco-nera.vercel.app` — e' gia' dentro l'app: **sui
+telefoni non c'e' niente da scrivere**. Il campo per cambiarlo non si vede
+nemmeno, finche' non serve: compare solo se il servizio non risponde, che e'
+l'unico momento in cui uno ha motivo di guardarlo.
 
 Su Vercel va preso l'indirizzo **di produzione** (`eco-nera.vercel.app`), non
 quello lungo con la sigla a caso: quello vale per un deploy soltanto e al push
@@ -194,14 +252,13 @@ funziona e' il peggiore da trovare.
 Non e' un server di gioco e non sa niente del gioco. Finito lo scambio i due
 telefoni si parlano diretti, e **se lo spegnessero a meta' partita non se ne
 accorgerebbe nessuno**. Al servizio arrivano solo le descrizioni WebRTC —
-indirizzi e chiavi — mai un dato di gioco. Una partita sono tre richieste in
+indirizzi e chiavi — mai un dato di gioco. Una partita sono quattro richieste in
 tutto: sta nel piano gratuito con quattro ordini di grandezza di margine.
 
 Per un po' e' rimasta anche una via di riserva — i due codici lunghi da
 passarsi con un messaggio, sotto una piega del pannello — pensata per quando il
 servizio non risponde. E' stata tolta: una seconda porta, peggiore, messa
-accanto a quella buona non rassicura, fa dubitare. Chi la vedeva si chiedeva se
-il numero di sei cifre bastasse davvero.
+accanto a quella buona non rassicura, fa dubitare.
 
 Gli unici estranei sono i server **STUN**, che servono a dire a un telefono qual
 e' il suo indirizzo visto da fuori. Non ci passa nessun dato di gioco. Quando
@@ -211,8 +268,8 @@ relay, che quello si' costerebbe qualcosa. Per adesso non c'e'.
 
 ## Fuori casa: il server dentro il telefono
 
-Spuntando **«senza server»** nel menu, il mondo gira dentro l'app: niente PC,
-niente Wi-Fi, si gioca in treno.
+Scegliendo **Solo** nel menu, il mondo gira dentro l'app: niente PC, niente
+Wi-Fi, si gioca in treno.
 
 Il menu si apre **subito**, senza aspettare il server, e dice come sta la
 faccenda: *pronto*, *sto cercando*, oppure *non risponde* — e quella riga si
@@ -223,8 +280,7 @@ che su un telefono puo' voler dire minuti. Prima l'app controllava il server
 collego al server" senza poter arrivare alla spunta che sta nel menu stesso.
 Adesso il menu viene prima di tutto, premere Entra senza server risponde di no
 invece di appendere, e chi entra mentre il collegamento e' ancora in corso viene
-riportato al menu dopo otto secondi. Si gioca **da soli**, perche' senza server non
-c'e' nessun posto dove il compagno potrebbe collegarsi.
+riportato al menu dopo otto secondi.
 
 Non e' una versione ridotta del gioco, ed e' il punto: e' lo **stesso identico
 `Mondo`**. La simulazione era gia' scritta in JavaScript puro e non usa niente
@@ -260,7 +316,7 @@ per cento di un core.
 ```
 server/       l'unica parte che vuole Node
   server.js        serve il gioco ai telefoni + ciclo a 20 passi al secondo
-segnalatore/  fa incontrare due telefoni sotto un codice di sei cifre
+segnalatore/  fa incontrare due telefoni dentro una stanza di quattro cifre
   api/stanza.js    la funzione che va su Vercel
   locale.js        la stessa, in casa, per provarla senza pubblicarla
 client/       quello che finisce sui telefoni (e nell'APK)
@@ -663,9 +719,13 @@ lo dice una schermata con il settore a cui siete arrivati, e da li' si torna al
 menu. Non riparte di nascosto dal primo settore — ritrovarcisi di colpo senza
 aver capito cosa e' successo e' peggio che perdere.
 
-Si puo' giocare **da soli**, spuntandolo nel menu: niente compagno automatico e
-qualche nemico in meno. Il gioco non cambia — cambia che non c'e' nessuno a
-rimetterti in piedi.
+Il modo **Solo** e' proprio questo: niente compagno automatico e qualche nemico
+in meno. Il gioco non cambia — cambia che non c'e' nessuno a rimetterti in
+piedi.
+
+Prima «da soli» era una spunta a parte, accanto alla scelta di dove giocare:
+due domande per una cosa sola, e potevano contraddirsi. Adesso e' il modo, e
+basta.
 
 ### Le mappe si generano
 
@@ -729,4 +789,4 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **6. L'app** — APK con Capacitor
 - [x] **7. Le missioni** — tre modalita' con briefing, e il riparo dell'Assalto
 - [x] **8. Fuori casa** — controller, e il server dentro il telefono
-- [x] **9. In due ovunque** — i due telefoni si parlano da soli, con un codice di sei cifre
+- [x] **9. In due ovunque** — i due telefoni si parlano da soli, dentro una stanza di quattro cifre

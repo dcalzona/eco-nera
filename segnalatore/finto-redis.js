@@ -7,7 +7,7 @@
 // risposte un byte alla volta, che e' il modo piu' cattivo possibile e il modo
 // piu' onesto di scoprire se il lettore e' scritto bene.
 //
-// Capisce quattro comandi: AUTH, SET (con EX e NX), GET, PING. Bastano.
+// Capisce cinque comandi: AUTH, SET (con EX e NX), GET, DEL, PING. Bastano.
 
 import net from 'node:net';
 
@@ -84,6 +84,12 @@ export function accendi(porta, { chiave = 'segreta', spezza = false } = {}) {
         const durata = dove >= 0 ? Number(resto[dove + 1]) : 300;
         roba.set(k, { valore: v, scadenza: Date.now() + durata * 1000 });
         return rispondi('+OK\r\n');
+      }
+
+      if (nome === 'DEL') {
+        let quante = 0;
+        for (const k of argomenti.slice(1)) if (roba.delete(k)) quante++;
+        return rispondi(`:${quante}\r\n`);
       }
 
       if (nome === 'GET') {

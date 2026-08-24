@@ -20,11 +20,8 @@ export const LINGUE = {
 
 const TESTI = {
   it: {
-    'menu.sottotitolo': 'Scegli chi sei. Nel buio, da soli, non si va da nessuna parte.',
     'menu.entra': 'Entra',
     'menu.guida': 'Come si gioca',
-    'menu.daSolo': 'Gioco da solo — niente compagno automatico, e qualche nemico in meno',
-    'menu.lingua': 'Lingua',
     'menu.versioneVecchia':
       'Attenzione: il server e alla versione {server}, l app alla {client}. Riavvia il server sul PC, altrimenti mancheranno pezzi di gioco.',
 
@@ -144,52 +141,37 @@ const TESTI = {
     'menu.serverNiente':
       'Server: non risponde — tocca per cambiare indirizzo, o spunta «senza server» qui sotto',
 
-    'menu.dove': 'Dove si gioca',
-    'menu.dove.casa': 'Sul PC di casa',
-    'menu.dove.telefono': 'Da solo, in questo telefono',
-    'menu.dove.ospite': 'Ospito io — invito qualcuno',
-    'menu.dove.invitato': 'Mi collego a un invito',
-    'menu.invito': 'Scambia il codice dell invito',
-    'invito.titolo': 'In due, senza nessun server',
-    'invito.spiega.ospite':
-      "Il mondo gira in questo telefono e l'altro si collega direttamente qui. Fatti dare un codice di sei cifre e diglielo: al servizio non passa nessun dato di gioco, solo quel numero.",
-    'invito.spiega.invitato':
-      'Il mondo gira nel telefono di chi ti ha invitato. Fatti dire il suo codice di sei cifre e scrivilo qui.',
-    'invito.crea': 'Fatti dare un codice',
-    'invito.collega': 'Collega',
-    'invito.chiudi': 'Torna al menu',
-    'invito.stato.preparo': "preparo l'invito…",
-    'invito.stato.mandalo': 'mandalo, e aspetta la risposta',
-    'invito.stato.attesa': 'aspetto che si colleghi…',
-    'invito.stato.errore': 'codice non valido, o rete che non collabora',
-    'invito.stato.nessuno': 'nessuno collegato',
-    'invito.stato.invitato': 'invito creato — aspetto la risposta',
-    'invito.stato.collegato': 'collegato!',
-    'invito.stato.caduto': 'il filo e caduto',
-    'guida.invito.titolo': 'In due senza server',
+    'guida.invito.titolo': 'In due via internet: una stanza',
     'guida.invito.testo':
-      "Uno dei due ospita: il mondo gira nel suo telefono e l'altro si collega direttamente li', senza niente in mezzo. Ci si scambia due codici — uno per parte — con un messaggio qualsiasi, e da li' in poi i due telefoni si parlano da soli. Chi ospita fa da server, quindi conviene che sia quello con la connessione migliore.",
+      "Vi mettete d'accordo su un numero di quattro cifre e lo scrivete tutti e due: chi entra per primo ospita — il mondo gira nel suo telefono — e il secondo si collega direttamente li', senza niente in mezzo. Chi ospita non lo sceglie nessuno, e il gioco ve lo scrive. Se chi ospita esce, la partita finisce: il mondo era sul suo telefono.",
 
-    'invito.codice.tuo': "Dillo all'altro, e aspetta:",
-    'invito.codice.chiedi': 'Scrivi il codice che ti hanno detto:',
     'invito.servizio': 'Indirizzo del servizio',
-    'invito.stato.creo': 'mi faccio dare un codice…',
-    'invito.stato.cerco': 'cerco quel codice…',
-    'invito.stato.dilloEAspetta': 'diglielo — aspetto che si colleghi',
-    'invito.stato.codiceCorto': 'il codice e di sei cifre',
     'invito.stato.servizioGiu': 'il servizio non risponde: provate lo scambio a mano qui sotto',
 
     'invito.stato.senzaIndirizzo':
       "Manca l'indirizzo del servizio: scrivilo qui sotto. Intanto si puo' fare a mano.",
     'invito.stato.servizioDice': 'il servizio risponde:',
+
+    'menu.scegliClasse': 'Scelta del personaggio',
+    'menu.scegliModo': 'Scelta modalita',
+    'menu.modo.solo': 'Solo',
+    'menu.modo.casa': 'Duo (offline)',
+    'menu.modo.rete': 'Duo (online)',
+    'menu.collega': 'Collega',
+    'menu.versione': 'versione',
+    'stanza.quattroCifre': 'servono quattro cifre',
+    'stanza.entro': 'entro nella stanza...',
+    'stanza.ospitoAspetto': 'ospiti tu: sto aspettando l altro',
+    'stanza.cercoChiOspita': 'cerco chi ospita...',
+    'stanza.collegatoOspiti': 'collegati! Ospiti tu: il gioco gira qui',
+    'stanza.collegatoOspita': 'collegati! Ospita l altro telefono',
+    'stanza.nessunoLi': 'in questa stanza non si e fatto vivo nessuno: riprova',
+    'stanza.nessunoArrivato': 'non e arrivato nessuno',
   },
 
   en: {
-    'menu.sottotitolo': "Choose who you are. Alone in the dark, you won't get far.",
     'menu.entra': 'Enter',
     'menu.guida': 'How to play',
-    'menu.daSolo': 'Playing alone — no automatic partner, and a few enemies fewer',
-    'menu.lingua': 'Language',
     'menu.versioneVecchia':
       'Warning: the server is version {server}, the app is {client}. Restart the server on the PC, or parts of the game will be missing.',
 
@@ -309,52 +291,37 @@ const TESTI = {
     'menu.serverNiente':
       'Server: no answer — tap to change the address, or tick “no server” below',
 
-    'menu.dove': 'Where the game runs',
-    'menu.dove.casa': 'On the PC at home',
-    'menu.dove.telefono': 'Alone, on this phone',
-    'menu.dove.ospite': 'I host — I invite someone',
-    'menu.dove.invitato': 'I join an invite',
-    'menu.invito': 'Exchange the invite code',
-    'invito.titolo': 'Two players, no server at all',
-    'invito.spiega.ospite':
-      'The world runs on this phone and the other one connects straight to it. Get a six-digit code and tell it to them: no game data reaches the service, only that number.',
-    'invito.spiega.invitato':
-      'The world runs on the phone of whoever invited you. Ask them for their six-digit code and type it here.',
-    'invito.crea': 'Get a code',
-    'invito.collega': 'Connect',
-    'invito.chiudi': 'Back to the menu',
-    'invito.stato.preparo': 'preparing the invite…',
-    'invito.stato.mandalo': 'send it, then wait for the reply',
-    'invito.stato.attesa': 'waiting for the connection…',
-    'invito.stato.errore': 'invalid code, or the network is not cooperating',
-    'invito.stato.nessuno': 'nobody connected',
-    'invito.stato.invitato': 'invite created — waiting for the reply',
-    'invito.stato.collegato': 'connected!',
-    'invito.stato.caduto': 'the link dropped',
-    'guida.invito.titolo': 'Two players, no server',
+    'guida.invito.titolo': 'Two players over the internet: a room',
     'guida.invito.testo':
-      'One of you hosts: the world runs on their phone and the other connects straight to it, with nothing in between. You swap two codes — one each — over any messaging app, and from then on the two phones talk by themselves. Whoever hosts is the server, so it should be the one with the better connection.',
+      'You agree on a four-digit number and you both type it in: whoever gets there first hosts — the world runs on their phone — and the second one connects straight to it, with nothing in between. Nobody picks the host, and the game tells you which of you it is. If the host leaves, the match ends: the world was on their phone.',
 
-    'invito.codice.tuo': 'Tell it to the other player, and wait:',
-    'invito.codice.chiedi': 'Type the code they told you:',
     'invito.servizio': 'Service address',
-    'invito.stato.creo': 'getting a code…',
-    'invito.stato.cerco': 'looking for that code…',
-    'invito.stato.dilloEAspetta': 'tell them — waiting for the connection',
-    'invito.stato.codiceCorto': 'the code has six digits',
     'invito.stato.servizioGiu': 'the service is not answering: try the manual swap below',
 
     'invito.stato.senzaIndirizzo':
       'The service address is missing: type it below. Meanwhile you can swap by hand.',
     'invito.stato.servizioDice': 'the service says:',
+
+    'menu.scegliClasse': 'Choose your character',
+    'menu.scegliModo': 'Choose the mode',
+    'menu.modo.solo': 'Solo',
+    'menu.modo.casa': 'Duo (offline)',
+    'menu.modo.rete': 'Duo (online)',
+    'menu.collega': 'Connect',
+    'menu.versione': 'version',
+    'stanza.quattroCifre': 'four digits, please',
+    'stanza.entro': 'entering the room...',
+    'stanza.ospitoAspetto': 'you are hosting: waiting for the other one',
+    'stanza.cercoChiOspita': 'looking for the host...',
+    'stanza.collegatoOspiti': 'connected! You host: the game runs here',
+    'stanza.collegatoOspita': 'connected! The other phone hosts',
+    'stanza.nessunoLi': 'nobody showed up in this room: try again',
+    'stanza.nessunoArrivato': 'nobody came',
   },
 
   fr: {
-    'menu.sottotitolo': "Choisis qui tu es. Seul dans le noir, on ne va nulle part.",
     'menu.entra': 'Entrer',
     'menu.guida': 'Comment jouer',
-    'menu.daSolo': 'Je joue seul — pas de coéquipier automatique, et quelques ennemis en moins',
-    'menu.lingua': 'Langue',
     'menu.versioneVecchia':
       "Attention : le serveur est en version {server}, l'application en {client}. Redémarre le serveur sur le PC, sinon des morceaux du jeu manqueront.",
 
@@ -475,53 +442,38 @@ const TESTI = {
     'menu.serverNiente':
       'Serveur : pas de réponse — touche pour changer l’adresse, ou coche « sans serveur » ci-dessous',
 
-    'menu.dove': 'Où tourne le jeu',
-    'menu.dove.casa': 'Sur le PC à la maison',
-    'menu.dove.telefono': 'En solo, sur ce téléphone',
-    'menu.dove.ospite': "J'héberge — j'invite quelqu'un",
-    'menu.dove.invitato': 'Je rejoins une invitation',
-    'menu.invito': "Échanger le code d'invitation",
-    'invito.titolo': 'À deux, sans aucun serveur',
-    'invito.spiega.ospite':
-      "Le monde tourne sur ce téléphone et l'autre s'y connecte directement. Prends un code à six chiffres et dis-le-lui : aucune donnée de jeu n'arrive au service, seulement ce numéro.",
-    'invito.spiega.invitato':
-      "Le monde tourne sur le téléphone de celui qui t'a invité. Demande-lui son code à six chiffres et écris-le ici.",
-    'invito.crea': 'Obtenir un code',
-    'invito.collega': 'Connecter',
-    'invito.chiudi': 'Retour au menu',
-    'invito.stato.preparo': "je prépare l'invitation…",
-    'invito.stato.mandalo': 'envoie-la, puis attends la réponse',
-    'invito.stato.attesa': 'en attente de la connexion…',
-    'invito.stato.errore': 'code invalide, ou le réseau ne coopère pas',
-    'invito.stato.nessuno': 'personne de connecté',
-    'invito.stato.invitato': "invitation créée — j'attends la réponse",
-    'invito.stato.collegato': 'connecté !',
-    'invito.stato.caduto': 'le lien est tombé',
-    'guida.invito.titolo': 'À deux sans serveur',
+    'guida.invito.titolo': 'A deux par internet : une salle',
     'guida.invito.testo':
-      "L'un des deux héberge : le monde tourne sur son téléphone et l'autre s'y connecte directement, sans rien au milieu. Vous échangez deux codes — un chacun — par n'importe quelle messagerie, et ensuite les deux téléphones se parlent tout seuls. Celui qui héberge fait office de serveur : autant que ce soit celui qui a la meilleure connexion.",
+      "Vous convenez d'un nombre a quatre chiffres et vous le tapez tous les deux : le premier arrive heberge — le monde tourne sur son telephone — et le second s'y connecte directement, sans rien entre les deux. Personne ne choisit l'hote, et le jeu vous dit qui c'est. Si l'hote s'en va, la partie s'arrete : le monde etait sur son telephone.",
 
-    'invito.codice.tuo': "Dis-le à l'autre, et attends :",
-    'invito.codice.chiedi': "Écris le code qu'on t'a donné :",
     'invito.servizio': 'Adresse du service',
-    'invito.stato.creo': 'je demande un code…',
-    'invito.stato.cerco': 'je cherche ce code…',
-    'invito.stato.dilloEAspetta': "dis-le-lui — j'attends la connexion",
-    'invito.stato.codiceCorto': 'le code fait six chiffres',
     'invito.stato.servizioGiu':
       "le service ne répond pas : essayez l'échange à la main ci-dessous",
 
     'invito.stato.senzaIndirizzo':
       "L'adresse du service manque : écris-la ci-dessous. En attendant, on peut échanger à la main.",
     'invito.stato.servizioDice': 'le service répond :',
+
+    'menu.scegliClasse': 'Choix du personnage',
+    'menu.scegliModo': 'Choix du mode',
+    'menu.modo.solo': 'Solo',
+    'menu.modo.casa': 'Duo (hors ligne)',
+    'menu.modo.rete': 'Duo (en ligne)',
+    'menu.collega': 'Connecter',
+    'menu.versione': 'version',
+    'stanza.quattroCifre': 'il faut quatre chiffres',
+    'stanza.entro': 'entree dans la salle...',
+    'stanza.ospitoAspetto': "c'est toi l'hote : j'attends l'autre",
+    'stanza.cercoChiOspita': "je cherche l'hote...",
+    'stanza.collegatoOspiti': "connectes ! Tu es l'hote : le jeu tourne ici",
+    'stanza.collegatoOspita': "connectes ! C'est l'autre telephone qui heberge",
+    'stanza.nessunoLi': "personne ne s'est manifeste dans cette salle : reessaie",
+    'stanza.nessunoArrivato': "personne n'est venu",
   },
 
   es: {
-    'menu.sottotitolo': 'Elige quién eres. Solo, en la oscuridad, no se llega a ninguna parte.',
     'menu.entra': 'Entrar',
     'menu.guida': 'Cómo se juega',
-    'menu.daSolo': 'Juego solo — sin compañero automático, y algunos enemigos menos',
-    'menu.lingua': 'Idioma',
     'menu.versioneVecchia':
       'Atención: el servidor está en la versión {server} y la aplicación en la {client}. Reinicia el servidor en el PC o faltarán partes del juego.',
 
@@ -640,53 +592,38 @@ const TESTI = {
     'menu.serverNiente':
       'Servidor: no responde — toca para cambiar la dirección, o marca «sin servidor» aquí abajo',
 
-    'menu.dove': 'Dónde corre el juego',
-    'menu.dove.casa': 'En el PC de casa',
-    'menu.dove.telefono': 'En solitario, en este teléfono',
-    'menu.dove.ospite': 'Alojo yo — invito a alguien',
-    'menu.dove.invitato': 'Me uno a una invitación',
-    'menu.invito': 'Intercambiar el código de invitación',
-    'invito.titolo': 'Entre dos, sin ningún servidor',
-    'invito.spiega.ospite':
-      'El mundo corre en este teléfono y el otro se conecta directamente aquí. Pide un código de seis cifras y díselo: al servicio no llega ningún dato de juego, solo ese número.',
-    'invito.spiega.invitato':
-      'El mundo corre en el teléfono de quien te ha invitado. Pídele su código de seis cifras y escríbelo aquí.',
-    'invito.crea': 'Pedir un código',
-    'invito.collega': 'Conectar',
-    'invito.chiudi': 'Volver al menú',
-    'invito.stato.preparo': 'preparando la invitación…',
-    'invito.stato.mandalo': 'mándala y espera la respuesta',
-    'invito.stato.attesa': 'esperando la conexión…',
-    'invito.stato.errore': 'código no válido, o la red no colabora',
-    'invito.stato.nessuno': 'nadie conectado',
-    'invito.stato.invitato': 'invitación creada — espero la respuesta',
-    'invito.stato.collegato': '¡conectado!',
-    'invito.stato.caduto': 'la conexión se ha caído',
-    'guida.invito.titolo': 'Entre dos sin servidor',
+    'guida.invito.titolo': 'Dos por internet: una sala',
     'guida.invito.testo':
-      'Uno de los dos aloja: el mundo corre en su teléfono y el otro se conecta directamente allí, sin nada en medio. Os intercambiáis dos códigos — uno cada uno — por cualquier mensajería, y a partir de ahí los dos teléfonos hablan solos. Quien aloja hace de servidor, así que mejor que sea el que tenga mejor conexión.',
+      'Os poneis de acuerdo en un numero de cuatro cifras y lo escribis los dos: quien llega primero es el anfitrion — el mundo corre en su telefono — y el segundo se conecta directamente alli, sin nada en medio. Nadie elige al anfitrion, y el juego os dice quien es. Si el anfitrion se va, la partida termina: el mundo estaba en su telefono.',
 
-    'invito.codice.tuo': 'Díselo al otro y espera:',
-    'invito.codice.chiedi': 'Escribe el código que te han dicho:',
     'invito.servizio': 'Dirección del servicio',
-    'invito.stato.creo': 'pidiendo un código…',
-    'invito.stato.cerco': 'buscando ese código…',
-    'invito.stato.dilloEAspetta': 'díselo — espero la conexión',
-    'invito.stato.codiceCorto': 'el código es de seis cifras',
     'invito.stato.servizioGiu':
       'el servicio no responde: probad el intercambio a mano de abajo',
 
     'invito.stato.senzaIndirizzo':
       'Falta la dirección del servicio: escríbela abajo. Mientras tanto se puede hacer a mano.',
     'invito.stato.servizioDice': 'el servicio responde:',
+
+    'menu.scegliClasse': 'Eleccion del personaje',
+    'menu.scegliModo': 'Eleccion del modo',
+    'menu.modo.solo': 'Solo',
+    'menu.modo.casa': 'Duo (sin conexion)',
+    'menu.modo.rete': 'Duo (en linea)',
+    'menu.collega': 'Conectar',
+    'menu.versione': 'version',
+    'stanza.quattroCifre': 'hacen falta cuatro cifras',
+    'stanza.entro': 'entrando en la sala...',
+    'stanza.ospitoAspetto': 'anfitrion eres tu: espero al otro',
+    'stanza.cercoChiOspita': 'buscando al anfitrion...',
+    'stanza.collegatoOspiti': 'conectados! Anfitrion eres tu: el juego corre aqui',
+    'stanza.collegatoOspita': 'conectados! El otro telefono es el anfitrion',
+    'stanza.nessunoLi': 'en esta sala no ha aparecido nadie: intentalo otra vez',
+    'stanza.nessunoArrivato': 'no ha venido nadie',
   },
 
   ru: {
-    'menu.sottotitolo': 'Выбери, кто ты. В темноте в одиночку далеко не уйдёшь.',
     'menu.entra': 'Войти',
     'menu.guida': 'Как играть',
-    'menu.daSolo': 'Играю один — без напарника-бота и с меньшим числом врагов',
-    'menu.lingua': 'Язык',
     'menu.versioneVecchia':
       'Внимание: версия сервера {server}, версия приложения {client}. Перезапусти сервер на компьютере, иначе часть игры пропадёт.',
 
@@ -804,52 +741,37 @@ const TESTI = {
     'menu.serverNiente':
       'Сервер: не отвечает — нажми, чтобы сменить адрес, или поставь галочку «без сервера» ниже',
 
-    'menu.dove': 'Где идёт игра',
-    'menu.dove.casa': 'На домашнем ПК',
-    'menu.dove.telefono': 'В одиночку, в этом телефоне',
-    'menu.dove.ospite': 'Принимаю я — приглашаю кого-то',
-    'menu.dove.invitato': 'Подключаюсь по приглашению',
-    'menu.invito': 'Обменяться кодом приглашения',
-    'invito.titolo': 'Вдвоём, вообще без сервера',
-    'invito.spiega.ospite':
-      'Мир идёт в этом телефоне, а другой подключается прямо сюда. Получи код из шести цифр и продиктуй его: игровые данные до сервиса не доходят, только этот номер.',
-    'invito.spiega.invitato':
-      'Мир идёт в телефоне того, кто тебя пригласил. Спроси у него код из шести цифр и введи его здесь.',
-    'invito.crea': 'Получить код',
-    'invito.collega': 'Подключить',
-    'invito.chiudi': 'Назад в меню',
-    'invito.stato.preparo': 'готовлю приглашение…',
-    'invito.stato.mandalo': 'отправь и жди ответ',
-    'invito.stato.attesa': 'жду подключения…',
-    'invito.stato.errore': 'неверный код, или сеть не даёт соединиться',
-    'invito.stato.nessuno': 'никто не подключён',
-    'invito.stato.invitato': 'приглашение создано — жду ответ',
-    'invito.stato.collegato': 'подключено!',
-    'invito.stato.caduto': 'связь оборвалась',
-    'guida.invito.titolo': 'Вдвоём без сервера',
+    'guida.invito.titolo': 'Вдвоём через интернет: комната',
     'guida.invito.testo':
-      'Один из двоих принимает: мир идёт в его телефоне, а второй подключается прямо туда, без всего посередине. Вы обмениваетесь двумя кодами — по одному с каждой стороны — любым мессенджером, а дальше телефоны говорят сами. Кто принимает, тот и сервер, поэтому пусть им будет тот, у кого связь лучше.',
+      'Вы договариваетесь о четырёхзначном числе и вводите его оба: кто вошёл первым, тот ведёт игру — мир крутится на его телефоне — а второй подключается напрямую, без посредников. Ведущего никто не выбирает, и игра сама скажет, кто это. Если ведущий выйдет, партия закончится: мир был на его телефоне.',
 
-    'invito.codice.tuo': 'Продиктуй его другому и жди:',
-    'invito.codice.chiedi': 'Введи код, который тебе назвали:',
     'invito.servizio': 'Адрес сервиса',
-    'invito.stato.creo': 'запрашиваю код…',
-    'invito.stato.cerco': 'ищу этот код…',
-    'invito.stato.dilloEAspetta': 'продиктуй его — жду подключения',
-    'invito.stato.codiceCorto': 'в коде шесть цифр',
     'invito.stato.servizioGiu': 'сервис не отвечает: попробуйте обмен вручную ниже',
 
     'invito.stato.senzaIndirizzo':
       'Нет адреса сервиса: впиши его ниже. Пока можно обменяться вручную.',
     'invito.stato.servizioDice': 'сервис отвечает:',
+
+    'menu.scegliClasse': 'Выбор персонажа',
+    'menu.scegliModo': 'Выбор режима',
+    'menu.modo.solo': 'Один',
+    'menu.modo.casa': 'Вдвоём (оффлайн)',
+    'menu.modo.rete': 'Вдвоём (онлайн)',
+    'menu.collega': 'Подключиться',
+    'menu.versione': 'версия',
+    'stanza.quattroCifre': 'нужны четыре цифры',
+    'stanza.entro': 'вхожу в комнату...',
+    'stanza.ospitoAspetto': 'ты ведёшь игру: жду второго',
+    'stanza.cercoChiOspita': 'ищу того, кто ведёт...',
+    'stanza.collegatoOspiti': 'соединились! Игра идёт здесь',
+    'stanza.collegatoOspita': 'соединились! Игру ведёт другой телефон',
+    'stanza.nessunoLi': 'в этой комнате никто не появился: попробуй ещё',
+    'stanza.nessunoArrivato': 'никто не пришёл',
   },
 
   nl: {
-    'menu.sottotitolo': 'Kies wie je bent. Alleen in het donker kom je nergens.',
     'menu.entra': 'Beginnen',
     'menu.guida': 'Hoe je speelt',
-    'menu.daSolo': 'Ik speel alleen — geen automatische partner, en wat minder vijanden',
-    'menu.lingua': 'Taal',
     'menu.versioneVecchia':
       'Let op: de server is versie {server}, de app is {client}. Herstart de server op de pc, anders ontbreken er delen van het spel.',
 
@@ -970,45 +892,33 @@ const TESTI = {
     'menu.serverNiente':
       'Server: geen antwoord — tik om het adres te wijzigen, of vink “zonder server” hieronder aan',
 
-    'menu.dove': 'Waar het spel draait',
-    'menu.dove.casa': 'Op de pc thuis',
-    'menu.dove.telefono': 'Alleen, op deze telefoon',
-    'menu.dove.ospite': 'Ik host — ik nodig iemand uit',
-    'menu.dove.invitato': 'Ik sluit aan bij een uitnodiging',
-    'menu.invito': 'Uitnodigingscode uitwisselen',
-    'invito.titolo': "Met z'n tweeën, zonder server",
-    'invito.spiega.ospite':
-      'De wereld draait op deze telefoon en de ander verbindt er rechtstreeks mee. Vraag een code van zes cijfers en zeg hem voor: er bereiken geen spelgegevens de dienst, alleen dat nummer.',
-    'invito.spiega.invitato':
-      'De wereld draait op de telefoon van degene die je uitnodigde. Vraag om zijn code van zes cijfers en typ hem hier.',
-    'invito.crea': 'Vraag een code',
-    'invito.collega': 'Verbinden',
-    'invito.chiudi': 'Terug naar het menu',
-    'invito.stato.preparo': 'uitnodiging voorbereiden…',
-    'invito.stato.mandalo': 'stuur hem en wacht op antwoord',
-    'invito.stato.attesa': 'wachten op verbinding…',
-    'invito.stato.errore': 'ongeldige code, of het netwerk werkt niet mee',
-    'invito.stato.nessuno': 'niemand verbonden',
-    'invito.stato.invitato': 'uitnodiging gemaakt — wacht op antwoord',
-    'invito.stato.collegato': 'verbonden!',
-    'invito.stato.caduto': 'de verbinding viel weg',
-    'guida.invito.titolo': 'Met z’n tweeën zonder server',
+    'guida.invito.titolo': 'Met zijn tweeen via internet: een kamer',
     'guida.invito.testo':
-      'Een van de twee host: de wereld draait op zijn telefoon en de ander verbindt er rechtstreeks mee, zonder iets ertussen. Jullie wisselen twee codes uit — één elk — via welke berichtenapp dan ook, en daarna praten de twee telefoons vanzelf. Wie host is de server, dus laat dat degene met de beste verbinding zijn.',
+      'Jullie spreken een getal van vier cijfers af en typen het allebei in: wie er als eerste is, is de host — de wereld draait op zijn telefoon — en de tweede verbindt er rechtstreeks mee, zonder iets ertussen. Niemand kiest de host, en het spel vertelt jullie wie het is. Als de host weggaat, is de partij voorbij: de wereld stond op zijn telefoon.',
 
-    'invito.codice.tuo': 'Zeg hem voor aan de ander en wacht:',
-    'invito.codice.chiedi': 'Typ de code die ze je gaven:',
     'invito.servizio': 'Adres van de dienst',
-    'invito.stato.creo': 'code opvragen…',
-    'invito.stato.cerco': 'die code zoeken…',
-    'invito.stato.dilloEAspetta': 'zeg hem voor — wacht op verbinding',
-    'invito.stato.codiceCorto': 'de code heeft zes cijfers',
     'invito.stato.servizioGiu':
       'de dienst antwoordt niet: probeer de handmatige uitwisseling hieronder',
 
     'invito.stato.senzaIndirizzo':
       'Het adres van de dienst ontbreekt: typ het hieronder. Ondertussen kan het handmatig.',
     'invito.stato.servizioDice': 'de dienst zegt:',
+
+    'menu.scegliClasse': 'Kies je personage',
+    'menu.scegliModo': 'Kies de modus',
+    'menu.modo.solo': 'Alleen',
+    'menu.modo.casa': 'Duo (offline)',
+    'menu.modo.rete': 'Duo (online)',
+    'menu.collega': 'Verbinden',
+    'menu.versione': 'versie',
+    'stanza.quattroCifre': 'er zijn vier cijfers nodig',
+    'stanza.entro': 'de kamer binnengaan...',
+    'stanza.ospitoAspetto': 'jij bent de host: ik wacht op de ander',
+    'stanza.cercoChiOspita': 'op zoek naar de host...',
+    'stanza.collegatoOspiti': 'verbonden! Jij host: het spel draait hier',
+    'stanza.collegatoOspita': 'verbonden! De andere telefoon host',
+    'stanza.nessunoLi': 'in deze kamer is niemand opgedoken: probeer opnieuw',
+    'stanza.nessunoArrivato': 'er is niemand gekomen',
   },
 };
 

@@ -49,6 +49,11 @@ function fintoRedis(comando) {
     roba.set(chiave, { valore, scadenza: Date.now() + durata * 1000 });
     return 'OK';
   }
+  if (nome === 'DEL') {
+    let quante = 0;
+    for (const k of [chiave, valore, ...resto]) if (k && roba.delete(k)) quante++;
+    return quante;
+  }
   throw new Error(`comando che il finto Redis non sa fare: ${nome}`);
 }
 
@@ -95,6 +100,19 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       res.writeHead(500).end(JSON.stringify({ error: String(e.message) }));
     }
+    return;
+  }
+
+  // Una manopola che esiste SOLO qui, mai su Vercel: fa scadere una chiave
+  // adesso invece che fra un minuto e mezzo. Serve a provare cosa succede
+  // quando chi ospita chiude l'app e il suo posto si libera — un caso che
+  // capita davvero e che senza questa manopola si potrebbe provare solo
+  // aspettando novanta secondi, cioe' non provandolo mai.
+  if (url.pathname === '/prova/scadi') {
+    const chiave = url.searchParams.get('chiave') ?? '';
+    const cera = roba.delete(chiave);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ scaduta: cera }));
     return;
   }
 

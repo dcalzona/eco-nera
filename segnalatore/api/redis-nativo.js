@@ -137,5 +137,6 @@ export function magazzinoNativo(url) {
     scrivi: (chiave, valore, durata) =>
       comandoRedis(url, ['SET', chiave, valore, 'EX', String(durata)]),
     leggi: (chiave) => comandoRedis(url, ['GET', chiave]),
+    cancella: (chiave) => comandoRedis(url, ['DEL', chiave]),
   };
 }

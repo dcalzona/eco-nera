@@ -84,20 +84,32 @@ async function chiedi(percorso, opzioni) {
   return d;
 }
 
-/** Chi ospita: lascia la sua offerta e si prende un codice di sei cifre. */
-export async function creaStanza(offerta) {
-  const d = await chiedi('/api/stanza', { method: 'POST', body: JSON.stringify({ offerta }) });
-  return d.codice;
+/**
+ * Entra nella stanza e scopri chi sei.
+ *
+ * Nessuno dichiara di voler ospitare: si entra nello stesso numero e il
+ * servizio dice a ciascuno che parte ha. Il primo che arriva ospita, e a
+ * deciderlo e' una scrittura che riesce a uno solo — non un controllo seguito
+ * da una decisione, che lascerebbe il tempo a tutti e due di credersi i primi.
+ */
+export async function entraInStanza(stanza) {
+  const d = await chiedi('/api/stanza', { method: 'POST', body: JSON.stringify({ stanza }) });
+  return d.ruolo; // 'ospita' | 'invitato'
 }
 
-/** Chi e' invitato: si fa dare l'offerta di chi ospita. */
-export async function leggiStanza(codice) {
-  return chiedi(`/api/stanza?codice=${encodeURIComponent(codice)}`, { method: 'GET' });
+/** Chi ospita: lascia la sua offerta. Rifarlo tiene viva la stanza. */
+export async function lasciaOfferta(stanza, offerta) {
+  return chiedi('/api/stanza', { method: 'PUT', body: JSON.stringify({ stanza, offerta }) });
 }
 
-/** Chi e' invitato: lascia la sua risposta sotto lo stesso codice. */
-export async function lasciaRisposta(codice, risposta) {
-  return chiedi('/api/stanza', { method: 'PUT', body: JSON.stringify({ codice, risposta }) });
+/** Chi e' invitato: lascia la sua risposta. */
+export async function lasciaRisposta(stanza, risposta) {
+  return chiedi('/api/stanza', { method: 'PUT', body: JSON.stringify({ stanza, risposta }) });
+}
+
+/** Cosa c'e' nella stanza adesso. Vuota non e' un errore: e' chi e' arrivato primo. */
+export async function guardaStanza(stanza) {
+  return chiedi(`/api/stanza?stanza=${encodeURIComponent(stanza)}`, { method: 'GET' });
 }
 
 /**
@@ -107,19 +119,60 @@ export async function lasciaRisposta(codice, risposta) {
  * secondi e capita una volta a partita e' la cosa piu' semplice che funziona —
  * e soprattutto non richiede che il servizio tenga aperto niente, che e' il
  * motivo per cui puo' stare su Vercel e costare zero.
+ *
+ * Ogni tanto si riscrive anche l'offerta: e' il battito che tiene il posto.
+ * Senza, dopo un minuto e mezzo la stanza scade sotto i piedi di chi sta li'
+ * ad aspettare, e l'altro arrivando si troverebbe host al posto suo.
  */
-export function aspettaRisposta(codice, { ogni = 1500, finoA = 150000, fermati } = {}) {
+export function aspettaRisposta(
+  stanza,
+  offerta,
+  { ogni = 1500, finoA = 150000, battito = 30000, fermati } = {},
+) {
   const scadenza = Date.now() + finoA;
+  let ultimoBattito = Date.now();
   return new Promise((riuscito, fallito) => {
     const guarda = async () => {
       if (fermati?.()) return fallito(new Error('annullato'));
       if (Date.now() > scadenza) return fallito(new Error('nessuno si e collegato'));
       try {
-        const d = await leggiStanza(codice);
+        const d = await guardaStanza(stanza);
         if (d.risposta) return riuscito(d.risposta);
+        if (Date.now() - ultimoBattito > battito) {
+          ultimoBattito = Date.now();
+          await lasciaOfferta(stanza, offerta);
+        }
       } catch (e) {
         // Una chiesta andata storta non e' la fine: si riprova al giro dopo.
-        // Se e' la stanza a essere scaduta, lo dira' il tempo massimo.
+      }
+      setTimeout(guarda, ogni);
+    };
+    guarda();
+  });
+}
+
+/**
+ * Chi e' invitato aspetta che chi ospita abbia lasciato la sua offerta.
+ *
+ * Di solito c'e' gia' o ci mette un attimo — il tempo che l'altro telefono
+ * finisca di raccogliere i suoi indirizzi. Ma se chi ospita ha chiuso l'app
+ * senza salutare, il suo posto resta occupato e qui non arriva mai niente: per
+ * questo si smette dopo un po' invece di girare in tondo. Chi smette lo scopre
+ * riprovando, quando il posto sara' scaduto e potra' prenderlo lui.
+ */
+export function aspettaOfferta(stanza, { ogni = 1000, finoA = 25000, fermati } = {}) {
+  const scadenza = Date.now() + finoA;
+  return new Promise((riuscito, fallito) => {
+    const guarda = async () => {
+      if (fermati?.()) return fallito(new Error('annullato'));
+      if (Date.now() > scadenza) {
+        return fallito(new Error('chi ospita non si e fatto vivo'));
+      }
+      try {
+        const d = await guardaStanza(stanza);
+        if (d.offerta) return riuscito(d.offerta);
+      } catch (e) {
+        /* si riprova al giro dopo */
       }
       setTimeout(guarda, ogni);
     };
