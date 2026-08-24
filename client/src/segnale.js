@@ -6,16 +6,19 @@
 // chiavi cifra — e ricevere indietro la stessa cosa. Quel primo scambio se lo
 // deve inventare chi scrive il gioco.
 //
-// Qui l'invenzione e' la piu' semplice possibile: la descrizione diventa un
-// codice di testo, e ve lo passate come vi pare — WhatsApp, un messaggio, a
-// voce se avete pazienza. Non c'e' nessun servizio in mezzo, niente da
-// installare e niente da pagare. Costa due copia-e-incolla a partita: e' il
-// prezzo di non avere un server, e per adesso e' un prezzo che si paga
-// volentieri.
+// Qui la descrizione diventa un codice di testo compatto, e a passarlo da una
+// parte all'altra ci pensa il segnalatore: chi ospita la lascia li' sotto un
+// numero di sei cifre, l'altro scrive quel numero e se la prende.
 //
-// Piu' avanti quei due copia-e-incolla diventeranno un codice di quattro
-// cifre, e a quel punto servira' un servizietto in mezzo. La forma del
-// collegamento pero' resta questa, e non cambiera' piu' niente sotto.
+// Per un pezzo quei due codici si passavano a mano — WhatsApp, un messaggio,
+// a voce se uno aveva pazienza — ed era la parte piu' scomoda del gioco:
+// dieci minuti per cominciare una partita, e un carattere sbagliato buttava
+// via tutto. Adesso c'e' il numero, e la strada a mano e' stata tolta: tenerla
+// li' accanto a quella buona faceva solo credere che quella buona non
+// bastasse.
+//
+// Il segnalatore serve solo a questo primo scambio. Da qui in poi i due
+// telefoni si parlano diretti e lui non c'entra piu' niente.
 
 /**
  * I server STUN servono a una cosa sola: dire a un telefono qual e' il suo

@@ -86,9 +86,15 @@ function creaRete(quale) {
         : quale === 'invitato'
           ? new ReteRemota()
           : new Rete();
-  r.alCambioOspite = () => aggiornaStatoServer();
+  // Chi ospita: l'altro e' arrivato.
+  r.alCambioOspite = () => {
+    if (r.statoOspite === 'collegato') chiudiPannelloInvito();
+    else aggiornaStatoServer();
+  };
   r.chiediIndirizzo = chiediIndirizzo;
+  // Chi e' invitato: il filo si e' teso.
   r.chiediClasse = () => {
+    if (r.collegamento === 'aperto') chiudiPannelloInvito();
     pannelloMenu.hidden = false;
     avvisaSeDisallineato();
   };
@@ -287,16 +293,13 @@ document.getElementById('senzaServer').addEventListener('click', () => {
 });
 
 // --- Lo scambio dell'invito ---------------------------------------------
-// Due codici, uno per parte. E' la parte piu' scomoda di tutto il gioco, e si
-// vede: ma e' anche l'unica che non chiede nessun server acceso da nessuna
-// parte, e quindi funziona anche in treno.
+// Un numero di sei cifre, detto a voce. Prima qui c'erano anche due codici
+// lunghissimi da copiare a mano, come via di riserva quando il servizio non
+// rispondeva: era una porta di servizio messa accanto a quella buona, e non
+// faceva altro che far credere che quella buona non bastasse.
 const pannelloInvito = document.getElementById('invito');
-const mioCodice = document.getElementById('mioCodice');
-const suoCodice = document.getElementById('suoCodice');
 const invitoStato = document.getElementById('invitoStato');
 const passoCrea = document.getElementById('passoCrea');
-const passoMio = document.getElementById('passoMio');
-const passoSuo = document.getElementById('passoSuo');
 const passoCodice = document.getElementById('passoCodice');
 const passoChiedi = document.getElementById('passoChiedi');
 const campoCodice = document.getElementById('campoCodice');
@@ -307,25 +310,12 @@ let annullato = false;
 function apriPannelloInvito() {
   traduciPagina(pannelloInvito);
   document.getElementById('invitoSpiega').textContent = t(`invito.spiega.${modo}`);
-  document.getElementById('invitoIncollaEtichetta').textContent = t(`invito.incolla.${modo}`);
-  document.getElementById('usaCodice').textContent =
-    t(modo === 'ospite' ? 'invito.collega' : 'invito.rispondi');
-  const campoServizio = document.getElementById('campoServizio');
-  campoServizio.value = indirizzoSegnalatore();
-  // Senza indirizzo non c'e' niente da provare: si dice subito e si apre lo
-  // scambio a mano, che funziona comunque.
-  if (!segnalatoreImpostato()) {
-    document.getElementById('aMano').open = true;
-  }
+  document.getElementById('campoServizio').value = indirizzoSegnalatore();
 
   // Chi ospita si fa dare un numero; chi e' invitato lo scrive.
   passoCrea.hidden = modo !== 'ospite';
   passoCodice.hidden = true;
   passoChiedi.hidden = modo === 'ospite';
-  passoMio.hidden = true;
-  passoSuo.hidden = false;
-  mioCodice.value = '';
-  suoCodice.value = '';
   campoCodice.value = '';
   codiceGrande.textContent = '';
   invitoStato.textContent = '';
@@ -334,11 +324,24 @@ function apriPannelloInvito() {
   pannelloInvito.hidden = false;
 }
 
-document.getElementById('chiudiInvito').addEventListener('click', () => {
-  annullato = true;
+/**
+ * Il pannello ha finito: si torna al menu.
+ *
+ * Serve sia a chi rinuncia sia a chi si e' collegato, e per un pezzo l'ha
+ * usata solo il primo: il pannello restava aperto a dire "aspetto il
+ * collegamento" sopra un menu che sotto diceva gia' "collegato!". I due
+ * telefoni si erano trovati, i canali erano aperti, e non si vedeva — che e'
+ * il guasto peggiore, perche' non c'e' niente da leggere da nessuna parte.
+ */
+function chiudiPannelloInvito() {
   pannelloInvito.hidden = true;
   pannelloMenu.hidden = false;
   aggiornaStatoServer();
+}
+
+document.getElementById('chiudiInvito').addEventListener('click', () => {
+  annullato = true;
+  chiudiPannelloInvito();
 });
 
 document.getElementById('campoServizio').addEventListener('change', (e) => {
@@ -361,10 +364,6 @@ document.getElementById('creaInvito').addEventListener('click', async () => {
     return;
   }
 
-  // Lo scambio a mano resta pronto sotto, per quando il servizio non risponde.
-  mioCodice.value = offerta;
-  passoMio.hidden = false;
-
   try {
     invitoStato.textContent = t('invito.stato.creo');
     const numero = await creaStanza(offerta);
@@ -379,7 +378,6 @@ document.getElementById('creaInvito').addEventListener('click', async () => {
   } catch (e) {
     passoCrea.hidden = true;
     invitoStato.textContent = perche(e);
-    document.getElementById('aMano').open = true;
     if (e.senzaIndirizzo) document.getElementById('campoServizio').focus();
   }
 });
@@ -417,45 +415,7 @@ document.getElementById('usaNumero').addEventListener('click', async () => {
     invitoStato.textContent = t('invito.stato.attesa');
   } catch (e) {
     invitoStato.textContent = perche(e);
-    document.getElementById('aMano').open = true;
     if (e.senzaIndirizzo) document.getElementById('campoServizio').focus();
-  }
-});
-
-// --- La via di riserva: i due codici lunghi, a mano ---------------------
-document.getElementById('usaCodice').addEventListener('click', async () => {
-  suoni.avvia();
-  const codice = suoCodice.value.trim();
-  if (!codice) return;
-  try {
-    if (modo === 'ospite') {
-      await rete.chiudiInvito(codice);
-      invitoStato.textContent = t('invito.stato.attesa');
-    } else {
-      mioCodice.value = await rete.rispondi(codice);
-      passoMio.hidden = false;
-      invitoStato.textContent = t('invito.stato.rimandalo');
-    }
-  } catch (e) {
-    invitoStato.textContent = t('invito.stato.errore');
-  }
-});
-
-document.getElementById('copiaCodice').addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(mioCodice.value);
-    invitoStato.textContent = t('invito.stato.copiato');
-  } catch {
-    // Senza permesso per gli appunti si ripiega sulla selezione: si copia a mano.
-    mioCodice.select();
-  }
-});
-
-document.getElementById('condividiCodice').addEventListener('click', async () => {
-  try {
-    await navigator.share({ text: mioCodice.value });
-  } catch {
-    /* annullato, o non si puo' */
   }
 });
 

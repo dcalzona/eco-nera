@@ -38,6 +38,23 @@ almeno sulle **reti private**, altrimenti il telefono non entra.
 Da soli il server mette in campo un **fantoccio** che gira per la mappa, cosi'
 si prova con un cellulare solo. Appena entra una seconda persona, sparisce.
 
+### Provare senza rifare l'APK
+
+**L'APK serve solo per giocare sul serio.** Per provare una modifica non serve
+affatto: dal browser del telefono si apre lo stesso indirizzo che stampa il
+terminale, e c'e' tutto il gioco — compreso il collegamento fra due telefoni,
+che funziona anche fuori da un contesto sicuro. Provato: WebRTC, compressione e
+canale dati vanno tutti su `http://192.168.x.x:5190`.
+
+L'unica cosa che manca e' il **blocco dello schermo**, che i browser danno solo
+in HTTPS: giocando a lungo dal browser lo schermo si spegne da solo. Per
+provare non importa, per giocare si', ed e' l'unico motivo per cui l'APK esiste
+anche in casa.
+
+Due schede dello stesso browser sul PC bastano per provare tutto il ballo
+dell'invito, ed e' il modo piu' veloce: uno ospita, l'altro si collega, e si
+vede subito se qualcosa non si muove.
+
 ## L'app Android
 
 ```bash
@@ -180,9 +197,11 @@ accorgerebbe nessuno**. Al servizio arrivano solo le descrizioni WebRTC —
 indirizzi e chiavi — mai un dato di gioco. Una partita sono tre richieste in
 tutto: sta nel piano gratuito con quattro ordini di grandezza di margine.
 
-Resta anche **lo scambio a mano**, sotto una piega del pannello: i due codici
-lunghi da passarsi con un messaggio. Serve quando il servizio non risponde, ed
-e' li' apposta perche' una serata non debba dipendere da un servizio.
+Per un po' e' rimasta anche una via di riserva — i due codici lunghi da
+passarsi con un messaggio, sotto una piega del pannello — pensata per quando il
+servizio non risponde. E' stata tolta: una seconda porta, peggiore, messa
+accanto a quella buona non rassicura, fa dubitare. Chi la vedeva si chiedeva se
+il numero di sei cifre bastasse davvero.
 
 Gli unici estranei sono i server **STUN**, che servono a dire a un telefono qual
 e' il suo indirizzo visto da fuori. Non ci passa nessun dato di gioco. Quando

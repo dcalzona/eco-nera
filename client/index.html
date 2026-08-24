@@ -113,8 +113,6 @@
         background: #0c1017; color: #dfe6f5;
         border: 1px solid #2a3550; border-radius: 10px;
       }
-      #aMano { margin-top: 16px; }
-      #aMano summary { font-size: 12px; color: #78849f; cursor: pointer; }
       #rigaServizio { margin-top: 14px; font-size: 11px; color: #5c6780; }
       #rigaServizio input {
         font: 11px ui-monospace, Consolas, monospace; width: 100%;
@@ -317,8 +315,8 @@
       </div>
     </div>
 
-    <!-- Giocare in due senza nessun server: ci si scambia due codici e i due
-         telefoni si parlano direttamente. -->
+    <!-- Giocare in due senza nessun server: uno si fa dare un numero di sei
+         cifre, lo dice all'altro, e i due telefoni si parlano direttamente. -->
     <div id="invito" hidden>
       <div id="invitoDentro">
         <h1 data-t="invito.titolo"></h1>
@@ -347,29 +345,8 @@
 
         <p id="invitoStato"></p>
 
-        <!-- La via di riserva, se il servizio non risponde. -->
-        <details id="aMano">
-          <summary data-t="invito.aMano"></summary>
-          <div class="passo" id="passoMio" hidden>
-            <p data-t="invito.mandaQuesto"></p>
-            <textarea id="mioCodice" readonly></textarea>
-            <div class="pulsantiera">
-              <button id="copiaCodice" type="button" data-t="invito.copia"></button>
-              <button id="condividiCodice" type="button" class="secondario" data-t="invito.condividi"></button>
-            </div>
-          </div>
-          <div class="passo" id="passoSuo">
-            <p id="invitoIncollaEtichetta"></p>
-            <textarea id="suoCodice" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
-            <div class="pulsantiera">
-              <button id="usaCodice" type="button"></button>
-            </div>
-          </div>
-        </details>
-
-        <!-- L'indirizzo del servizio sta in chiaro e non sotto la piega: senza
-             quello non funziona niente, e nasconderlo vuol dire far cercare a
-             chi gioca la cosa che gli serve per prima. -->
+        <!-- L'indirizzo del servizio, per chi ne vuole uno suo. Sta in
+             chiaro perche' senza quello non funziona niente. -->
         <label id="rigaServizio">
           <span data-t="invito.servizio"></span>
           <input id="campoServizio" type="text" inputmode="url" autocomplete="off"
