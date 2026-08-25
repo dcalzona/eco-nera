@@ -46,7 +46,7 @@ export class ReteOspite extends ReteLocale {
    */
   async apriInvito() {
     this.chiudiPresa();
-    if (!this.mondo) this.mondo = new Mondo();
+    if (!this.mondo) this.mondo = new Mondo(this.difficolta);
 
     const presa = nuovaPresa();
     this.presa = presa;
@@ -82,13 +82,25 @@ export class ReteOspite extends ReteLocale {
     await accettaRisposta(this.presa, codice);
   }
 
+  /**
+   * Il compagno se n'e' andato.
+   *
+   * NON si fa uscire il suo personaggio dal mondo e NON si riparte: si mette
+   * tutto in pausa e si aspetta. Puo' essere una galleria, il telefono che ha
+   * spento lo schermo, l'app finita in secondo piano — e in tutti e tre i casi
+   * fra un minuto e' di nuovo qui. Buttare fuori il personaggio vorrebbe dire
+   * che al ritorno ne trova un altro, all'ingresso, senza piu' niente addosso.
+   */
   ospiteSeNeVa() {
-    if (this.idOspite !== null && this.mondo) this.mondo.esce(this.idOspite);
-    this.idOspite = null;
     if (this.statoOspite === 'collegato') {
       this.statoOspite = 'caduto';
       this.alCambioOspite?.(this.statoOspite);
     }
+  }
+
+  /** In partita e senza il compagno: il mondo aspetta. */
+  inPausa() {
+    return this.stato === 'dentro' && this.statoOspite === 'caduto';
   }
 
   chiudiPresa() {

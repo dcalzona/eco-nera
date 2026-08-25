@@ -438,6 +438,131 @@ personaggi a terra, nemici feriti, bombe in mano e casse raccolte: se il
 rimontaggio sbagliasse un campo si vedrebbe come un nemico sempre intero o un
 compagno senza nome, cose che in partita si notano tardi e si spiegano peggio.
 
+## Quello che si spende
+
+Per sei settori il gioco era una passeggiata, e la causa non era la
+difficolta': era che **non c'era niente da amministrare**. Si sparava
+all'infinito, il riparo si ripiantava aspettando sedici secondi, e dal settore
+otto in poi i numeri smettevano di crescere — quattordici nemici, quattro
+obiettivi, una cassa — quindi ogni settore era identico al precedente tranne il
+numero scritto in cima.
+
+### Le munizioni
+
+Tre caricatori a testa, e finiti quelli si va a cercarne.
+
+| classe | caricatore | totale | colpi per nemico | **nemici con una dotazione** |
+| --- | --- | --- | --- | --- |
+| Eco | 10 | 30 | 1 | **30** |
+| Faro | 10 | 30 | 2 | 15 |
+| Assalto | 20 | 60 | 5 | **12** |
+
+I numeri non sono uguali per tutti, e non e' bilanciamento: e' l'identita' delle
+classi vista dal lato del costo. Chi spara tanto finisce presto, chi mira bene
+dura — la stessa cosa che il gioco gia' diceva con la gittata, detta un'altra
+volta con le riserve. Un settore sono sette-quattordici nemici, quindi con
+l'Assalto una dotazione copre poco piu' di un settore.
+
+Il caricatore si rimette **da solo** appena la canna e' vuota. All'inizio
+partiva solo premendo il grilletto a vuoto, e provandolo si e' visto subito
+perche' non va: voleva dire restare disarmati proprio mentre si scappa, che e'
+il momento in cui uno vorrebbe che l'arma si stesse gia' ricaricando da se'.
+
+### Lo Sniper uccideva peggio di tutti
+
+Il colpo dell'Eco faceva **36**, la vita di un pattugliatore e' **46**:
+mancava il colpo secco per dieci punti, quindi ne servivano due a 0,9 secondi
+l'uno. Era il piu' lento dei tre a uccidere — 0,90 secondi contro 0,64
+dell'Assalto e 0,42 del Faro — e per giunta doveva azzeccare un colpo stretto da
+lontano. La classe piu' difficile da usare era anche la peggiore, e non per
+sensazione: per aritmetica.
+
+Adesso fa 52. Uccide in un colpo, ed e' la classe che **dura**: trenta nemici
+con la stessa dotazione con cui l'Assalto ne fa dodici.
+
+### Le stazioni
+
+Colpi, kit, sonar e ripari, tutto insieme. Bisogna **starci fermi sopra** un
+paio di secondi, e non e' un fastidio aggiunto: e' quello che rende il
+rifornirsi una decisione. Passandoci di corsa non succede niente.
+
+Ognuno la puo' usare **una volta sola**. Una stazione che si riusa
+all'infinito non e' un rifornimento, e' un accampamento: ci si torna dietro
+ogni volta che si e' a secco e la scarsita' non esiste piu'.
+
+Quante ce ne siano dipende da quanto si e' scesi — tre nei settori 1-5, due nei
+6-10, una negli 11-15 — cosi' la stessa mappa pesa diversamente a seconda di
+quando ci si arriva. Restano disegnate anche dopo, spente: vedere che c'e' e
+che non serve piu' e' un'informazione, vedere il vuoto dove era non lo e'.
+
+### Il riparo si conta
+
+Due per settore, e si ricaricano alle stazioni. Prima bastava aspettare la
+ricarica e ripiantarlo all'infinito, e ogni stanza diventava una posizione da
+tenere: comodo, e proprio per questo noioso.
+
+## Quindici settori, e poi si e' finita
+
+Prima non finiva mai, e non era una scelta: era che nessuno aveva deciso dove
+finisse. Le mappe crescono lungo la campagna — 44x26 al primo, 74x42 al
+quindicesimo, quasi il triplo di spazio e il doppio delle stanze — quindi il
+giro e' piu' lungo, le stazioni sono piu' lontane fra loro, e tornare indietro
+a rifornirsi comincia a costare davvero.
+
+### L'evacuazione
+
+Tenere l'uscita costa **sette secondi fermi nel cerchio**, e di piu' alle
+difficolta' alte. E il conto riparte se qualcuno ne esce: coi rinforzi che
+arrivano ogni tre secondi e mezzo, in pratica sono una ventina di secondi da
+combattere, non da aspettare.
+
+C'era un primo tentativo sbagliato, e vale la pena raccontarlo: l'uscita restava
+**chiusa** per una dozzina di secondi dopo la missione. Sembrava piu' duro, ed
+era solo arbitrario — il viaggio di ritorno e' gia' l'evacuazione, e una porta
+a tempo punisce chi arriva in fretta, che resta su un cerchio spento senza
+niente da fare. Provandolo, il giocatore moriva li' in piedi ad aspettare una
+porta. Cosi' non e' piu' un'attesa: e' una posizione da difendere.
+
+## Le quattro difficolta'
+
+**Facile e' esattamente il gioco di prima**, numero per numero: chi ci ha gia'
+giocato deve ritrovare quello che conosce, non una versione ritoccata di
+nascosto. Le altre moltiplicano a partire da li'.
+
+| | facile | normale | difficile | incubo |
+| --- | --- | --- | --- | --- |
+| nemici nel settore 1 | 7 | 9 | 11 | 13 |
+| **con l'allarme** | **10** | **13** | **15** | **19** |
+| stazioni nei primi 5 settori | 3 | 3 | 2 | 2 |
+| caricatori | 3 | 3 | 2 | 2 |
+
+Non si tocca la **vita** dei nemici, di proposito: gonfiarla fa solo sparare
+piu' a lungo alla stessa cosa, che e' noia travestita da sfida. Si tocca quanti
+sono, quanto fanno male, quanto in fretta arrivano i rinforzi, e quanto vi
+resta in tasca.
+
+Col server di casa la difficolta' la decide chi lo accende
+(`node server/server.js --difficolta incubo`) e non chi entra: il mondo e' uno
+solo per tutti quelli che si collegano, e se la scegliesse chi entra il secondo
+cambierebbe la partita al primo a meta' spedizione.
+
+## Se il compagno sparisce
+
+Il mondo vive nel telefono di chi ospita. Se quell'app viene chiusa davvero, il
+mondo non esiste piu': non c'e' niente da mettere in pausa, e nessun codice
+sull'altro telefono puo' congelare una partita che non c'e'.
+
+Quello che si fa e' l'altra meta', che poi e' quasi tutti i casi veri — una
+galleria, lo schermo che si spegne, l'app finita in secondo piano. Il mondo di
+chi ospita **si ferma**, e non a meta': non si fa nemmeno uscire il personaggio
+dell'altro, sennò al ritorno ne troverebbe uno nuovo all'ingresso senza piu'
+niente addosso. Si aspetta, senza scadenze: quando torna, si riprende dallo
+stesso passo.
+
+E l'orologio non recupera: senza quell'accortezza, al ritorno il mondo
+consumerebbe di colpo tutti i secondi di pausa e i nemici si
+teletrasporterebbero.
+
 ## Le lingue
 
 Italiano, inglese, francese, spagnolo, russo e olandese. Si scelgono dal menu e
@@ -790,3 +915,4 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **7. Le missioni** — tre modalita' con briefing, e il riparo dell'Assalto
 - [x] **8. Fuori casa** — controller, e il server dentro il telefono
 - [x] **9. In due ovunque** — i due telefoni si parlano da soli, dentro una stanza di quattro cifre
+- [x] **10. Qualcosa da amministrare** — munizioni, stazioni, ripari contati, quattro difficolta' e quindici settori con una fine

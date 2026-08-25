@@ -6,7 +6,7 @@
  * parte (mira assistita, allarme, modalita' in solitaria) e sembra che il
  * gioco sia rotto. Se i numeri non coincidono, ora lo si legge a schermo.
  */
-export const VERSIONE = '2.0';
+export const VERSIONE = '3.0';
 
 // Numeri che server e client devono conoscere allo stesso modo.
 // Questa cartella e' condivisa: il server la importa da ../client/condiviso/,
@@ -198,9 +198,103 @@ export function casseDelSettore(numero) {
  */
 export const ARMI = {
   faro: { cadenza: 0.42, colpi: 5, dispersione: 0.34, gittata: 190, danno: 9, velocita: 640, rumore: 15 },
-  eco: { cadenza: 0.9, colpi: 1, dispersione: 0.015, gittata: 430, danno: 36, velocita: 940, rumore: 9 },
+  // 52 e non 36, e il numero che conta e' 46: la vita di un pattugliatore.
+  // Con 36 l'Eco sbagliava il colpo secco per dieci punti, quindi gliene
+  // servivano due a 0,9 secondi l'uno — era il PIU' LENTO dei tre a uccidere
+  // (0,90 s contro 0,64 dell'Assalto e 0,42 del Faro) e per giunta doveva
+  // azzeccare un colpo stretto da lontano. Non era una sensazione, era
+  // aritmetica: la classe piu' difficile da usare era anche la peggiore.
+  eco: { cadenza: 0.9, colpi: 1, dispersione: 0.015, gittata: 430, danno: 52, velocita: 940, rumore: 9 },
   assalto: { cadenza: 0.16, colpi: 1, dispersione: 0.07, gittata: 300, danno: 10, velocita: 820, rumore: 12 },
 };
+
+// --- Le munizioni ----------------------------------------------------------
+
+/**
+ * Tre caricatori a testa, e finiti quelli si va a cercarne.
+ *
+ * Prima si sparava all'infinito, ed e' meta' del motivo per cui dopo sei
+ * settori il gioco diventava una passeggiata: non c'era NIENTE da
+ * amministrare. Un colpo che costa qualcosa cambia ogni decisione — se
+ * ingaggiare o passare oltre, se finire quello ferito o risparmiare, se
+ * tornare indietro fino alla stazione o tirare avanti al buio.
+ *
+ * I numeri non sono uguali per tutti, e non e' bilanciamento: e' l'identita'
+ * delle classi vista dal lato del costo. L'Assalto ha il doppio dei colpi e ne
+ * spende cinque per nemico; l'Eco ne ha dieci e ne spende uno. Chi spara tanto
+ * finisce presto, chi mira bene dura — ed e' la stessa cosa che il gioco gia'
+ * diceva con la gittata, detta un'altra volta con le riserve.
+ */
+export const MUNIZIONI = {
+  faro: { caricatore: 10, caricatori: 3, ricarica: 1.7 },
+  eco: { caricatore: 10, caricatori: 3, ricarica: 2.1 },
+  assalto: { caricatore: 20, caricatori: 3, ricarica: 1.5 },
+};
+
+export function munizioniDi(ruolo) {
+  return MUNIZIONI[ruolo] ?? MUNIZIONI.faro;
+}
+
+// --- Le stazioni ------------------------------------------------------------
+
+/**
+ * Dove si ricarica tutto: colpi, kit, sonar e riparo.
+ *
+ * Ce ne sono meno man mano che la campagna scende — tre nei primi cinque
+ * settori, due nei cinque di mezzo, una negli ultimi — cosi' la stessa mappa
+ * pesa diversamente a seconda di quando ci si arriva. E' la stessa curva delle
+ * casse, e per lo stesso motivo: sotto una non si scende mai, perche' un
+ * settore senza niente non e' difficile, e' solo crudele.
+ */
+export const STAZIONE = {
+  raggio: 32,
+  usa: 2.2, // secondi fermi addosso per prendere tutto
+  quante: [3, 2, 1], // nelle tre fasi della campagna
+};
+
+export function stazioniDelSettore(numero, difficolta = 'facile') {
+  const fase = Math.min(2, Math.floor((numero - 1) / (SETTORI_PER_FINIRE / 3)));
+  const base = STAZIONE.quante[fase];
+  return Math.max(1, Math.round(base * regoleDifficolta(difficolta).stazioni));
+}
+
+// --- La campagna ------------------------------------------------------------
+
+/**
+ * Quindici settori e si e' finita.
+ *
+ * Prima non finiva mai, e non era una scelta: era che nessuno aveva deciso
+ * dove finisse. Dall'ottavo in poi i numeri smettevano di crescere — quattordici
+ * nemici, quattro obiettivi, una cassa — e ogni settore era identico al
+ * precedente tranne il numero scritto in cima. Andare avanti non voleva dire
+ * niente, e infatti dopo sei si smetteva.
+ */
+export const SETTORI_PER_FINIRE = 15;
+
+// --- Le quattro difficolta' -------------------------------------------------
+
+/**
+ * Quella di prima diventa "facile", e resta esattamente com'era: chi ha gia'
+ * giocato deve ritrovare il gioco che conosce, non una versione ritoccata di
+ * nascosto. Tutte le altre si moltiplicano a partire da li'.
+ *
+ * Le manopole sono poche di proposito. Non si tocca la VITA dei nemici —
+ * gonfiarla fa solo sparare piu' a lungo alla stessa cosa, che e' noia
+ * travestita da sfida. Si tocca quanti sono, quanto fanno male, quanto in
+ * fretta arrivano i rinforzi, e quanto vi resta in tasca.
+ */
+export const DIFFICOLTA = ['facile', 'normale', 'difficile', 'incubo'];
+
+const REGOLE_DIFFICOLTA = {
+  facile: { nemici: 1, danno: 1, rinforzi: 1, caricatori: 1, stazioni: 1, evacuazione: 1 },
+  normale: { nemici: 1.25, danno: 1.25, rinforzi: 0.8, caricatori: 1, stazioni: 1, evacuazione: 1.25 },
+  difficile: { nemici: 1.5, danno: 1.5, rinforzi: 0.62, caricatori: 0.67, stazioni: 0.7, evacuazione: 1.5 },
+  incubo: { nemici: 1.85, danno: 1.9, rinforzi: 0.45, caricatori: 0.67, stazioni: 0.5, evacuazione: 1.8 },
+};
+
+export function regoleDifficolta(quale) {
+  return REGOLE_DIFFICOLTA[quale] ?? REGOLE_DIFFICOLTA.facile;
+}
 
 /** Quanto si resta a terra prima di morire davvero, e cosa serve per rialzarsi. */
 export const CRITICO_SECONDI = 30;
@@ -304,6 +398,18 @@ export const ABILITA = {
  * larga la fascia in cui si rallenta: piu' larga di quella vera, altrimenti si
  * scavalca in due decimi di secondo e non si sente niente.
  */
+/**
+ * Quanti ripari si possono piantare in un settore.
+ *
+ * Prima erano infiniti, con solo un'attesa fra l'uno e l'altro: bastava
+ * aspettare sedici secondi e ripiantarlo, e ogni stanza diventava una
+ * posizione da tenere. Due per settore, e si ricaricano alle stazioni, vuol
+ * dire doverli SPENDERE — decidere dove vale la pena fermarsi e dove no. E'
+ * la stessa medicina delle munizioni: quello che non costa niente non si
+ * amministra, e quello che non si amministra annoia.
+ */
+export const RIPARI_PER_SETTORE = 2;
+
 export const RIPARO = {
   mezzaLunghezza: 30, // quasi due caselle di larghezza in tutto
   spessore: 9,
@@ -335,7 +441,16 @@ export const IMPULSO_SONAR = 1.6;
  */
 export const ALLARME = {
   richiamo: 2.4, // ogni quanto i nemici si aggiornano su dove siete
-  rinforzi: 5, // secondi fra un rinforzo e l'altro, invece di dodici
+  /**
+   * Ogni quanto arriva un rinforzo durante l'evacuazione.
+   *
+   * Era 5 secondi anche in facile, e il ritorno finiva prima che qualcuno
+   * riuscisse a tagliarvi la strada: si usciva quasi sempre indisturbati, e
+   * l'allarme era una scritta piu' che una fase. Adesso 3,4 anche al livello
+   * piu' basso, e le difficolta' piu' alte lo stringono ancora.
+   */
+  rinforzi: 3.4,
+
   memoria: 10, // quanto a lungo continuano a cercarvi dopo il richiamo
   // Con l'allarme corrono: da fermi sono piu' lenti di voi, e inseguendovi da
   // dietro non vi raggiungerebbero mai. Il ritorno dev'essere una fuga, e per
@@ -345,6 +460,8 @@ export const ALLARME = {
   // che rende il ritorno un attraversamento invece di una passeggiata con
   // qualcuno che arranca dietro.
   davanti: true,
+  /** Con l'allarme il settore ne regge di piu': e' il momento di punta. */
+  tetto: 1.45,
 };
 
 /**
@@ -370,7 +487,20 @@ export const SPEDIZIONE = {
   raggioNucleo: 44,
   durataNucleo: 3,
   raggioEstrazione: 56,
-  durataEstrazione: 2.5,
+  /**
+   * Quanto si resta fermi nel cerchio per uscire.
+   *
+   * Erano due secondi e mezzo: si arrivava e si spariva, e l'evacuazione era
+   * una scritta. Sette, e di piu' alle difficolta' alte, e' un'ATTESA DA
+   * TENERE — fermi in un punto che tutti conoscono, mentre arrivano.
+   *
+   * Ci avevo provato prima tenendo l'uscita CHIUSA per una dozzina di secondi
+   * dopo la missione, e sbagliavo: il viaggio di ritorno e' gia' l'evacuazione,
+   * e una porta che si apre a tempo non la rende piu' dura — punisce chi
+   * arriva in fretta, che resta su un cerchio spento senza niente da fare.
+   * Provandolo, il giocatore moriva li' in piedi ad aspettare una porta.
+   */
+  durataEstrazione: 7,
   /**
    * Il briefing. Prima che il settore si svegli si legge cosa c'e' da fare:
    * per quei secondi i nemici stanno fermi. Non e' un dettaglio di comodo —
@@ -429,8 +559,21 @@ export const BOMBA = {
   // A voi arriva molto meno, e solo se ci siete proprio sopra. Difendere la
   // bomba vuol dire starci vicino: punire con settanta danni la cosa che la
   // missione stessa chiede di fare sarebbe una trappola, non una regola.
-  raggioSchegge: 90,
-  dannoSchegge: 25,
+  /**
+   * Lo scoppio addosso a VOI, e adesso fa male sul serio.
+   *
+   * Prima erano 25 punti fissi entro 90 pixel: una scheggia, una cosa che si
+   * incassava senza pensarci. Ma difendere una bomba che non fa niente non e'
+   * difendere, e' aspettare — e la missione diventava "stai fermo e spara".
+   *
+   * Adesso il danno scala con la distanza: al centro AMMAZZA, e si sfuma fino
+   * a un graffio al bordo. Il conto non punisce la missione — restare li' e'
+   * quello che vi si chiede — punisce lo stare SOPRA la bomba quando parte.
+   * Il tempo per allontanarsi c'e' tutto: la miccia si vede scorrere.
+   */
+  raggioSchegge: 150,
+  raggioLetale: 46, // dentro questo, si va giu' e basta
+  dannoSchegge: 78, // al centro; sfuma a poco piu' di zero al bordo
   richiamo: 3, // ogni quanto i nemici si aggiornano su dov'e' la bomba
 };
 
@@ -444,5 +587,16 @@ export const DOMINIO = {
   durata: 40, // secondi di presenza per conquistarla
   perSettore: 6, // e qualcuno in piu' man mano che si scende
   perdita: 0.35, // quanto si perde stando fuori, rispetto a quanto si guadagna
+  /**
+   * In due dentro il cerchio si conquista PIU' IN FRETTA, da soli piu' piano.
+   *
+   * Prima uno o due era uguale: uno restava dentro a fare il palo e l'altro
+   * girava a sparare, che e' il contrario di una missione cooperativa. Il
+   * numero da guardare e' 1.0 — restare in due vale piu' della somma di due
+   * mezze presenze, e restarci da soli costa tempo che i nemici usano per
+   * arrivare.
+   */
+  daSolo: 0.65,
+  inDue: 1.45,
   rinforzi: 6, // secondi fra un nemico e l'altro mentre si tiene la zona
 };

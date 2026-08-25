@@ -2,8 +2,9 @@
 // la propria o quella del compagno — piu' quello che si e' gia' visto prima,
 // che resta disegnato spento, come un ricordo.
 
-import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA, ARMATURA_MASSIMA, RIPARO, BOMBA }
-  from '../condiviso/regole.js';
+import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA, ARMATURA_MASSIMA, RIPARO, BOMBA,
+  munizioniDi, STAZIONE, RIPARI_PER_SETTORE,
+} from '../condiviso/regole.js';
 import { giaVisto } from './visione.js';
 import { t } from './lingue.js';
 import { RAGGIO_STICK } from './input.js';
@@ -112,7 +113,7 @@ export class Disegno {
   scena(mappa, personaggi, io, luci, memoria, extra = {}) {
     const {
       nemici = [], coni = [], colpi = [], oggetti = [], sonar = [],
-      casse = [], ripari = [], scoppi = [], mioId = null,
+      casse = [], stazioni = [], ripari = [], scoppi = [], mioId = null,
     } = extra;
     const c = this.ctx;
     c.fillStyle = COLORI.fondo;
@@ -153,6 +154,7 @@ export class Disegno {
 
     // 3b. Le cose lasciate per terra: kit, sonar, ripari.
     for (const s of sonar) this.sonarATerra(s);
+    for (const z of stazioni) this.stazione(z, memoria, mioId);
     for (const cassa of casse) this.cassaRifornimento(cassa, memoria, mioId);
     for (const o of oggetti) this.kitMedico(o);
     for (const r of ripari) this.riparo(r);
@@ -209,6 +211,46 @@ export class Disegno {
       c.lineWidth = 1.6;
       c.beginPath();
       c.arc(cassa.x, cassa.y, 14, 0, Math.PI * 2);
+      c.stroke();
+    }
+    c.restore();
+  }
+
+  /**
+   * Una stazione di ricarica.
+   *
+   * Si disegna anche quando e' gia' stata usata, spenta: vedere che c'e' e che
+   * non serve piu' e' un'informazione, vedere il vuoto dove era non lo e' — e
+   * senza si torna indietro per niente proprio quando si e' a secco.
+   *
+   * Il cerchio attorno e' il raggio vero in cui bisogna stare, non una
+   * decorazione: si vede dove fermarsi senza doverlo indovinare.
+   */
+  stazione(z, memoria, mioId) {
+    if (memoria && !this.scoperto(z, memoria)) return;
+    const c = this.ctx;
+    const usata = mioId !== null && z.u?.includes(mioId);
+    c.save();
+    c.globalAlpha = usata ? 0.22 : 1;
+
+    // La cassa madre: piu' larga e bassa di una cassa qualsiasi, cosi' le due
+    // non si confondono a colpo d'occhio.
+    c.fillStyle = usata ? COLORI.vitaVuota : '#2f4a44';
+    stondato(c, z.x - 15, z.y - 10, 30, 20, 4);
+    c.fill();
+    c.strokeStyle = 'rgba(5,7,12,0.7)';
+    c.lineWidth = 1.2;
+    c.stroke();
+
+    // Tre tacche: si legge come "roba da prendere" e non come un macchinario.
+    c.fillStyle = usata ? COLORI.testoSpento : COLORI.kit;
+    for (let k = -1; k <= 1; k++) c.fillRect(z.x + k * 8 - 2, z.y - 5, 4, 10);
+
+    if (!usata) {
+      c.strokeStyle = tinta(COLORI.kit, 0.3 + 0.22 * Math.sin(performance.now() / 500));
+      c.lineWidth = 1.6;
+      c.beginPath();
+      c.arc(z.x, z.y, STAZIONE.raggio, 0, Math.PI * 2);
       c.stroke();
     }
     c.restore();
@@ -916,6 +958,8 @@ export class Disegno {
       );
     }
 
+    this.munizioni(mio);
+
     if (mio.st === STATO.CRITICO) {
       // Bordo rosso che pulsa: si capisce che e' grave senza leggere niente.
       const battito = 0.18 + 0.12 * Math.sin(performance.now() / 260);
@@ -944,6 +988,77 @@ export class Disegno {
       c.fillStyle = COLORI.testo;
       c.font = '17px system-ui, sans-serif';
       c.fillText(t('gioco.fuoriGioco', { secondi: mio.tc }), this.w / 2, this.h / 2);
+    }
+  }
+
+  /**
+   * I colpi, in basso a destra.
+   *
+   * Sta dalla parte del pollice che spara e non insieme alla vita: sono due
+   * cose che si guardano in momenti diversi. La vita la controlli quando ti
+   * hanno colpito, i colpi mentre stai sparando — e in quel momento l'occhio
+   * e' gia' da quella parte.
+   *
+   * I caricatori di scorta sono pallini e non un numero: quanti ne restano si
+   * legge senza contare, e a colpo d'occhio "due pallini" dice piu' di "2".
+   */
+  munizioni(mio) {
+    const c = this.ctx;
+    const m = munizioniDi(mio.r ?? 'faro');
+    const colpi = mio.co ?? m.caricatore;
+    const riserve = mio.rs ?? 0;
+    const x = this.w - 14;
+    const y = this.h - 26;
+
+    // Sotto un quarto il numero si accende: e' il momento in cui conviene
+    // decidere qualcosa, non quello in cui si e' gia' a secco.
+    const pochi = colpi <= Math.max(2, Math.round(m.caricatore * 0.25));
+    const secco = colpi === 0 && riserve === 0;
+
+    c.textAlign = 'right';
+    if ((mio.rc ?? 0) > 0) {
+      // Mentre si ricarica non si spara, e va detto forte: e' il momento in
+      // cui si e' scoperti, ed e' tutta la ragione per cui i colpi finiscono.
+      c.fillStyle = COLORI.armatura;
+      c.font = '13px ui-monospace, Consolas, monospace';
+      c.fillText(t('gioco.ricarico'), x, y + 9);
+      const quanto = 1 - Math.min(1, mio.rc / m.ricarica);
+      barra(c, x - 92, y + 14, 92, 4, quanto, COLORI.armatura);
+    } else {
+      c.fillStyle = secco ? COLORI.critico : pochi ? COLORI.nemicoAllerta : COLORI.testo;
+      c.font = '20px ui-monospace, Consolas, monospace';
+      c.fillText(String(colpi), x, y + 12);
+    }
+
+    // I caricatori di scorta, uno per pallino.
+    for (let k = 0; k < m.caricatori - 1; k++) {
+      const px = x - 6 - k * 11;
+      c.fillStyle = k < riserve ? COLORI.testo : COLORI.vitaVuota;
+      c.beginPath();
+      c.arc(px, y - 8, 3.5, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    // I ripari che restano, solo per chi li ha: due quadretti. Sopra i colpi,
+    // perche' e' l'altra cosa che si spende e che finisce.
+    if ((mio.r ?? 'faro') === 'assalto') {
+      const rimasti = mio.rp ?? RIPARI_PER_SETTORE;
+      for (let k = 0; k < RIPARI_PER_SETTORE; k++) {
+        const px = x - 10 - k * 12;
+        c.fillStyle = k < rimasti ? COLORI.assalto : COLORI.vitaVuota;
+        c.fillRect(px, y - 26, 9, 4);
+      }
+    }
+
+    // Fermi su una stazione: la barra che si riempie. Sta al centro dello
+    // schermo e non in un angolo, perche' in quei due secondi non si fa altro
+    // e si e' fermi in mezzo a un settore sveglio.
+    if ((mio.sz ?? 0) > 0) {
+      c.textAlign = 'center';
+      c.fillStyle = COLORI.kit;
+      c.font = '12px system-ui, sans-serif';
+      c.fillText(t('gioco.ricarica'), this.w / 2, this.h - 58);
+      barra(c, this.w / 2 - 70, this.h - 52, 140, 6, mio.sz, COLORI.kit);
     }
   }
 

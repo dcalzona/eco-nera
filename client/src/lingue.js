@@ -167,6 +167,19 @@ const TESTI = {
     'stanza.collegatoOspita': 'collegati! Ospita l altro telefono',
     'stanza.nessunoLi': 'in questa stanza non si e fatto vivo nessuno: riprova',
     'stanza.nessunoArrivato': 'non e arrivato nessuno',
+
+    'gioco.ricarico': 'ricarico',
+    'gioco.ricarica': 'mi rifornisco...',
+
+    'menu.scegliDifficolta': 'Difficolta',
+    'menu.difficoltaDalServer': 'Difficolta: la decide il server di casa',
+    'menu.difficolta.facile': 'Facile',
+    'menu.difficolta.normale': 'Normale',
+    'menu.difficolta.difficile': 'Difficile',
+    'menu.difficolta.incubo': 'Incubo',
+    'fine.vittoria': 'SPEDIZIONE COMPIUTA',
+    'fine.dettaglioVittoria': 'Tutti e {settori} i settori. Siete usciti.',
+    'gioco.compagnoSparito': "Il compagno non c’è. Il mondo aspetta.",
   },
 
   en: {
@@ -317,6 +330,19 @@ const TESTI = {
     'stanza.collegatoOspita': 'connected! The other phone hosts',
     'stanza.nessunoLi': 'nobody showed up in this room: try again',
     'stanza.nessunoArrivato': 'nobody came',
+
+    'gioco.ricarico': 'reloading',
+    'gioco.ricarica': 'resupplying...',
+
+    'menu.scegliDifficolta': 'Difficulty',
+    'menu.difficoltaDalServer': 'Difficulty: set by the home server',
+    'menu.difficolta.facile': 'Easy',
+    'menu.difficolta.normale': 'Normal',
+    'menu.difficolta.difficile': 'Hard',
+    'menu.difficolta.incubo': 'Nightmare',
+    'fine.vittoria': 'EXPEDITION COMPLETE',
+    'fine.dettaglioVittoria': 'All {settori} sectors. You made it out.',
+    'gioco.compagnoSparito': "Your partner is gone. The world is waiting.",
   },
 
   fr: {
@@ -469,6 +495,19 @@ const TESTI = {
     'stanza.collegatoOspita': "connectes ! C'est l'autre telephone qui heberge",
     'stanza.nessunoLi': "personne ne s'est manifeste dans cette salle : reessaie",
     'stanza.nessunoArrivato': "personne n'est venu",
+
+    'gioco.ricarico': 'je recharge',
+    'gioco.ricarica': 'je me ravitaille...',
+
+    'menu.scegliDifficolta': 'Difficulte',
+    'menu.difficoltaDalServer': 'Difficulte : decidee par le serveur',
+    'menu.difficolta.facile': 'Facile',
+    'menu.difficolta.normale': 'Normal',
+    'menu.difficolta.difficile': 'Difficile',
+    'menu.difficolta.incubo': 'Cauchemar',
+    'fine.vittoria': 'EXPEDITION ACCOMPLIE',
+    'fine.dettaglioVittoria': 'Les {settori} secteurs. Vous etes sortis.',
+    'gioco.compagnoSparito': "Ton coequipier a disparu. Le monde attend.",
   },
 
   es: {
@@ -619,6 +658,19 @@ const TESTI = {
     'stanza.collegatoOspita': 'conectados! El otro telefono es el anfitrion',
     'stanza.nessunoLi': 'en esta sala no ha aparecido nadie: intentalo otra vez',
     'stanza.nessunoArrivato': 'no ha venido nadie',
+
+    'gioco.ricarico': 'recargando',
+    'gioco.ricarica': 'reabasteciendo...',
+
+    'menu.scegliDifficolta': 'Dificultad',
+    'menu.difficoltaDalServer': 'Dificultad: la decide el servidor',
+    'menu.difficolta.facile': 'Facil',
+    'menu.difficolta.normale': 'Normal',
+    'menu.difficolta.difficile': 'Dificil',
+    'menu.difficolta.incubo': 'Pesadilla',
+    'fine.vittoria': 'EXPEDICION COMPLETADA',
+    'fine.dettaglioVittoria': 'Los {settori} sectores. Habeis salido.',
+    'gioco.compagnoSparito': "Tu companero no esta. El mundo espera.",
   },
 
   ru: {
@@ -767,6 +819,19 @@ const TESTI = {
     'stanza.collegatoOspita': 'соединились! Игру ведёт другой телефон',
     'stanza.nessunoLi': 'в этой комнате никто не появился: попробуй ещё',
     'stanza.nessunoArrivato': 'никто не пришёл',
+
+    'gioco.ricarico': 'перезарядка',
+    'gioco.ricarica': 'пополняю запасы...',
+
+    'menu.scegliDifficolta': 'Сложность',
+    'menu.difficoltaDalServer': 'Сложность: её задаёт сервер',
+    'menu.difficolta.facile': 'Лёгкая',
+    'menu.difficolta.normale': 'Обычная',
+    'menu.difficolta.difficile': 'Сложная',
+    'menu.difficolta.incubo': 'Кошмар',
+    'fine.vittoria': 'ЭКСПЕДИЦИЯ ЗАВЕРШЕНА',
+    'fine.dettaglioVittoria': 'Все {settori} секторов. Вы вышли.',
+    'gioco.compagnoSparito': "Напарника нет. Мир ждёт.",
   },
 
   nl: {
@@ -919,6 +984,19 @@ const TESTI = {
     'stanza.collegatoOspita': 'verbonden! De andere telefoon host',
     'stanza.nessunoLi': 'in deze kamer is niemand opgedoken: probeer opnieuw',
     'stanza.nessunoArrivato': 'er is niemand gekomen',
+
+    'gioco.ricarico': 'herladen',
+    'gioco.ricarica': 'bevoorraden...',
+
+    'menu.scegliDifficolta': 'Moeilijkheid',
+    'menu.difficoltaDalServer': 'Moeilijkheid: bepaald door de server',
+    'menu.difficolta.facile': 'Makkelijk',
+    'menu.difficolta.normale': 'Normaal',
+    'menu.difficolta.difficile': 'Moeilijk',
+    'menu.difficolta.incubo': 'Nachtmerrie',
+    'fine.vittoria': 'EXPEDITIE VOLBRACHT',
+    'fine.dettaglioVittoria': 'Alle {settori} sectoren. Jullie zijn eruit.',
+    'gioco.compagnoSparito': "Je maatje is weg. De wereld wacht.",
   },
 };
 

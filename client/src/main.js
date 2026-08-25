@@ -12,7 +12,7 @@ import { Disegno } from './render.js';
 import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
 import { Suoni } from './audio.js';
 import { disegnaOmino, coloreDi, armaDi } from './render.js';
-import { CLASSI, ABILITA, VERSIONE, BOMBA } from '../condiviso/regole.js';
+import { CLASSI, ABILITA, VERSIONE, BOMBA, DIFFICOLTA } from '../condiviso/regole.js';
 import { LINGUE, t, impostaLingua, linguaCorrente, traduciPagina } from './lingue.js';
 import { disegnaBriefing } from './briefing.js';
 import {
@@ -47,6 +47,12 @@ if (!MODI.includes(modo)) {
   // Chi arriva dalle versioni di prima: i quattro modi di allora diventano tre.
   modo = { telefono: 'solo', ospite: 'rete', invitato: 'rete' }[modo] ?? 'casa';
 }
+// La difficolta' si legge PRIMA di costruire il collegamento: creaRete la
+// mette dentro subito, e una `let` dichiarata piu' sotto non si puo' leggere
+// da qui — sarebbe un errore di zona morta al primo avvio, cioe' sempre.
+let difficolta = localStorage.getItem('ecoNera.difficolta');
+if (!DIFFICOLTA.includes(difficolta)) difficolta = 'facile';
+
 let rete = creaRete(modo);
 
 // I browser non fanno suonare niente prima di un gesto: si accende al primo
@@ -100,6 +106,7 @@ function creaRete(quale, ruolo = null) {
     avvisaSeDisallineato();
   };
   r.alSaluto = () => avvisaSeDisallineato();
+  r.difficolta = difficolta;
   return r;
 }
 
@@ -280,6 +287,35 @@ function costruisciModi() {
   }
 }
 
+// --- La difficolta' --------------------------------------------------------
+// "Facile" e' esattamente il gioco di prima, numero per numero: chi ci ha gia'
+// giocato deve ritrovare quello che conosce, non una versione ritoccata di
+// nascosto. Le altre tre moltiplicano a partire da li'.
+const elencoDifficolta = document.getElementById('difficolta');
+
+function costruisciDifficolta() {
+  elencoDifficolta.textContent = '';
+  for (const quale of DIFFICOLTA) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'modo';
+    b.dataset.difficolta = quale;
+    b.addEventListener('click', () => {
+      suoni.avvia();
+      difficolta = quale;
+      localStorage.setItem('ecoNera.difficolta', quale);
+      // Il mondo la prende alla nascita e non la cambia in corsa: se ce n'e'
+      // gia' uno acceso, si riparte da capo. Cambiarla a meta' campagna
+      // vorrebbe dire un settore facile e il successivo incubo senza che sia
+      // successo niente.
+      rete.mondo = null;
+      rete.difficolta = quale;
+      adeguaMenuAlModo();
+    });
+    elencoDifficolta.append(b);
+  }
+}
+
 // --- La stanza -------------------------------------------------------------
 // Quattro cifre uguali per tutti e due. Chi arriva primo ospita, e non e' una
 // scelta di nessuno: e' una scrittura che nell'archivio riesce a uno solo.
@@ -397,6 +433,19 @@ function adeguaMenuAlModo() {
     b.setAttribute('aria-pressed', String(b.dataset.modo === modo));
     b.textContent = t(`menu.modo.${b.dataset.modo}`);
   }
+  for (const b of elencoDifficolta.children) {
+    b.setAttribute('aria-pressed', String(b.dataset.difficolta === difficolta));
+    b.textContent = t(`menu.difficolta.${b.dataset.difficolta}`);
+  }
+  // Col server di casa il mondo e' uno solo per tutti quelli che si collegano:
+  // la difficolta' la decide chi lo accende, non chi entra. Dirlo qui e'
+  // meglio che lasciar premere un pulsante che non fa niente.
+  const dalServer = modo === 'casa';
+  elencoDifficolta.classList.toggle('spenta', dalServer);
+  document.getElementById('etichettaDifficolta').textContent = t(
+    dalServer ? 'menu.difficoltaDalServer' : 'menu.scegliDifficolta',
+  );
+  rete.difficolta = difficolta;
   rigaStanza.hidden = modo !== 'rete';
   if (modo !== 'rete') {
     statoStanza.textContent = '';
@@ -407,6 +456,7 @@ function adeguaMenuAlModo() {
 }
 
 costruisciModi();
+costruisciDifficolta();
 adeguaMenuAlModo();
 document.getElementById('rigaVersione').textContent = `${t('menu.versione')} ${VERSIONE}`;
 
@@ -588,6 +638,7 @@ function aggiornaBriefing(ob) {
 
 // --- Fine partita ----------------------------------------------------------
 const pannelloFine = document.getElementById('fine');
+const titoloFine = document.querySelector('#fineDentro h1');
 const fineDettaglio = document.getElementById('fineDettaglio');
 document.getElementById('tornaAlMenu').addEventListener('click', tornaAlMenu);
 document.getElementById('apriGuida').addEventListener('click', () => {
@@ -662,6 +713,13 @@ function giro(ora) {
     disegno.scena({ larghezza: 0, altezza: 0, griglia: [] }, [], 0, null, null);
     disegno.messaggio(t(rete.stato === 'caduto' ? 'gioco.caduta' : 'gioco.collegamento'));
     return;
+  }
+
+  // Chi ospita, mentre l'altro non c'e': il mondo e' fermo e va detto. Senza
+  // questa scritta si vedrebbe solo un gioco che non risponde, che e' il modo
+  // peggiore di dire "sto aspettando".
+  if (rete.inPausa?.()) {
+    disegno.messaggio(t('gioco.compagnoSparito'));
   }
   if (!pannello.hidden) pannello.hidden = true;
 
@@ -775,6 +833,7 @@ function giro(ora) {
     oggetti: fuochi,
     sonar: rete.sonar(),
     casse: rete.rifornimenti(),
+    stazioni: rete.stazioni(),
     ripari,
     scoppi: rete.scoppi(),
     mioId: rete.io,
@@ -801,11 +860,19 @@ function giro(ora) {
 
   // Spedizione perduta: lo dice una schermata, non un ritorno improvviso al
   // primo settore senza aver capito cosa e' successo.
-  if (ob?.fine && pannelloFine.hidden) {
-    fineDettaglio.textContent = t('fine.dettaglio', { settore: ob.settore });
+  // Finita la campagna, o persa: in tutti e due i casi lo dice una schermata.
+  // La vittoria in particolare doveva esistere — prima i settori non finivano
+  // mai, e andare avanti non voleva dire niente.
+  if ((ob?.fine || ob?.vt) && pannelloFine.hidden) {
+    const vinta = !!ob.vt;
+    titoloFine.textContent = t(vinta ? 'fine.vittoria' : 'fine.titolo');
+    titoloFine.classList.toggle('vinta', vinta);
+    fineDettaglio.textContent = vinta
+      ? t('fine.dettaglioVittoria', { settori: ob.diQuanti || ob.settore })
+      : t('fine.dettaglio', { settore: ob.settore });
     pannelloFine.hidden = false;
     suoni.sirena(false);
-    suoni.evento('aTerra');
+    suoni.evento(vinta ? 'nucleo' : 'aTerra');
   }
 
   aggiornaBriefing(ob);

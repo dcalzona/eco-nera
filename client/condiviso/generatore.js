@@ -12,10 +12,37 @@
 
 import { TILE, CASELLA } from './regole.js';
 
-const LARGHEZZA = 44;
-const ALTEZZA = 26;
+/**
+ * Le mappe crescono col settore.
+ *
+ * Prima erano tutte identiche — 44 per 26, sette-dieci stanze — e da sole
+ * bastavano a far sembrare uguale il quindicesimo settore al primo: cambiava
+ * il disegno, non la scala, e dopo un po' l'occhio non distingueva piu'.
+ * Crescendo, l'ultimo e' quasi il doppio del primo: il giro e' piu' lungo, le
+ * stazioni sono piu' lontane fra loro, e tornare indietro a rifornirsi
+ * comincia a costare davvero.
+ */
+const LARGHEZZA_BASE = 44;
+const ALTEZZA_BASE = 26;
+const CRESCITA = 2.2; // caselle in piu' per settore, in larghezza
+const LARGHEZZA_MAX = 74;
+const ALTEZZA_MAX = 42;
 
-const STANZE = { minimo: 7, massimo: 10 };
+function misure(settore) {
+  const n = Math.max(1, settore);
+  return {
+    larghezza: Math.min(LARGHEZZA_MAX, Math.round(LARGHEZZA_BASE + (n - 1) * CRESCITA)),
+    altezza: Math.min(ALTEZZA_MAX, Math.round(ALTEZZA_BASE + (n - 1) * CRESCITA * 0.6)),
+  };
+}
+
+const STANZE_BASE = { minimo: 7, massimo: 10 };
+
+/** Piu' grande e' la mappa, piu' stanze ci stanno: sennò diventa un corridoio. */
+function quanteStanze(settore) {
+  const in_piu = Math.floor((Math.max(1, settore) - 1) / 3);
+  return { minimo: STANZE_BASE.minimo + in_piu, massimo: STANZE_BASE.massimo + in_piu };
+}
 const LATO = { min: 5, max: 10 };
 const ALTO = { min: 4, max: 7 };
 
@@ -44,6 +71,9 @@ export function generaMappa(seme = Date.now(), settore = 1) {
 function prova(seme, settore, insisti = false) {
   const caso = dado(seme);
   const fra = (a, b) => a + Math.floor(caso() * (b - a + 1));
+
+  const { larghezza: LARGHEZZA, altezza: ALTEZZA } = misure(settore);
+  const STANZE = quanteStanze(settore);
 
   const griglia = [];
   for (let y = 0; y < ALTEZZA; y++) griglia.push(new Array(LARGHEZZA).fill(CASELLA.MURO));
@@ -130,14 +160,14 @@ function linea(griglia, da, a, fisso, orizzontale) {
   for (let v = da; v !== a + passo; v += passo) {
     const x = orizzontale ? v : fisso;
     const y = orizzontale ? fisso : v;
-    if (x <= 0 || y <= 0 || x >= LARGHEZZA - 1 || y >= ALTEZZA - 1) continue;
+    if (x <= 0 || y <= 0 || x >= griglia[0].length - 1 || y >= griglia.length - 1) continue;
     if (griglia[y][x] === CASELLA.MURO) griglia[y][x] = CASELLA.PAVIMENTO;
   }
 }
 
 /** Diventa porta solo una casella che e' gia' un passaggio scavato. */
 function metti(griglia, x, y, tipo) {
-  if (x <= 0 || y <= 0 || x >= LARGHEZZA - 1 || y >= ALTEZZA - 1) return;
+  if (x <= 0 || y <= 0 || x >= griglia[0].length - 1 || y >= griglia.length - 1) return;
   if (griglia[y][x] === CASELLA.PAVIMENTO) griglia[y][x] = tipo;
 }
 

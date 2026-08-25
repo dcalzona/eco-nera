@@ -131,6 +131,9 @@
       #fine { display: flex; align-items: center; justify-content: center; }
       #fineDentro { text-align: center; max-width: 460px; }
       #fineDentro h1 { font-size: 24px; color: #ff5d5d; letter-spacing: 0.05em; }
+      /* Vinta si legge in giallo, persa in rosso: il colore lo dice prima
+         delle parole, e a fine partita le parole si leggono dopo. */
+      #fineDentro h1.vinta { color: #ffc65c; }
       #fineDettaglio { color: #c3cbde; font-size: 13px; margin: 8px 0 16px; line-height: 1.5; }
       #tornaAlMenu {
         font: inherit; font-size: 15px; font-weight: 600;
@@ -177,6 +180,10 @@
       }
       #classi { margin-bottom: 16px; }
       #modi { display: flex; gap: 8px; }
+      #etichettaDifficolta { margin-top: 14px; }
+      #difficolta { display: flex; gap: 6px; }
+      #difficolta .modo { font-size: 12px; padding: 7px 4px; }
+      #difficolta.spenta { opacity: 0.45; pointer-events: none; }
       .modo {
         flex: 1 1 0; min-width: 0;
         background: #0c1017; border: 2px solid #232d41; border-radius: 10px;
@@ -323,6 +330,9 @@
             <p class="etichettaScelta" data-t="menu.scegliModo"></p>
             <div id="modi"></div>
 
+            <p class="etichettaScelta" id="etichettaDifficolta"></p>
+            <div id="difficolta"></div>
+
             <!-- Solo per il duo online: quattro cifre uguali per tutti e due,
                  e il primo che entra ospita. Sta qui e non in un pannello a
                  parte perche' e' una riga, non una procedura. -->
@@ -448,7 +458,7 @@
 
     <div id="fine" hidden>
       <div id="fineDentro">
-        <h1 data-t="fine.titolo"></h1>
+        <h1></h1>
         <p id="fineDettaglio"></p>
         <p id="avvisoVersione" class="avvisoPausa" hidden></p>
         <button id="tornaAlMenu" type="button" data-t="fine.torna"></button>

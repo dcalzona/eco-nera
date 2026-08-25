@@ -43,6 +43,13 @@ import {
   CLASSI,
   CLASSE_PREDEFINITA,
   IMPULSO_SONAR,
+  munizioniDi,
+  RIPARI_PER_SETTORE,
+  STAZIONE,
+  stazioniDelSettore,
+  SETTORI_PER_FINIRE,
+  regoleDifficolta,
+  DIFFICOLTA,
 } from '../condiviso/regole.js';
 import { creaNemici, passoNemici, chiVede } from './nemici.js';
 import { creaColpo, passoProiettili } from './proiettili.js';
@@ -56,7 +63,15 @@ const GRAZIA_MS = 30_000;
 const CORPO = 11;
 
 export class Mondo {
-  constructor() {
+  /**
+   * La difficolta' si passa alla nascita e non si cambia in corsa: cambiarla
+   * a meta' campagna vorrebbe dire un settore facile e il successivo incubo
+   * senza che sia successo niente, e i quindici settori non sarebbero piu' una
+   * cosa sola.
+   */
+  constructor(difficolta = 'facile') {
+    this.difficolta = DIFFICOLTA.includes(difficolta) ? difficolta : 'facile';
+    this.vittoria = false;
     this.giocatori = new Map(); // id -> personaggio
     this.prossimoId = 1;
     this.tick = 0;
@@ -154,6 +169,39 @@ export class Mondo {
       }
       if (scelta) this.rifornimenti.push({ ...scelta, usatoDa: [] });
     }
+
+    // Le stazioni di ricarica: colpi, kit, sonar e ripari. Ce ne sono meno man
+    // mano che la campagna scende — tre nei primi cinque settori, due nei
+    // cinque di mezzo, una negli ultimi — cosi' la stessa mappa pesa
+    // diversamente a seconda di quando ci si arriva.
+    //
+    // Vanno LONTANE fra loro, e non e' estetica: due stazioni vicine sono una
+    // stazione sola con due disegni, e il giro per raggiungerle — che e' il
+    // costo vero del rifornirsi — sparirebbe.
+    this.stazioni = [];
+    const quanteStazioni = Math.min(
+      stazioniDelSettore(numero, this.difficolta),
+      this.mappa.stanze.length,
+    );
+    const perLeStazioni = this.mappa.stanze.slice();
+    for (let k = 0; k < quanteStazioni; k++) {
+      let scelta = null;
+      let migliorDistanza = -1;
+      for (const stanza of perLeStazioni) {
+        const p = centroStanza(stanza);
+        const distanza = this.stazioni.length
+          ? Math.min(...this.stazioni.map((z) => Math.hypot(z.x - p.x, z.y - p.y)))
+          : Math.hypot(p.x - centroStanza(ingresso).x, p.y - centroStanza(ingresso).y);
+        if (distanza > migliorDistanza) {
+          migliorDistanza = distanza;
+          scelta = p;
+        }
+      }
+      if (scelta) this.stazioni.push({ x: scelta.x, y: scelta.y, usatoDa: [], quanto: new Map() });
+    }
+
+    // I ripari dell'Assalto si contano a settore, e il conto riparte qui.
+    for (const g of this.giocatori.values()) g.ripari = RIPARI_PER_SETTORE;
 
     this.estrazione = { ...centroStanza(ingresso), aperta: false, progresso: 0 };
     this.allarme = false;
@@ -289,8 +337,9 @@ export class Mondo {
 
   entra(sessione, nome, classe, solo = false) {
     // Chi rientra dopo una spedizione perduta la fa ricominciare da capo.
-    if (this.disfatta) {
+    if (this.disfatta || this.vittoria) {
       this.disfatta = false;
+      this.vittoria = false;
       this.tuttiGiu = 0;
       this.nuovoSettore(1);
     }
@@ -314,6 +363,11 @@ export class Mondo {
           if (nomeAutomatico) g.nome = CLASSI[voluta].nome;
           g.ricarica = 0;
           g.abilitaRicarica = 0;
+          // Arma nuova, colpi nuovi: quelli di prima non ci entrano. I
+          // caricatori di scorta pero' restano quelli che si erano, sennò
+          // cambiare classe sarebbe un rifornimento gratis.
+          g.ricaricaArma = 0;
+          g.colpi = munizioniDi(voluta).caricatore;
           console.log(`${g.nome} cambia classe: ora e' ${CLASSI[voluta].nome}.`);
         }
         return g;
@@ -345,7 +399,7 @@ export class Mondo {
       coda: [],
       ultimoSeq: 0,
       soloVoluto: solo,
-      ...statoIniziale(),
+      ...statoIniziale(ruolo),
     };
     this.giocatori.set(id, g);
     this.piantaCambiata = true;
@@ -444,6 +498,8 @@ export class Mondo {
     );
 
     if (!dorme) this.ascoltano();
+    if (!dorme) this.usaLeStazioni(dt);
+    this.scorriRicariche(dt);
     this.sbiadisciMarchi(dt);
     this.obiettivi(dt);
     this.controllaDisfatta(dt);
@@ -504,6 +560,11 @@ export class Mondo {
       this.sonar.push({ x: g.x, y: g.y, resta: regola.durata, raggio: regola.raggio, battito: 0 });
       console.log(`${g.nome} ha posato un sonar.`);
     } else if (regola.tipo === 'riparo') {
+      // Finiti i ripari del settore non se ne piantano altri: si va a
+      // ricaricare a una stazione. Prima bastava aspettare la ricarica e
+      // ripiantarlo all'infinito, e ogni stanza diventava una posizione da
+      // tenere — comodo, e proprio per questo noioso.
+      if ((g.ripari ?? RIPARI_PER_SETTORE) <= 0) return;
       // Il riparo si pianta davanti, di traverso rispetto a dove si guarda.
       // Se davanti c'e' un muro non si pianta e non si consuma la ricarica:
       // sprecare l'abilita' per un pollice storto sarebbe punitivo per niente.
@@ -519,8 +580,9 @@ export class Mondo {
         resta: regola.durata,
         padrone: g.id,
       });
+      g.ripari = (g.ripari ?? RIPARI_PER_SETTORE) - 1;
       this.rumori.emetti('passi', g.x, g.y, g.id);
-      console.log(`${g.nome} ha piantato un riparo.`);
+      console.log(`${g.nome} ha piantato un riparo (ne restano ${g.ripari}).`);
     }
 
     g.abilitaRicarica = regola.ricarica;
@@ -630,6 +692,63 @@ export class Mondo {
     }
   }
 
+  /**
+   * Le stazioni di ricarica: colpi, abilita' e ripari, tutto insieme.
+   *
+   * Bisogna STARCI FERMI SOPRA per un paio di secondi, e non e' un fastidio
+   * aggiunto: e' quello che rende il rifornirsi una decisione. Fermarsi in
+   * mezzo a un settore sveglio, con l'allarme che suona, e' un rischio che si
+   * corre apposta. Passandoci sopra di corsa non succede niente.
+   *
+   * Ognuno la puo' usare una volta sola. Una stazione che si riusa all'infinito
+   * non e' un rifornimento, e' un accampamento: ci si torna dietro ogni volta
+   * che si e' a secco e la scarsita' non esiste piu'.
+   */
+  usaLeStazioni(dt) {
+    if (!this.stazioni?.length) return;
+    const vivi = [...this.giocatori.values()].filter(
+      (g) => (g.online || g.bot) && g.stato === STATO.VIVO,
+    );
+
+    for (const z of this.stazioni) {
+      for (const g of vivi) {
+        if (z.usatoDa.includes(g.id)) continue;
+        if (Math.hypot(g.x - z.x, g.y - z.y) > STAZIONE.raggio) {
+          // Allontanarsi azzera: il conto va fatto stando li', non a rate.
+          if (z.quanto.has(g.id)) {
+            z.quanto.delete(g.id);
+            this.piantaCambiata = true;
+          }
+          continue;
+        }
+        const fatto = (z.quanto.get(g.id) ?? 0) + dt;
+        z.quanto.set(g.id, fatto);
+        if (fatto < STAZIONE.usa) continue;
+
+        const m = munizioniDi(g.ruolo);
+        g.colpi = m.caricatore;
+        g.riserve = m.caricatori - 1;
+        g.ricaricaArma = 0;
+        g.abilitaRicarica = 0;
+        g.ripari = RIPARI_PER_SETTORE;
+        z.quanto.delete(g.id);
+        z.usatoDa.push(g.id);
+        this.piantaCambiata = true;
+        console.log(`${g.nome} si e' ricaricato a una stazione.`);
+      }
+    }
+  }
+
+  /** Quanto manca a ricaricarsi, per chi e' fermo su una stazione. */
+  quantoAllaStazione(g) {
+    if (!this.stazioni?.length) return 0;
+    for (const z of this.stazioni) {
+      const fatto = z.quanto.get(g.id);
+      if (fatto) return Math.min(1, fatto / STAZIONE.usa);
+    }
+    return 0;
+  }
+
   /** I sonar a terra: ogni impulso segna i nemici che ci passano dentro. */
   battonoISonar(dt) {
     for (let k = this.sonar.length - 1; k >= 0; k--) {
@@ -706,8 +825,20 @@ export class Mondo {
       this.estrazione.progresso = Math.max(0, this.estrazione.progresso - dt);
       return;
     }
-    this.estrazione.progresso += dt / SPEDIZIONE.durataEstrazione;
-    if (this.estrazione.progresso >= 1) this.nuovoSettore(this.settore + 1);
+    // Tenere l'uscita costa piu' a mano a mano che si alza la difficolta'.
+    this.estrazione.progresso +=
+      dt / (SPEDIZIONE.durataEstrazione * this.regole().evacuazione);
+    if (this.estrazione.progresso < 1) return;
+    // Quindici e si e' finita. Prima non finiva mai, e non era una scelta: era
+    // che nessuno aveva deciso dove finisse.
+    if (this.settore >= SETTORI_PER_FINIRE) {
+      this.vittoria = true;
+      this.estrazione.progresso = 1;
+      this.piantaCambiata = true;
+      console.log(`SPEDIZIONE COMPIUTA: ${SETTORI_PER_FINIRE} settori.`);
+      return;
+    }
+    this.nuovoSettore(this.settore + 1);
   }
 
   /**
@@ -825,13 +956,25 @@ export class Mondo {
         n.vita -= BOMBA.dannoScoppio;
         if (n.vita <= 0) this.nemici.splice(k, 1);
       }
-      // A voi arriva solo qualche scheggia, e solo se siete proprio sopra:
-      // la missione vi chiede di restare li', e non puo' poi punirvi per
-      // averlo fatto.
+      // E a voi arriva addosso, con il danno che scala sulla distanza: al
+      // centro ammazza, al bordo e' un graffio. La missione vi chiede di stare
+      // li' a difenderla, non di stare SOPRA quando parte — e la miccia si
+      // vede scorrere, quindi il tempo per scansarsi c'e' tutto.
       for (const g of this.giocatori.values()) {
         if (g.stato !== STATO.VIVO) continue;
-        if (Math.hypot(g.x - b.x, g.y - b.y) > BOMBA.raggioSchegge) continue;
-        this.ferisci(g, BOMBA.dannoSchegge);
+        const quanto = Math.hypot(g.x - b.x, g.y - b.y);
+        if (quanto > BOMBA.raggioSchegge) continue;
+        if (quanto <= BOMBA.raggioLetale) {
+          console.log(`${g.nome} era sopra la bomba.`);
+          this.ferisci(g, VITA_MASSIMA + ARMATURA_MASSIMA);
+          continue;
+        }
+        // Fuori dal nocciolo il danno cala col quadrato: vicino fa ancora
+        // molto male, lontano quasi niente. Lineare sarebbe stato piu' facile
+        // da scrivere e piu' difficile da leggere giocando.
+        const fuori =
+          (quanto - BOMBA.raggioLetale) / (BOMBA.raggioSchegge - BOMBA.raggioLetale);
+        this.ferisci(g, Math.round(BOMBA.dannoSchegge * (1 - fuori) ** 2));
       }
 
       b.fatte++;
@@ -862,8 +1005,13 @@ export class Mondo {
     // cui non ci si nasconde, ci si tiene.
     this.richiamaSu(z, dt);
 
-    if (dentroNostri > 0 && !dentroLoro) z.progresso += dt / z.durata;
-    else if (dentroNostri === 0) {
+    // In due si conquista piu' in fretta, da soli piu' piano: senza questa
+    // differenza uno faceva il palo e l'altro girava a sparare, che e' il
+    // contrario di una missione da fare insieme.
+    if (dentroNostri > 0 && !dentroLoro) {
+      const passo = dentroNostri > 1 ? DOMINIO.inDue : DOMINIO.daSolo;
+      z.progresso += (dt * passo) / z.durata;
+    } else if (dentroNostri === 0) {
       z.progresso = Math.max(0, z.progresso - (dt * DOMINIO.perdita) / z.durata);
     }
 
@@ -1019,7 +1167,17 @@ export class Mondo {
   /** Quanti nemici tiene in piedi questo settore, con lo sconto per chi e' solo. */
   tettoNemici() {
     const base = this.nemiciBase ?? SPEDIZIONE.nemiciBase;
-    return Math.max(3, Math.round(base * (this.daSoli() ? SCONTO_DA_SOLI : 1)));
+    const quanti =
+      base *
+      this.regole().nemici *
+      (this.allarme ? ALLARME.tetto : 1) *
+      (this.daSoli() ? SCONTO_DA_SOLI : 1);
+    return Math.max(3, Math.round(quanti));
+  }
+
+  /** Le manopole della difficolta' scelta. */
+  regole() {
+    return regoleDifficolta(this.difficolta);
   }
 
   /** I giocatori ancora in piedi: bersagli per i nemici, sorgenti per il campo. */
@@ -1115,6 +1273,15 @@ export class Mondo {
 
   sparaGiocatore(g) {
     if (g.ricarica > 0) return;
+    // Senza colpi in canna non parte niente: si rimette il caricatore, e per
+    // quei secondi si e' disarmati. E' il momento in cui il compagno serve
+    // davvero, ed e' tutto il senso di avere delle munizioni invece che
+    // spararne all'infinito.
+    if (g.ricaricaArma > 0) return;
+    if (g.colpi <= 0) {
+      ricaricaArma(g);
+      return;
+    }
     // In due chi porta la bomba ha le mani occupate: il compagno diventa la
     // sua scorta, ed e' il momento piu' cooperativo del gioco. Da soli invece
     // si spara lo stesso — attraversare mezzo settore disarmati senza nessuno
@@ -1122,6 +1289,7 @@ export class Mondo {
     if (this.portaLaBomba(g) && !this.daSoli()) return;
     const arma = ARMI[g.ruolo] ?? ARMI.faro;
     g.ricarica = arma.cadenza;
+    g.colpi--;
 
     // Il pollice non e' un mouse: il colpo si raddrizza di qualche grado verso
     // il nemico piu' centrato. Poco, e solo se c'e' gia' quasi la mira.
@@ -1148,6 +1316,31 @@ export class Mondo {
           false,
         ),
       );
+    }
+  }
+
+  /**
+   * I caricatori si rimettono da soli quando la canna e' vuota.
+   *
+   * Non si aspetta che chi gioca prema qualcosa: su un telefono un pulsante
+   * "ricarica" e' un dito in piu' da trovare mentre si scappa, e nessuno lo
+   * troverebbe. Si ricarica quando si prova a sparare a vuoto, e la barra lo
+   * dice.
+   */
+  scorriRicariche(dt) {
+    for (const g of this.giocatori.values()) {
+      // Il caricatore si rimette DA SOLO appena la canna e' vuota, senza
+      // aspettare che si prema di nuovo. Prima partiva solo premendo il
+      // grilletto a vuoto, e voleva dire restare a secco mentre si scappa —
+      // che e' esattamente il momento in cui uno vorrebbe che l'arma si stesse
+      // gia' ricaricando da se'.
+      if (g.ricaricaArma <= 0 && g.colpi <= 0 && g.riserve > 0) ricaricaArma(g);
+      if (g.ricaricaArma <= 0) continue;
+      g.ricaricaArma = Math.max(0, g.ricaricaArma - dt);
+      if (g.ricaricaArma === 0 && g.riserve > 0) {
+        g.riserve--;
+        g.colpi = munizioniDi(g.ruolo).caricatore;
+      }
     }
   }
 
@@ -1514,6 +1707,8 @@ export class Mondo {
     return {
       t: 'pianta',
       settore: this.settore,
+      diQuanti: SETTORI_PER_FINIRE,
+      vt: this.vittoria ? 1 : 0,
       md: this.modalita,
       g: identita,
       nuclei: this.nuclei.map((k) => ({
@@ -1528,6 +1723,15 @@ export class Mondo {
       zo: this.zona
         ? { x: Math.round(this.zona.x), y: Math.round(this.zona.y), r: this.zona.raggio }
         : null,
+      // Le stazioni non spariscono mai: restano disegnate, spente per chi le ha
+      // gia' usate. Vederne una gia' consumata e sapere che non serve piu' e'
+      // un'informazione; vedere il vuoto dove era non lo e'.
+      st: (this.stazioni ?? []).map((z, i) => ({
+        i,
+        x: Math.round(z.x),
+        y: Math.round(z.y),
+        u: z.usatoDa,
+      })),
       ri: this.rifornimenti.map((r, i) => ({
         i,
         x: Math.round(r.x),
@@ -1562,6 +1766,8 @@ export class Mondo {
         ar: Math.round(p.armatura),
         l: p.torcia ? 1 : 0,
         ca: Math.round(p.carica * 100) / 100,
+        // I colpi in canna cambiano a ogni sparo, quindi viaggiano sempre.
+        co: p.colpi,
       };
       // Tutto il resto solo quando c'e' davvero qualcosa da dire.
       if (p.stato !== STATO.VIVO) {
@@ -1571,6 +1777,13 @@ export class Mondo {
       if (p.rianima > 0) uno.rn = Math.round(p.rianima * 100) / 100;
       if (p.esaurita) uno.es = 1;
       if (p.abilitaRicarica > 0) uno.ab = Math.round(p.abilitaRicarica * 10) / 10;
+      // Le scorte e la ricarica cambiano di rado: si dicono solo quando non
+      // sono al valore di riposo, come tutto il resto della fotografia magra.
+      if (p.riserve !== munizioniDi(p.ruolo).caricatori - 1) uno.rs = p.riserve;
+      if (p.ricaricaArma > 0) uno.rc = Math.round(p.ricaricaArma * 10) / 10;
+      if ((p.ripari ?? RIPARI_PER_SETTORE) !== RIPARI_PER_SETTORE) uno.rp = p.ripari;
+      const allaStazione = this.quantoAllaStazione(p);
+      if (allaStazione > 0) uno.sz = Math.round(allaStazione * 100) / 100;
       if (this.portaLaBomba(p)) uno.bo = 1;
       g.push(uno);
     }
@@ -1682,7 +1895,8 @@ function differenzaAngolo(a, b) {
   return d;
 }
 
-function statoIniziale() {
+function statoIniziale(ruolo = CLASSE_PREDEFINITA) {
+  const m = munizioniDi(ruolo);
   return {
     vita: VITA_MASSIMA,
     armatura: ARMATURA_INIZIALE,
@@ -1697,5 +1911,19 @@ function statoIniziale() {
     abilitaRicarica: 0,
     passoRumore: 0,
     codaVuota: 0,
+    // Uno in canna e gli altri in tasca. Il conto e' per classe: chi spara a
+    // raffica ne ha di piu' e ne consuma di piu'.
+    colpi: m.caricatore,
+    riserve: m.caricatori - 1,
+    ricaricaArma: 0,
+    ripari: RIPARI_PER_SETTORE,
   };
+}
+
+/** Rimettere il caricatore: costa tempo, ed e' il tempo in cui non si spara. */
+function ricaricaArma(g) {
+  const m = munizioniDi(g.ruolo);
+  if (g.colpi > 0 || g.riserve <= 0 || g.ricaricaArma > 0) return false;
+  g.ricaricaArma = m.ricarica;
+  return true;
 }

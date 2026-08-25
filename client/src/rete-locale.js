@@ -49,7 +49,7 @@ export class ReteLocale extends Rete {
   entra(classe, solo = true) {
     this.classe = classe;
     this.solo = true; // fuori casa si gioca da soli per definizione
-    if (!this.mondo) this.mondo = new Mondo();
+    if (!this.mondo) this.mondo = new Mondo(this.difficolta);
 
     const g = this.mondo.entra('telefono', null, classe, true);
     this.io = g.id;
@@ -96,8 +96,26 @@ export class ReteLocale extends Rete {
     this.battitoLocale = setInterval(() => this.giroDelMondo(), 8);
   }
 
+  /**
+   * Il mondo si puo' fermare. Serve a chi ospita quando il compagno sparisce:
+   * se continuasse a girare, chi torna fra un minuto ritroverebbe una partita
+   * andata avanti senza di lui — nemici spostati, tempo di missione consumato,
+   * e nessuna spiegazione. Fermarlo e' l'unico modo perche' "torna" voglia
+   * dire davvero tornare.
+   */
+  inPausa() {
+    return false;
+  }
+
   giroDelMondo() {
     if (!this.mondo) return;
+    if (this.inPausa()) {
+      // Si tiene l'orologio allineato senza far passare il tempo, sennò al
+      // ritorno il mondo recupererebbe di colpo tutti i secondi di pausa.
+      this.ultimoOrologio = performance.now();
+      this.arretrato = 0;
+      return;
+    }
     const ora = performance.now();
     this.arretrato += ora - this.ultimoOrologio;
     this.ultimoOrologio = ora;

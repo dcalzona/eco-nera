@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 
 import { Mondo } from '../client/simulazione/mondo.js';
-import { TICK_HZ, VERSIONE } from '../client/condiviso/regole.js';
+import { TICK_HZ, VERSIONE, DIFFICOLTA }
+from '../client/condiviso/regole.js';
 
 const QUI = path.dirname(fileURLToPath(import.meta.url));
 const RADICE = path.join(QUI, '..', 'client');
@@ -58,7 +59,13 @@ const server = http.createServer((req, res) => {
   });
 });
 
-const mondo = new Mondo();
+// La difficolta' del server di casa si dice all'avvio:
+//   node server/server.js --difficolta incubo
+// Sta qui e non nel menu perche' il mondo e' UNO SOLO per tutti quelli che si
+// collegano: se la scegliesse chi entra, il secondo cambierebbe la partita al
+// primo a meta' spedizione.
+const scelta = process.argv[process.argv.indexOf('--difficolta') + 1];
+const mondo = new Mondo(DIFFICOLTA.includes(scelta) ? scelta : 'facile');
 const wss = new WebSocketServer({ server });
 
 // Quale collegamento comanda quale personaggio. Serve perche' un telefono puo'

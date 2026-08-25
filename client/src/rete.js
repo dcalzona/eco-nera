@@ -18,6 +18,8 @@ import {
   STATO,
   UMORE,
   NEMICI,
+  munizioniDi,
+  RIPARI_PER_SETTORE,
 } from '../condiviso/regole.js';
 
 /** Ogni quanto arriva una fotografia, se tutto va bene. */
@@ -431,9 +433,10 @@ export class Rete {
     const identita = this.pianta?.g ?? [];
     return this.interpolati('g', true).map((p) => {
       const chi = identita.find((q) => q.i === p.i);
+      const ruolo = chi?.r ?? 'faro';
       return {
         n: chi?.n ?? '',
-        r: chi?.r ?? 'faro',
+        r: ruolo,
         b: chi?.b ?? 0,
         st: STATO.VIVO,
         rn: 0,
@@ -441,6 +444,13 @@ export class Rete {
         es: 0,
         ab: 0,
         bo: 0,
+        // A riposo le scorte sono piene e non si sta ricaricando: e' il caso
+        // normale, quindi e' quello che non viaggia.
+        rs: munizioniDi(ruolo).caricatori - 1,
+        rc: 0,
+        co: munizioniDi(ruolo).caricatore,
+        rp: RIPARI_PER_SETTORE,
+        sz: 0,
         ...p,
       };
     });
@@ -480,6 +490,8 @@ export class Rete {
 
     return {
       settore: s.settore,
+      diQuanti: s.diQuanti ?? 0,
+      vt: s.vt ?? 0,
       md: s.md,
       pr: d.pr ?? 0,
       al: d.al ?? 0,
@@ -522,6 +534,11 @@ export class Rete {
   /** Le casse di rifornimento ancora in piedi. Stanno ferme: le dice la pianta. */
   rifornimenti() {
     return this.pianta?.ri ?? [];
+  }
+
+  /** Le stazioni di ricarica. Stanno nella pianta: non si spostano mai. */
+  stazioni() {
+    return this.pianta?.st ?? [];
   }
 
   /** I sonar posati dall'Eco. */
