@@ -629,6 +629,7 @@ export class Mondo {
       f: msg.f ? 1 : 0,
       l: msg.l ? 1 : 0, // torcia accesa
       b: msg.b ? 1 : 0, // abilita' del ruolo
+      rk: msg.rk ? 1 : 0, // ricarica a mano
     });
     // Se il telefono e' molto avanti (e' successo qualcosa alla rete) non si
     // accumula all'infinito: si buttano i comandi piu' vecchi.
@@ -1562,6 +1563,7 @@ export class Mondo {
       g.abilitaRicarica = Math.max(0, g.abilitaRicarica - SOTTOPASSO);
       if (c.f && g.stato === STATO.VIVO) this.sparaGiocatore(g);
       if (c.b && g.stato === STATO.VIVO) this.usaAbilita(g);
+      if (c.rk && g.stato === STATO.VIVO) ricaricaAMano(g);
     }
     void eseguiti;
   }
@@ -2319,6 +2321,25 @@ function statoIniziale(ruolo = CLASSE_PREDEFINITA) {
 function ricaricaArma(g) {
   const m = munizioniDi(g.ruolo);
   if (g.colpi > 0 || g.riserve <= 0 || g.ricaricaArma > 0) return false;
+  g.ricaricaArma = m.ricarica;
+  return true;
+}
+
+/**
+ * Ricaricare quando si vuole, senza aspettare di restare a secco.
+ *
+ * E' il caso che conta davvero: dodici colpi su venti e una porta da aprire.
+ * Li' si vuole poter decidere di riempire PRIMA, invece di scoprire a meta'
+ * sparatoria che ne restavano tre.
+ *
+ * I colpi che restavano in canna si perdono, e non e' una svista: e' l'unica
+ * cosa che rende la scelta una scelta. Se non costassero niente si
+ * ricaricherebbe dopo ogni raffica e tanto varrebbe non contarli.
+ */
+function ricaricaAMano(g) {
+  const m = munizioniDi(g.ruolo);
+  if (g.ricaricaArma > 0 || g.riserve <= 0 || g.colpi >= m.caricatore) return false;
+  g.colpi = 0; // quelli in canna se ne vanno con il caricatore
   g.ricaricaArma = m.ricarica;
   return true;
 }

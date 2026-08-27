@@ -1116,19 +1116,23 @@ export class Disegno {
   }
 
   /**
-   * Le munizioni: un quadrante tondo in fila con torcia e abilita'.
+   * Le munizioni: un pulsante tondo in fila con torcia e abilita'.
    *
    * Prima erano un numero e dei pallini scritti in basso a destra, che
    * cadevano proprio sopra il tasto della torcia: si sovrapponevano e non si
    * capiva cosa fosse cosa. Adesso hanno la stessa faccia degli altri due
-   * comandi — cerchio, anello, glifo — perche' stanno nello stesso posto e si
+   * comandi — cerchio, anello, numero — perche' stanno nello stesso posto e si
    * guardano nello stesso momento. E' lo stesso trucco delle pozioni di Dragon
    * Tower: il numero non sta in un angolo dello schermo, sta ADDOSSO alla cosa
    * che lo consuma.
    *
-   * L'anello e' il caricatore che si svuota; mentre si ricarica cambia colore
-   * e si riempie al contrario. I caricatori di scorta sono i puntini sotto:
-   * "due puntini" si legge senza contare, "2" no.
+   * E si preme: ricarica. Il caricatore si rimetteva gia' da solo, ma solo a
+   * canna vuota — e in mezzo c'e' il caso che conta, dodici su venti e una
+   * porta da aprire. Quando premerlo serve a qualcosa il pulsante si accende,
+   * come gli altri due: se e' spento non c'e' niente da fare.
+   *
+   * `X/Y` e non un numero solo: dodici da soli non dicono se sono tanti o
+   * pochi, dodici su venti si'.
    */
   munizioni(comandi, mio) {
     if (!mio) return;
@@ -1142,8 +1146,11 @@ export class Disegno {
     const ricarica = mio.rc ?? 0;
     const secco = colpi === 0 && riserve === 0;
     const pochi = colpi <= Math.max(2, Math.round(m.caricatore * 0.25));
+    // Acceso quando premerlo cambia qualcosa: c'e' posto in canna e c'e' un
+    // caricatore da metterci. Sennò e' spento come un'abilita' in ricarica.
+    const puoRicaricare = ricarica <= 0 && riserve > 0 && colpi < m.caricatore;
 
-    cerchio(c, b, COLORI.pulsante);
+    cerchio(c, b, puoRicaricare ? COLORI.pulsanteAcceso : COLORI.pulsante);
 
     // L'anello: il caricatore, o la ricarica in corso.
     const quanto = ricarica > 0 ? 1 - ricarica / m.ricarica : colpi / m.caricatore;
@@ -1165,9 +1172,25 @@ export class Disegno {
       c.font = '10px system-ui, sans-serif';
       c.fillText(t('gioco.ricarico'), b.x, b.y + 4);
     } else {
+      // I colpi in canna grandi, la capienza piccola accanto: il numero che si
+      // guarda mentre si spara e' il primo, il secondo serve solo a dargli una
+      // misura. Scriverli uguali vorrebbe dire leggerli tutti e due ogni volta.
       c.fillStyle = secco ? COLORI.critico : pochi ? COLORI.nemicoAllerta : COLORI.testo;
       c.font = '17px ui-monospace, Consolas, monospace';
-      c.fillText(String(colpi), b.x, b.y + 6);
+      const grande = String(colpi);
+      const piccolo = `/${m.caricatore}`;
+      const largoGrande = c.measureText(grande).width;
+      c.font = '11px ui-monospace, Consolas, monospace';
+      const largoPiccolo = c.measureText(piccolo).width;
+      const inizio = b.x - (largoGrande + largoPiccolo) / 2;
+
+      c.textAlign = 'left';
+      c.font = '17px ui-monospace, Consolas, monospace';
+      c.fillText(grande, inizio, b.y + 6);
+      c.fillStyle = COLORI.testoSpento;
+      c.font = '11px ui-monospace, Consolas, monospace';
+      c.fillText(piccolo, inizio + largoGrande, b.y + 6);
+      c.textAlign = 'center';
     }
 
     // I caricatori di scorta, sotto: uno per puntino.

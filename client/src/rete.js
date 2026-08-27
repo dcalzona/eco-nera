@@ -370,11 +370,23 @@ export class Rete {
    * costa meno di quanto costi alla radio del telefono chiedere il permesso di
    * trasmettere sessanta volte al secondo.
    */
-  mandaPasso(seq, io) {
-    if (!this.pronta()) return;
+  /**
+   * La forma di un comando, in un posto solo.
+   *
+   * Sta qui e non dentro `mandaPasso` perche' i comandi si costruiscono in due
+   * strade — `Rete` li impacchetta per la rete, `ReteLocale` li consegna al
+   * mondo che ha in casa — e finche' erano due copie della stessa forma una
+   * delle due restava indietro. E' successo con la ricarica: partiva col
+   * server di casa e non da soli, senza che niente lo dicesse.
+   *
+   * Si arrotonda come arrotonderebbe la rete: il server vero riceve tre
+   * decimali e il telefono prevede con il numero pieno. E' uno scarto
+   * minuscolo, ma esiste in casa — e allora deve esistere ovunque, o le due
+   * partite non sono piu' la stessa partita.
+   */
+  static comando(seq, io) {
     const tondo = (v) => Math.round(v * 1000) / 1000;
-    if (!this.daMandare.length) this.primoInAttesa = performance.now();
-    this.daMandare.push({
+    return {
       q: seq,
       mx: tondo(io.mx),
       my: tondo(io.my),
@@ -383,7 +395,14 @@ export class Rete {
       f: io.spara ? 1 : 0,
       l: io.torcia ? 1 : 0,
       b: io.abilita ? 1 : 0,
-    });
+      rk: io.ricarica ? 1 : 0,
+    };
+  }
+
+  mandaPasso(seq, io) {
+    if (!this.pronta()) return;
+    if (!this.daMandare.length) this.primoInAttesa = performance.now();
+    this.daMandare.push(Rete.comando(seq, io));
 
     const quanti = this.ping > SOGLIA_PING_RAGGRUPPA ? COMANDI_PER_PACCHETTO : 1;
     const pieno = this.daMandare.length >= quanti;

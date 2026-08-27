@@ -27,6 +27,7 @@ const PAD = {
   fuoco: [7, 5], // R2, R1
   torcia: [6, 4], // L2, L1
   abilita: [0, 2], // croce, quadrato
+  ricarica: [1, 3], // cerchio, triangolo
   menu: [9, 8], // options, share
   su: [12], giu: [13], sinistra: [14], destra: [15], // croce direzionale
 };
@@ -42,6 +43,8 @@ export class Comandi {
     this.torcia = true;   // acceso di partenza
     this.abilita = false;
     this.abilitaFino = 0;
+    this.ricarica = false;
+    this.ricaricaFino = 0;
     // La misura dello schermo la detta il disegno, non il canvas: due fonti
     // di verita' sulle stesse coordinate prima o poi divergono, e i pulsanti
     // finirebbero disegnati in un posto e premibili in un altro.
@@ -84,6 +87,7 @@ export class Comandi {
       // di salita, non lo stato: tenendo premuto non si deve lampeggiare.
       if (!e.repeat && e.code === 'KeyL') this.torcia = !this.torcia;
       if (!e.repeat && e.code === 'KeyE') this.premiAbilita();
+      if (!e.repeat && e.code === 'KeyR') this.premiRicarica();
       this.tasti.add(e.code);
     });
     addEventListener('keyup', (e) => this.tasti.delete(e.code));
@@ -121,12 +125,21 @@ export class Comandi {
       torcia: { x: destra, y, r: 32 },
       abilita: { x: destra - 78, y, r: 32 },
       // Le munizioni stanno nella stessa fila e con la stessa faccia degli
-      // altri due, ma non si premono: e' un quadrante, non un comando. Prima
-      // erano un blocco di testo a `h - 26`, cioe' addosso al tasto torcia, e
-      // non si capiva cosa fosse cosa. `dentroUnPulsante` non la nomina, e
-      // quindi un dito che ci finisce sopra vale come stick.
+      // altri due, e si premono come loro: premendo si ricarica. Prima erano un
+      // blocco di testo a `h - 26`, cioe' addosso al tasto torcia, e non si
+      // capiva cosa fosse cosa.
       munizioni: { x: destra - 156, y, r: 32 },
     };
+  }
+
+  /**
+   * Ricarica a mano. Come l'abilita', resta premuto un attimo: i comandi
+   * partono sessanta volte al secondo e uno solo potrebbe cadere in un momento
+   * in cui chi ospita non lo consuma.
+   */
+  premiRicarica() {
+    this.ricarica = true;
+    this.ricaricaFino = performance.now() + 200;
   }
 
   premiAbilita() {
@@ -138,7 +151,7 @@ export class Comandi {
 
   dentroUnPulsante(p) {
     const b = this.pulsanti();
-    for (const nome of ['abilita', 'torcia']) {
+    for (const nome of ['abilita', 'torcia', 'munizioni']) {
       if (Math.hypot(p.x - b[nome].x, p.y - b[nome].y) <= b[nome].r + 8) return nome;
     }
     return null;
@@ -164,6 +177,10 @@ export class Comandi {
     }
     if (pulsante === 'abilita') {
       this.premiAbilita();
+      return;
+    }
+    if (pulsante === 'munizioni') {
+      this.premiRicarica();
       return;
     }
 
@@ -257,6 +274,7 @@ export class Comandi {
     // separato costringe a un terzo dito che non c'e'. Mirare e' sparare.
     this.spara = Math.hypot(this.ax, this.ay) > 0.45;
     if (this.abilita && performance.now() > this.abilitaFino) this.abilita = false;
+    if (this.ricarica && performance.now() > this.ricaricaFino) this.ricarica = false;
 
     // Il controller ha l'ultima parola: se lo si sta usando, comanda lui.
     const pad = this.leggiPad();
@@ -275,6 +293,7 @@ export class Comandi {
       }
       if (pad.torcia) this.torcia = !this.torcia;
       if (pad.abilita) this.premiAbilita();
+      if (pad.ricarica) this.premiRicarica();
       if (pad.menu) this.menuPremuto = true;
       if (pad.conferma) this.confermaPremuta = true;
     }
@@ -330,6 +349,7 @@ export function daPad(pad, prima = []) {
     fuoco: giu(PAD.fuoco),
     torcia: appenaGiu(PAD.torcia),
     abilita: appenaGiu(PAD.abilita),
+    ricarica: appenaGiu(PAD.ricarica),
     menu: appenaGiu(PAD.menu),
     conferma: appenaGiu(PAD.abilita),
   };

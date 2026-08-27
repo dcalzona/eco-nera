@@ -201,6 +201,8 @@ const TESTI = {
     'guida.difficolta.titolo': 'Difficolta e Survival',
     'guida.difficolta.testo':
       "Quattro difficolta': in Facile il gioco e' esattamente quello di sempre, le altre alzano quanti sono i nemici, quanto fanno male e quanto in fretta arrivano i rinforzi. La campagna e' di quindici settori e poi si e' finita. SURVIVAL e' un'altra cosa e per questo ha un altro colore: non si sceglie nessuna difficolta', si parte da facile e ogni cinque livelli si sale, all'infinito. Si vede fin dove si arriva.",
+    'guida.comandi.ricarica':
+      'Il tondo dei colpi — si preme per ricaricare, anche col caricatore a meta (R sulla tastiera, cerchio sul pad).',
   },
 
   en: {
@@ -386,6 +388,8 @@ const TESTI = {
     'guida.difficolta.titolo': 'Difficulty and Survival',
     'guida.difficolta.testo':
       'Four difficulties: on Easy the game is exactly the one you know, the others raise how many enemies there are, how hard they hit and how fast reinforcements arrive. The campaign is fifteen sectors and then it is over. SURVIVAL is a different thing, which is why it is a different colour: you pick no difficulty at all — it starts easy and climbs a step every five levels, forever. You see how far you get.',
+    'guida.comandi.ricarica':
+      'The ammo dial — press it to reload, even with a half-full magazine (R on the keyboard, circle on the pad).',
   },
 
   fr: {
@@ -573,6 +577,8 @@ const TESTI = {
     'guida.difficolta.titolo': 'Difficulte et Survie',
     'guida.difficolta.testo':
       "Quatre difficultes : en Facile le jeu est exactement celui que tu connais, les autres augmentent le nombre d'ennemis, leurs degats et la vitesse des renforts. La campagne fait quinze secteurs et puis c'est fini. SURVIE est autre chose, d'ou la couleur differente : on ne choisit aucune difficulte — on part en facile et on monte d'un cran tous les cinq niveaux, sans fin. On voit jusqu'ou on arrive.",
+    'guida.comandi.ricarica':
+      'Le cadran des balles — appuie pour recharger, meme a moitie plein (R au clavier, cercle sur la manette).',
   },
 
   es: {
@@ -758,6 +764,8 @@ const TESTI = {
     'guida.difficolta.titolo': 'Dificultad y Supervivencia',
     'guida.difficolta.testo':
       'Cuatro dificultades: en Facil el juego es exactamente el de siempre, las otras suben cuantos enemigos hay, cuanto hacen dano y como de rapido llegan los refuerzos. La campana son quince sectores y luego se acaba. SUPERVIVENCIA es otra cosa, y por eso tiene otro color: no se elige ninguna dificultad — se empieza en facil y se sube un escalon cada cinco niveles, sin fin. Se ve hasta donde llegas.',
+    'guida.comandi.ricarica':
+      'El circulo de las balas — pulsalo para recargar, incluso a medio cargador (R en el teclado, circulo en el mando).',
   },
 
   ru: {
@@ -939,6 +947,8 @@ const TESTI = {
     'guida.difficolta.titolo': 'Сложность и Выживание',
     'guida.difficolta.testo':
       'Четыре сложности: на Лёгкой это ровно та игра, которую ты знаешь. Кампания — пятнадцать секторов, и на этом всё. ВЫЖИВАНИЕ — другое, поэтому и цвет другой: сложность не выбирают, она растёт каждые пять уровней, бесконечно.',
+    'guida.comandi.ricarica':
+      'Круг с патронами — нажми, чтобы перезарядить, даже с половиной магазина (R на клавиатуре, круг на геймпаде).',
   },
 
   nl: {
@@ -1126,6 +1136,8 @@ const TESTI = {
     'guida.difficolta.titolo': 'Moeilijkheid en Survival',
     'guida.difficolta.testo':
       'Vier moeilijkheden: op Makkelijk is het spel precies dat wat je kent. De campagne is vijftien sectoren en dan is het klaar. SURVIVAL is iets anders, vandaar de andere kleur: je kiest geen moeilijkheid — het begint makkelijk en stijgt elke vijf levels, eindeloos. Je ziet hoe ver je komt.',
+    'guida.comandi.ricarica':
+      'De kogelring — druk om te herladen, ook bij een half magazijn (R op het toetsenbord, cirkel op de controller).',
   },
 };
 

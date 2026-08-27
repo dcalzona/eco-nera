@@ -158,24 +158,13 @@ export class ReteLocale extends Rete {
   }
 
   /**
-   * I comandi. Si arrotondano come li arrotonderebbe la rete: il server vero
-   * riceve tre decimali, e il telefono prevede con il numero pieno. E' uno
-   * scarto minuscolo, ma e' uno scarto che esiste in casa — e allora deve
-   * esistere anche qui, o le due partite non sono piu' la stessa partita.
+   * I comandi vanno dritti al mondo che sta qui, ma sono LO STESSO COMANDO che
+   * partirebbe per la rete: la forma la fa `Rete.comando`, arrotondamenti
+   * compresi. Quando era scritta due volte, una delle due restava indietro.
    */
   mandaPasso(seq, io) {
     if (!this.mondo || this.io === null) return;
-    const tondo = (v) => Math.round(v * 1000) / 1000;
-    this.mondo.input(this.io, {
-      q: seq,
-      mx: tondo(io.mx),
-      my: tondo(io.my),
-      ax: tondo(io.ax),
-      ay: tondo(io.ay),
-      f: io.spara ? 1 : 0,
-      l: io.torcia ? 1 : 0,
-      b: io.abilita ? 1 : 0,
-    });
+    this.mondo.input(this.io, Rete.comando(seq, io));
   }
 
   mandaPronto() {
