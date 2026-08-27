@@ -3,7 +3,7 @@
 // personaggio per non sentire il ritardo della rete sotto il dito.
 // Devono per forza calcolare la stessa cosa, quindi il codice e' uno solo.
 
-import { RAGGIO, VELOCITA, RIPARO } from './regole.js';
+import { RAGGIO, VELOCITA, RIPARO, TILE } from './regole.js';
 import { muro } from './mappa.js';
 
 /** Riduce a lunghezza 1 un vettore piu' lungo di 1 (il dito sullo stick puo' sbordare). */
@@ -107,6 +107,28 @@ export function suUnRiparo(ripari, x, y) {
 }
 
 /** La velocita' di chi sta scavalcando, se sta scavalcando. */
+/**
+ * Le porte in fondo all'arena: gli scagnozzi ci passano, voi no.
+ *
+ * Non e' un muro nella mappa ed e' voluto. Aprire le porte cambiando la
+ * griglia vorrebbe dire cambiare la mappa a partita in corso, e la mappa e'
+ * l'unica cosa che i due telefoni si dicono UNA VOLTA SOLA. Cosi' invece si
+ * apre una regola, e la regola sta qui — dove la applicano tutti e due, chi
+ * ospita e chi prevede. Se la applicasse solo chi ospita, il telefono
+ * continuerebbe a prevedere di passare e verrebbe tirato indietro a ogni
+ * fotografia.
+ */
+export function fermatoDalleporte(arena, aperte, ent, prima) {
+  if (!arena || aperte) return false;
+  const o = arena.oltre;
+  const tx = Math.floor(ent.x / TILE);
+  const ty = Math.floor(ent.y / TILE);
+  if (tx < o.x || tx >= o.x + o.w || ty < o.y || ty >= o.y + o.h) return false;
+  ent.x = prima.x;
+  ent.y = prima.y;
+  return true;
+}
+
 export function velocitaFraIRipari(velocita, ripari, x, y) {
   return suUnRiparo(ripari, x, y) ? velocita * RIPARO.rallenta : velocita;
 }

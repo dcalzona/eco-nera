@@ -10,7 +10,8 @@
 // sta dietro un muro. Per questo la connessione si verifica sempre, e una
 // mappa che non la passa viene rifatta.
 
-import { TILE, CASELLA } from './regole.js';
+import { TILE, CASELLA, ARENA }
+from './regole.js';
 
 /**
  * Le mappe crescono col settore.
@@ -136,6 +137,116 @@ function prova(seme, settore, insisti = false) {
   if (!insisti && raggiunte < calpestabili) return null;
 
   mappa.partenze = postiNellaStanza(stanze[0], 4);
+  return mappa;
+}
+
+/**
+ * Il livello del boss: non si genera, si costruisce.
+ *
+ * Tutti gli altri settori sono stanze sparse collegate da corridoi, e vanno
+ * bene perche' la missione e' andare a cercare qualcosa. Qui la missione e'
+ * un'altra: si avanza per un corridoio largo, si sbuca in un'arena, e si
+ * combatte. Una mappa a caso non saprebbe fare quella forma, e mettercela
+ * dentro per caso sarebbe peggio che disegnarla.
+ *
+ * La pianta e' questa, da sinistra a destra:
+ *
+ *     [ingresso]===corridoio largo===[   ARENA   ]++[uscita]
+ *                                    [   boss    ]||
+ *                                    [           ]++
+ *
+ * Le porte in fondo (`++`) restano chiuse finche' il boss e' vivo: gli
+ * scagnozzi ci passano, voi no. E' la ragione per cui l'uscita sta DOPO
+ * l'arena e non dietro le spalle — si va avanti, non si torna indietro.
+ */
+export function generaArena(seme = Date.now(), settore = 1) {
+  const caso = dado(seme);
+  // Anche l'arena cresce col settore, come le altre mappe. Senza, l'ultimo
+  // boss si sarebbe combattuto nella stessa identica stanza del primo: la
+  // promessa "piu' si scende, piu' e' grande" non puo' valere per quattro
+  // settori su cinque e saltare il quinto proprio quando conta di piu'.
+  const piu = Math.min(10, Math.floor((Math.max(1, settore) - 1) / 2));
+  const A = {
+    ...ARENA,
+    corridoioLungo: ARENA.corridoioLungo + piu * 2,
+    stanzaLarga: ARENA.stanzaLarga + piu,
+    stanzaAlta: ARENA.stanzaAlta + Math.floor(piu / 2) * 2,
+    nemiciNelCorridoio: ARENA.nemiciNelCorridoio + Math.floor(piu / 2),
+    ripariNelCorridoio: ARENA.ripariNelCorridoio + Math.floor(piu / 3),
+  };
+
+  const larghezza = 4 + A.corridoioLungo + A.stanzaLarga + 8;
+  const altezza = Math.max(A.stanzaAlta + 6, A.corridoioLargo + 6);
+  const griglia = [];
+  for (let y = 0; y < altezza; y++) griglia.push(new Array(larghezza).fill(CASELLA.MURO));
+
+  const mezzo = Math.floor(altezza / 2);
+
+  // 1. L'ingresso: una camera piccola da cui si parte.
+  const ingresso = { x: 2, y: mezzo - 2, w: 4, h: 5 };
+  scava(griglia, ingresso.x, ingresso.y, ingresso.w, ingresso.h);
+
+  // 2. Il corridoio largo. Otto-dieci caselle, come chiesto: e' largo abbastanza
+  //    da poterci girare intorno a un riparo invece di infilarsi in fila.
+  const corrX = ingresso.x + ingresso.w;
+  const corrY = mezzo - Math.floor(A.corridoioLargo / 2);
+  scava(griglia, corrX, corrY, A.corridoioLungo, A.corridoioLargo);
+
+  // 3. L'arena.
+  const arenaX = corrX + A.corridoioLungo;
+  const arenaY = mezzo - Math.floor(A.stanzaAlta / 2);
+  scava(griglia, arenaX, arenaY, A.stanzaLarga, A.stanzaAlta);
+
+  // 4. L'uscita, dietro le porte.
+  const uscita = { x: arenaX + A.stanzaLarga + 3, y: mezzo - 2, w: 4, h: 5 };
+  scava(griglia, uscita.x, uscita.y, uscita.w, uscita.h);
+
+  // 5. Le porte: due varchi nel muro in fondo all'arena, e il pezzetto di
+  //    passaggio che li unisce all'uscita. Sono PAVIMENTO nella griglia — il
+  //    muro che vi ferma non e' nella mappa, e' nella regola: finche' il boss
+  //    e' vivo non ci si passa, e a fermarvi ci pensa il mondo. Se fossero
+  //    muri veri, aprirle vorrebbe dire cambiare la mappa a partita in corso,
+  //    e la mappa e' l'unica cosa che i due telefoni non si riscambiano mai.
+  const porte = [];
+  for (const dy of [-3, 3]) {
+    const py = mezzo + dy;
+    for (let x = arenaX + A.stanzaLarga; x < uscita.x; x++) griglia[py][x] = CASELLA.PAVIMENTO;
+    porte.push({ tx: arenaX + A.stanzaLarga, ty: py });
+  }
+  // e i due varchi si uniscono davanti all'uscita
+  for (let y = mezzo - 3; y <= mezzo + 3; y++) griglia[y][uscita.x - 1] = CASELLA.PAVIMENTO;
+
+  const stanze = [
+    { ...ingresso },
+    { x: arenaX, y: arenaY, w: A.stanzaLarga, h: A.stanzaAlta },
+    { ...uscita },
+    { x: corrX, y: corrY, w: A.corridoioLungo, h: A.corridoioLargo },
+  ];
+
+  const mappa = {
+    larghezza,
+    altezza,
+    tile: TILE,
+    griglia,
+    stanze,
+    settore,
+    // Chi legge la mappa deve sapere che questa e' un'arena: il mondo ci
+    // appende sopra regole che negli altri settori non esistono.
+    arena: {
+      porte,
+      // Il rettangolo oltre le porte: e' li' che non si puo' passare.
+      oltre: { x: arenaX + A.stanzaLarga, y: mezzo - 4, w: uscita.x + uscita.w - (arenaX + A.stanzaLarga), h: 9 },
+      corridoio: { x: corrX, y: corrY, w: A.corridoioLungo, h: A.corridoioLargo },
+      // Quanti nemici e quanti ripari li dice la mappa, non la costante: qui
+      // si sa quanto e' lunga davvero, e il mondo no.
+      quantiNemici: A.nemiciNelCorridoio,
+      quantiRipari: A.ripariNelCorridoio,
+      centro: { tx: arenaX + Math.floor(A.stanzaLarga * 0.62), ty: mezzo },
+    },
+  };
+  mappa.partenze = postiNellaStanza(ingresso, 4);
+  // Il caso serve solo a spostare un po' i ripari: la pianta resta quella.
+  mappa.semeArredi = Math.floor(caso() * 1e9);
   return mappa;
 }
 

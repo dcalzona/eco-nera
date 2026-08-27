@@ -3,7 +3,7 @@
 // che resta disegnato spento, come un ricordo.
 
 import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA, ARMATURA_MASSIMA, RIPARO, BOMBA,
-  munizioniDi, STAZIONE, RIPARI_PER_SETTORE,
+  munizioniDi, STAZIONE, RIPARI_PER_SETTORE, CONVOGLIO, BOSS,
 } from '../condiviso/regole.js';
 import { giaVisto } from './visione.js';
 import { t } from './lingue.js';
@@ -534,6 +534,115 @@ export class Disegno {
   }
 
   /**
+   * Il convoglio e il suo binario.
+   *
+   * Il binario si vede sempre, spento: e' la cosa che dice DOVE ANDRA', e
+   * senza quella scortare qualcosa che si muove da solo diventa seguirlo alla
+   * cieca. Il cerchio attorno al vagone e' il raggio vero entro cui bisogna
+   * stare, non una decorazione — si vede quando lo si sta perdendo prima che
+   * cominci a tornare indietro.
+   */
+  convoglio(cv) {
+    if (!cv) return;
+    const c = this.ctx;
+
+    c.strokeStyle = 'rgba(138,106,58,0.35)';
+    c.lineWidth = 5;
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    c.beginPath();
+    c.moveTo(cv.via[0][0], cv.via[0][1]);
+    for (const q of cv.via) c.lineTo(q[0], q[1]);
+    c.stroke();
+
+    // Il pezzo gia' fatto, acceso: si legge il progresso guardando il binario
+    // invece che una barra in un angolo.
+    c.strokeStyle = tinta(COLORI.cassa, 0.75);
+    c.lineWidth = 3;
+    c.beginPath();
+    c.moveTo(cv.via[0][0], cv.via[0][1]);
+    for (const q of cv.via) {
+      c.lineTo(q[0], q[1]);
+      if (Math.hypot(q[0] - cv.x, q[1] - cv.y) < 6) break;
+    }
+    c.stroke();
+
+    c.strokeStyle = cv.s
+      ? tinta(COLORI.vita, 0.5 + 0.25 * Math.sin(performance.now() / 300))
+      : tinta(COLORI.critico, 0.55);
+    c.lineWidth = 2;
+    c.beginPath();
+    c.arc(cv.x, cv.y, CONVOGLIO.raggio, 0, Math.PI * 2);
+    c.stroke();
+
+    c.fillStyle = COLORI.cassa;
+    stondato(c, cv.x - 18, cv.y - 12, 36, 24, 4);
+    c.fill();
+    c.strokeStyle = 'rgba(5,7,12,0.75)';
+    c.lineWidth = 1.4;
+    c.stroke();
+    c.fillStyle = cv.s ? COLORI.vita : COLORI.critico;
+    c.fillRect(cv.x - 18, cv.y - 3, 36, 6);
+  }
+
+  /**
+   * Il boss: piu' grosso, con la sua barra di vita addosso.
+   *
+   * La barra sta SOPRA di lui e non in cima allo schermo, perche' al buio la
+   * cosa che si cerca e' lui: se la barra sta altrove si guarda quella e non
+   * la stanza, e questo e' un gioco in cui bisogna guardare la stanza.
+   */
+  boss(b) {
+    if (!b) return;
+    const c = this.ctx;
+
+    // Il corpo: due cerchi concentrici, cosi' si distingue da un pattugliatore
+    // anche di sfuggita e anche mezzo al buio.
+    c.fillStyle = tinta(BOSS.colore, 0.22);
+    c.beginPath();
+    c.arc(b.x, b.y, BOSS.raggio + 6, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = BOSS.colore;
+    c.beginPath();
+    c.arc(b.x, b.y, BOSS.raggio, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = scurisci(BOSS.colore, 0.55);
+    c.beginPath();
+    c.arc(b.x + Math.cos(b.a) * 10, b.y + Math.sin(b.a) * 10, 8, 0, Math.PI * 2);
+    c.fill();
+
+    barra(c, b.x - 30, b.y - BOSS.raggio - 14, 60, 6, b.v / Math.max(1, b.vp), COLORI.critico);
+  }
+
+  /**
+   * Le porte in fondo all'arena, finche' sono chiuse.
+   *
+   * Vanno disegnate perche' altrimenti si sbatte contro un muro che non c'e':
+   * il pavimento e' pavimento, il divieto e' una regola. Vedere una grata
+   * chiusa e capire che si apre uccidendo quello grosso e' tutta la lettura
+   * che serve.
+   */
+  porte(ar, aperte) {
+    if (!ar || aperte) return;
+    const c = this.ctx;
+    const o = ar.oltre;
+    c.fillStyle = 'rgba(224,90,90,0.10)';
+    c.fillRect(o.x * TILE, o.y * TILE, o.w * TILE, o.h * TILE);
+    c.strokeStyle = tinta(COLORI.critico, 0.55);
+    c.lineWidth = 3;
+    for (const [tx, ty] of ar.porte) {
+      const x = (tx + 0.5) * TILE;
+      const y = (ty + 0.5) * TILE;
+      c.beginPath();
+      for (let k = -1; k <= 1; k++) {
+        c.moveTo(x - 6, y + k * 9);
+        c.lineTo(x + 6, y + k * 9);
+      }
+      c.stroke();
+    }
+  }
+
+  /**
    * Gli obiettivi, disegnati nel mondo. Ogni modalita' disegna la sua roba, ma
    * l'uscita e' sempre la stessa e sta sempre in fondo: e' il pezzo che dice
    * "qualunque cosa tu sia venuto a fare, ora si torna indietro".
@@ -552,7 +661,12 @@ export class Disegno {
 
     if (ob.md === 'bomba') this.disegnaBomba(ob.bo);
     else if (ob.md === 'dominio') this.disegnaZona(ob.zo);
-    else for (const n of ob.nuclei) this.serverDaSpegnere(n, memoria);
+    else if (ob.md === 'convoglio') this.convoglio(ob.cv);
+    else if (ob.md === 'boss') {
+      // Le porte prima del boss: sono scenario, e lui ci sta davanti.
+      this.porte(ob.ar, ob.po === 1);
+      this.boss(ob.bs);
+    } else for (const n of ob.nuclei) this.serverDaSpegnere(n, memoria);
 
     const uscita = ob.es;
     if (uscita.a || this.scoperto(uscita, memoria)) {
@@ -900,6 +1014,18 @@ export class Disegno {
       c.arc(b.abilita.x, b.abilita.y, b.abilita.r - 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * quanto);
       c.stroke();
     }
+    // Quanti ripari restano, addosso al tasto che li pianta: e' il numero che
+    // serve proprio mentre si decide se piantarne uno, e cercarlo in un angolo
+    // dello schermo vorrebbe dire non guardarlo mai.
+    if (regola.tipo === 'riparo') {
+      const rimasti = mio.rp ?? RIPARI_PER_SETTORE;
+      for (let k = 0; k < RIPARI_PER_SETTORE; k++) {
+        const px = b.abilita.x - ((RIPARI_PER_SETTORE - 1) * 6) + k * 12;
+        c.fillStyle = k < rimasti ? COLORI.assalto : COLORI.vitaVuota;
+        c.fillRect(px, b.abilita.y + b.abilita.r + 4, 9, 4);
+      }
+    }
+
     c.fillStyle = pronta ? COLORI.testo : COLORI.testoSpento;
     c.font = '10px system-ui, sans-serif';
     c.textAlign = 'center';
@@ -958,8 +1084,6 @@ export class Disegno {
       );
     }
 
-    this.munizioni(mio);
-
     if (mio.st === STATO.CRITICO) {
       // Bordo rosso che pulsa: si capisce che e' grave senza leggere niente.
       const battito = 0.18 + 0.12 * Math.sin(performance.now() / 260);
@@ -992,69 +1116,73 @@ export class Disegno {
   }
 
   /**
-   * I colpi, in basso a destra.
+   * Le munizioni: un quadrante tondo in fila con torcia e abilita'.
    *
-   * Sta dalla parte del pollice che spara e non insieme alla vita: sono due
-   * cose che si guardano in momenti diversi. La vita la controlli quando ti
-   * hanno colpito, i colpi mentre stai sparando — e in quel momento l'occhio
-   * e' gia' da quella parte.
+   * Prima erano un numero e dei pallini scritti in basso a destra, che
+   * cadevano proprio sopra il tasto della torcia: si sovrapponevano e non si
+   * capiva cosa fosse cosa. Adesso hanno la stessa faccia degli altri due
+   * comandi — cerchio, anello, glifo — perche' stanno nello stesso posto e si
+   * guardano nello stesso momento. E' lo stesso trucco delle pozioni di Dragon
+   * Tower: il numero non sta in un angolo dello schermo, sta ADDOSSO alla cosa
+   * che lo consuma.
    *
-   * I caricatori di scorta sono pallini e non un numero: quanti ne restano si
-   * legge senza contare, e a colpo d'occhio "due pallini" dice piu' di "2".
+   * L'anello e' il caricatore che si svuota; mentre si ricarica cambia colore
+   * e si riempie al contrario. I caricatori di scorta sono i puntini sotto:
+   * "due puntini" si legge senza contare, "2" no.
    */
-  munizioni(mio) {
+  munizioni(comandi, mio) {
+    if (!mio) return;
     const c = this.ctx;
+    const b = comandi.pulsanti().munizioni;
+    if (!b) return;
+
     const m = munizioniDi(mio.r ?? 'faro');
     const colpi = mio.co ?? m.caricatore;
     const riserve = mio.rs ?? 0;
-    const x = this.w - 14;
-    const y = this.h - 26;
-
-    // Sotto un quarto il numero si accende: e' il momento in cui conviene
-    // decidere qualcosa, non quello in cui si e' gia' a secco.
-    const pochi = colpi <= Math.max(2, Math.round(m.caricatore * 0.25));
+    const ricarica = mio.rc ?? 0;
     const secco = colpi === 0 && riserve === 0;
+    const pochi = colpi <= Math.max(2, Math.round(m.caricatore * 0.25));
 
-    c.textAlign = 'right';
-    if ((mio.rc ?? 0) > 0) {
-      // Mentre si ricarica non si spara, e va detto forte: e' il momento in
-      // cui si e' scoperti, ed e' tutta la ragione per cui i colpi finiscono.
+    cerchio(c, b, COLORI.pulsante);
+
+    // L'anello: il caricatore, o la ricarica in corso.
+    const quanto = ricarica > 0 ? 1 - ricarica / m.ricarica : colpi / m.caricatore;
+    c.strokeStyle = ricarica > 0
+      ? COLORI.armatura
+      : secco
+        ? COLORI.critico
+        : pochi
+          ? COLORI.nemicoAllerta
+          : COLORI.testo;
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(b.x, b.y, b.r - 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * quanto);
+    c.stroke();
+
+    c.textAlign = 'center';
+    if (ricarica > 0) {
       c.fillStyle = COLORI.armatura;
-      c.font = '13px ui-monospace, Consolas, monospace';
-      c.fillText(t('gioco.ricarico'), x, y + 9);
-      const quanto = 1 - Math.min(1, mio.rc / m.ricarica);
-      barra(c, x - 92, y + 14, 92, 4, quanto, COLORI.armatura);
+      c.font = '10px system-ui, sans-serif';
+      c.fillText(t('gioco.ricarico'), b.x, b.y + 4);
     } else {
       c.fillStyle = secco ? COLORI.critico : pochi ? COLORI.nemicoAllerta : COLORI.testo;
-      c.font = '20px ui-monospace, Consolas, monospace';
-      c.fillText(String(colpi), x, y + 12);
+      c.font = '17px ui-monospace, Consolas, monospace';
+      c.fillText(String(colpi), b.x, b.y + 6);
     }
 
-    // I caricatori di scorta, uno per pallino.
+    // I caricatori di scorta, sotto: uno per puntino.
     for (let k = 0; k < m.caricatori - 1; k++) {
-      const px = x - 6 - k * 11;
+      const px = b.x - ((m.caricatori - 2) * 5) + k * 10;
       c.fillStyle = k < riserve ? COLORI.testo : COLORI.vitaVuota;
       c.beginPath();
-      c.arc(px, y - 8, 3.5, 0, Math.PI * 2);
+      c.arc(px, b.y + b.r + 7, 3, 0, Math.PI * 2);
       c.fill();
     }
 
-    // I ripari che restano, solo per chi li ha: due quadretti. Sopra i colpi,
-    // perche' e' l'altra cosa che si spende e che finisce.
-    if ((mio.r ?? 'faro') === 'assalto') {
-      const rimasti = mio.rp ?? RIPARI_PER_SETTORE;
-      for (let k = 0; k < RIPARI_PER_SETTORE; k++) {
-        const px = x - 10 - k * 12;
-        c.fillStyle = k < rimasti ? COLORI.assalto : COLORI.vitaVuota;
-        c.fillRect(px, y - 26, 9, 4);
-      }
-    }
-
-    // Fermi su una stazione: la barra che si riempie. Sta al centro dello
-    // schermo e non in un angolo, perche' in quei due secondi non si fa altro
-    // e si e' fermi in mezzo a un settore sveglio.
+    // Fermi su una cassa: la barra che si riempie, al centro dello schermo.
+    // Li' e non qui, perche' in quei due secondi non si fa altro e si e' fermi
+    // in mezzo a un settore sveglio: e' una cosa da guardare, non da spiare.
     if ((mio.sz ?? 0) > 0) {
-      c.textAlign = 'center';
       c.fillStyle = COLORI.kit;
       c.font = '12px system-ui, sans-serif';
       c.fillText(t('gioco.ricarica'), this.w / 2, this.h - 58);

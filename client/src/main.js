@@ -1,6 +1,6 @@
 // Avvio del client e giro di rendering.
 
-import { muovi, angolo, velocitaFraIRipari } from '../condiviso/fisica.js';
+import { muovi, angolo, velocitaFraIRipari, fermatoDalleporte } from '../condiviso/fisica.js';
 import { SOTTOPASSO, STATO, UMORE, VELOCITA, VELOCITA_CRITICO, NEMICI, VITA_MASSIMA, ECO_SECONDI }
   from '../condiviso/regole.js';
 import { Rete } from './rete.js';
@@ -12,7 +12,8 @@ import { Disegno } from './render.js';
 import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
 import { Suoni } from './audio.js';
 import { disegnaOmino, coloreDi, armaDi } from './render.js';
-import { CLASSI, ABILITA, VERSIONE, BOMBA, DIFFICOLTA } from '../condiviso/regole.js';
+import { CLASSI, ABILITA, VERSIONE, BOMBA, DIFFICOLTA, SCELTE_DIFFICOLTA }
+  from '../condiviso/regole.js';
 import { LINGUE, t, impostaLingua, linguaCorrente, traduciPagina } from './lingue.js';
 import { disegnaBriefing } from './briefing.js';
 import {
@@ -51,7 +52,7 @@ if (!MODI.includes(modo)) {
 // mette dentro subito, e una `let` dichiarata piu' sotto non si puo' leggere
 // da qui — sarebbe un errore di zona morta al primo avvio, cioe' sempre.
 let difficolta = localStorage.getItem('ecoNera.difficolta');
-if (!DIFFICOLTA.includes(difficolta)) difficolta = 'facile';
+if (!SCELTE_DIFFICOLTA.includes(difficolta)) difficolta = 'facile';
 
 let rete = creaRete(modo);
 
@@ -295,7 +296,7 @@ const elencoDifficolta = document.getElementById('difficolta');
 
 function costruisciDifficolta() {
   elencoDifficolta.textContent = '';
-  for (const quale of DIFFICOLTA) {
+  for (const quale of SCELTE_DIFFICOLTA) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'modo';
@@ -785,7 +786,9 @@ function giro(ora) {
     // uguale e non lo e': la fascia della barriera e' larga meno di quanto si
     // cammini in un fotogramma, e basterebbe a far litigare i due calcoli.
     const velocita = velocitaFraIRipari(velocitaBase, ripari, io.x, io.y);
+    const primaDelPasso = { x: io.x, y: io.y };
     muovi(io, c.mx, c.my, SOTTOPASSO, mappa, velocita);
+    fermatoDalleporte(mappa.arena, rete.porteAperte(), io, primaDelPasso);
     const mira = angolo(c.ax, c.ay) ?? angolo(c.mx, c.my);
     if (mira !== null) io.ang = mira;
     pendenti.push({ seq, mx: c.mx, my: c.my, vel: velocita });
@@ -853,6 +856,7 @@ function giro(ora) {
 
   const mio = scena.find((p) => p.i === rete.io);
   disegno.pulsanti(comandi, mio);
+  disegno.munizioni(comandi, mio);
   disegno.cruscotto(mio, scena, VITA_MASSIMA);
   suona(dt, scena.find((p) => p.i === rete.io), disegnato);
 
@@ -921,7 +925,11 @@ function riconcilia(mappa) {
 
   const rifatto = { x: foto.p.x, y: foto.p.y };
   pendenti = pendenti.filter((c) => c.seq > (foto.p.s ?? 0));
-  for (const c of pendenti) muovi(rifatto, c.mx, c.my, SOTTOPASSO, mappa, c.vel ?? VELOCITA);
+  for (const c of pendenti) {
+    const eraQui = { x: rifatto.x, y: rifatto.y };
+    muovi(rifatto, c.mx, c.my, SOTTOPASSO, mappa, c.vel ?? VELOCITA);
+    fermatoDalleporte(mappa.arena, rete.porteAperte(), rifatto, eraQui);
+  }
 
   const dx = rifatto.x - io.x;
   const dy = rifatto.y - io.y;

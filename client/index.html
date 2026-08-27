@@ -83,22 +83,25 @@
       /* La stanza: quattro cifre e un pulsante, su una riga sola. Prima era
          una schermata a parte con dei passi; era una procedura per una cosa
          che e' un numero. */
-      #rigaStanza { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+      #rigaStanza {
+        display: flex; gap: 8px; align-items: center; margin-top: 8px;
+        flex-wrap: wrap;
+      }
       #rigaStanza[hidden] { display: none; }
       #campoStanza {
-        font: 700 26px ui-monospace, Consolas, monospace;
-        letter-spacing: 0.3em; text-align: center; text-indent: 0.3em;
-        width: 150px; flex: none; padding: 6px 4px;
+        font: 700 20px ui-monospace, Consolas, monospace;
+        letter-spacing: 0.28em; text-align: center; text-indent: 0.28em;
+        width: 118px; flex: none; padding: 5px 4px;
         background: #0c1017; color: #dfe6f5;
-        border: 1px solid #2a3550; border-radius: 10px;
+        border: 1px solid #2a3550; border-radius: 9px;
       }
       #entraStanza {
-        font: inherit; font-size: 14px; font-weight: 600;
-        padding: 10px 18px; border: 0; border-radius: 9px;
+        font: inherit; font-size: 13px; font-weight: 600;
+        padding: 8px 15px; border: 0; border-radius: 9px;
         background: #1b2434; color: #dfe6f5; cursor: pointer;
       }
       #entraStanza:disabled { color: #6a7590; cursor: default; }
-      #statoStanza { font-size: 12px; min-height: 17px; margin-top: 6px; color: #ffc65c; }
+      #statoStanza { font-size: 12px; color: #ffc65c; flex: 1 1 140px; min-width: 0; }
       /* L'indirizzo del servizio non si vede mai, finche' non serve: compare
          solo se il servizio non risponde, che e' l'unico momento in cui uno
          ha motivo di cambiarlo. */
@@ -175,32 +178,33 @@
         border: 1px solid #1c2434; border-radius: 12px;
       }
       .etichettaScelta {
-        font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
-        color: #78849f; margin: 0 0 6px;
+        font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+        color: #78849f; margin: 0 0 4px;
       }
-      #classi { margin-bottom: 16px; }
-      #modi { display: flex; gap: 8px; }
-      #etichettaDifficolta { margin-top: 14px; }
-      #difficolta { display: flex; gap: 6px; }
+      #classi { margin-bottom: 10px; }
+      #modi { display: flex; gap: 6px; }
+      #etichettaDifficolta { margin-top: 10px; }
+      #difficolta { display: flex; gap: 5px; }
       #difficolta .modo { font-size: 12px; padding: 7px 4px; }
       #difficolta.spenta { opacity: 0.45; pointer-events: none; }
       .modo {
         flex: 1 1 0; min-width: 0;
-        background: #0c1017; border: 2px solid #232d41; border-radius: 10px;
-        padding: 10px 6px; color: #dfe6f5; font: inherit; font-size: 13px;
+        background: #0c1017; border: 2px solid #232d41; border-radius: 9px;
+        padding: 8px 4px; color: #dfe6f5; font: inherit; font-size: 12.5px;
         cursor: pointer; text-align: center;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       .modo[aria-pressed='true'] { border-color: #ffc65c; background: #141c2a; color: #ffc65c; }
       #avvio.grande {
-        display: block; width: 100%; margin-top: 14px;
-        font: inherit; font-size: 16px; font-weight: 700;
-        padding: 12px 20px; border: 0; border-radius: 9px;
+        display: block; width: 100%; margin-top: 10px;
+        font: inherit; font-size: 15px; font-weight: 700;
+        padding: 10px 20px; border: 0; border-radius: 9px;
         background: #ffc65c; color: #05070c; cursor: pointer;
       }
       #avvio.grande:disabled { background: #2a3550; color: #6a7590; cursor: default; }
       #menuPiede {
-        margin-top: auto; padding-top: 16px;
-        display: flex; justify-content: flex-end; align-items: center; gap: 12px;
+        margin-top: auto; padding-top: 10px;
+        display: flex; justify-content: flex-end; align-items: center; gap: 10px;
         font-size: 11px; color: #5c6780;
       }
       #menuPiede select {
@@ -254,12 +258,26 @@
 
       /* Schermo davvero basso (telefono in orizzontale): si stringe tutto e
          le descrizioni lunghe spariscono, tanto ci sono nella guida. */
-      @media (max-height: 420px) {
+      /* Schermo basso — il telefono in orizzontale, che e' il caso normale.
+         Tutto quello che si puo' togliere si toglie, perche' il menu DEVE
+         stare in una schermata sola: doverlo far scorrere per arrivare al
+         pulsante che fa partire il gioco e' il modo piu' sicuro di far
+         sembrare rotta una cosa che funziona. */
+      @media (max-height: 560px) {
         .classe .desc { display: none; }
-        .classe canvas { width: 38px; height: 30px; }
-        #menuFigura { flex-basis: 300px; }
-        #avvio.grande { margin-top: 10px; padding: 10px 20px; }
-        #menuPiede { padding-top: 10px; }
+        .classe .abilita { display: none; }
+        .classe canvas { width: 34px; height: 26px; }
+        .classe { padding: 6px 8px; }
+        #menuFigura { flex-basis: 280px; }
+        #avvio.grande { margin-top: 8px; padding: 8px 20px; font-size: 14px; }
+        #menuPiede { padding-top: 6px; }
+        #classi { margin-bottom: 8px; }
+        #etichettaDifficolta { margin-top: 8px; }
+      }
+      @media (max-height: 430px) {
+        .classe .arma { display: none; }
+        #menuFigura { display: none; }
+        .etichettaScelta { margin-bottom: 2px; }
       }
 
       /* Schermo stretto: la figura se ne va prima delle scelte — e' bella, non
@@ -340,8 +358,11 @@
               <input id="campoStanza" type="text" inputmode="numeric" autocomplete="off"
                      maxlength="5" placeholder="0000" />
               <button id="entraStanza" type="button" data-t="menu.collega"></button>
+              <!-- Lo stato accanto e non sotto: una riga in meno e' una riga
+                   in meno, e con la riga della stanza aperta il menu non ci
+                   stava piu' nello schermo. -->
+              <span id="statoStanza"></span>
             </div>
-            <p id="statoStanza"></p>
             <label id="rigaServizio" hidden>
               <span data-t="invito.servizio"></span>
               <input id="campoServizio" type="text" inputmode="url" autocomplete="off"

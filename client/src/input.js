@@ -120,6 +120,12 @@ export class Comandi {
     return {
       torcia: { x: destra, y, r: 32 },
       abilita: { x: destra - 78, y, r: 32 },
+      // Le munizioni stanno nella stessa fila e con la stessa faccia degli
+      // altri due, ma non si premono: e' un quadrante, non un comando. Prima
+      // erano un blocco di testo a `h - 26`, cioe' addosso al tasto torcia, e
+      // non si capiva cosa fosse cosa. `dentroUnPulsante` non la nomina, e
+      // quindi un dito che ci finisce sopra vale come stick.
+      munizioni: { x: destra - 156, y, r: 32 },
     };
   }
 

@@ -6,7 +6,7 @@
  * parte (mira assistita, allarme, modalita' in solitaria) e sembra che il
  * gioco sia rotto. Se i numeri non coincidono, ora lo si legge a schermo.
  */
-export const VERSIONE = '3.0';
+export const VERSIONE = '4.0';
 
 // Numeri che server e client devono conoscere allo stesso modo.
 // Questa cartella e' condivisa: il server la importa da ../client/condiviso/,
@@ -285,6 +285,16 @@ export const SETTORI_PER_FINIRE = 15;
  */
 export const DIFFICOLTA = ['facile', 'normale', 'difficile', 'incubo'];
 
+/**
+ * Quello che si sceglie nel menu: le quattro difficolta' piu' Survival.
+ *
+ * Survival sta nella STESSA riga e non in una sua, e non e' per risparmiare
+ * spazio (anche): e' che scegliere Survival E una difficolta' non vuol dire
+ * niente — li' la difficolta' la detta il settore. Mettendola in fila con le
+ * altre, "non si sceglie" si legge senza doverlo spiegare.
+ */
+export const SCELTE_DIFFICOLTA = [...DIFFICOLTA, 'survival'];
+
 const REGOLE_DIFFICOLTA = {
   facile: { nemici: 1, danno: 1, rinforzi: 1, caricatori: 1, stazioni: 1, evacuazione: 1 },
   normale: { nemici: 1.25, danno: 1.25, rinforzi: 0.8, caricatori: 1, stazioni: 1, evacuazione: 1.25 },
@@ -523,10 +533,136 @@ export const SPEDIZIONE = {
  * Quello che NON cambia mai e' la coda: finito l'obiettivo, qualunque fosse,
  * scatta l'allarme e si torna all'uscita con tutto il settore addosso.
  */
-export const MODALITA = ['sabotaggio', 'bomba', 'dominio'];
+export const MODALITA = ['sabotaggio', 'bomba', 'dominio', 'convoglio', 'boss'];
 
-export function modalitaDelSettore(numero) {
-  return MODALITA[(numero - 1) % MODALITA.length];
+/** Le quattro che si mescolano. La quinta ha un posto fisso. */
+const MODALITA_MESCOLATE = MODALITA.filter((m) => m !== 'boss');
+
+/**
+ * Cinque settori per blocco: le prime quattro modalita' in ordine sparso, e
+ * la quinta e' SEMPRE il boss.
+ *
+ * Sparso e non a caso settore per settore: pescando ogni volta capiterebbe di
+ * farne tre uguali di fila proprio la sera che si vorrebbero vedere tutte.
+ * Mescolando il blocco si vedono tutte e quattro, sempre, in un ordine che
+ * cambia — che e' quello che si vuole davvero quando si dice "a caso".
+ *
+ * E il boss in fondo al blocco diventa il muro fra un gradino e l'altro: in
+ * Survival la difficolta' sale ogni cinque livelli, quindi il boss e' esatta-
+ * mente la prova che dice se sei pronto per quello dopo.
+ */
+export function modalitaDelSettore(numero, seme = 1) {
+  const n = Math.max(1, Math.floor(numero));
+  const dentro = (n - 1) % 5; // 0..4
+  if (dentro === 4) return 'boss';
+
+  // Lo stesso blocco deve dare sempre lo stesso ordine: chi ospita e chi
+  // guarda le prove devono vedere la stessa cosa, e un `Math.random()` qui
+  // vorrebbe dire una modalita' diversa a ogni ricalcolo.
+  const blocco = Math.floor((n - 1) / 5);
+  return mescola(MODALITA_MESCOLATE, seme * 7919 + blocco * 104729)[dentro];
+}
+
+/** Mescolata ripetibile: stesso seme, stesso ordine. */
+function mescola(elenco, seme) {
+  const fuori = elenco.slice();
+  let x = (seme % 2147483647) || 1;
+  const prossimo = () => {
+    x = (x * 48271) % 2147483647;
+    return x / 2147483647;
+  };
+  for (let k = fuori.length - 1; k > 0; k--) {
+    const j = Math.floor(prossimo() * (k + 1));
+    [fuori[k], fuori[j]] = [fuori[j], fuori[k]];
+  }
+  return fuori;
+}
+
+// --- Scorta il convoglio ---------------------------------------------------
+
+/**
+ * Un convoglio che avanza se gli si sta vicino e torna indietro se lo si
+ * lascia solo. E' l'unica missione in cui STARE FERMI A SPARARE FA PERDERE
+ * TERRENO: le altre quattro premiano il trovare una posizione e tenerla,
+ * questa punisce chi si attarda.
+ *
+ * E' anche l'unica con un tempo che uccide. Scaduto quello la spedizione e'
+ * persa: e' voluto, ed e' quello che rende la scelta "lo seguo o mi fermo a
+ * togliermi di torno questi due" una scelta vera invece che una preferenza.
+ */
+export const CONVOGLIO = {
+  raggio: 96, // entro quanto bisogna stargli per farlo avanzare
+  velocita: 42, // pixel al secondo quando lo si scorta
+  indietro: 0.55, // quanto torna indietro, rispetto a quanto va avanti
+  tempo: 150, // secondi per portarlo in fondo
+  vita: 260, // non serve ancora: i nemici non lo attaccano. Vedi sotto.
+  raggioCorpo: 22,
+};
+
+// --- La stanza del boss ----------------------------------------------------
+
+/**
+ * Il boss: piu' grosso, piu' duro, e con piu' vita a mano a mano che si scende.
+ *
+ * La vita cresce col settore perche' altrimenti l'ultimo boss sarebbe identico
+ * al primo — lo stesso appiattimento che rendeva noiosi i settori dopo l'ottavo.
+ */
+export const BOSS = {
+  vitaBase: 420,
+  vitaPerSettore: 90,
+  velocita: 66, // lento: e' una cosa che avanza, non che ti insegue
+  cadenza: 1.6,
+  danno: 26,
+  gittata: 300,
+  velocitaColpo: 380,
+  raggio: 26, // il doppio abbondante di un pattugliatore
+  cono: (78 * Math.PI) / 180,
+  vista: 320,
+  colore: '#ff8a3c',
+  /** Ogni quanto arriva uno scagnozzo dalle porte in fondo. */
+  scagnozzi: 7,
+  scagnozziInsieme: 4,
+};
+
+/** La forma del livello boss: un corridoio largo che sfocia in un'arena. */
+export const ARENA = {
+  corridoioLungo: 26, // caselle
+  corridoioLargo: 9, // le 8/10 chieste
+  stanzaLarga: 20,
+  stanzaAlta: 15,
+  nemiciNelCorridoio: 5,
+  ripariNelCorridoio: 3,
+};
+
+// --- Survival --------------------------------------------------------------
+
+/**
+ * Niente difficolta' da scegliere: si parte da facile e ogni cinque livelli si
+ * sale di un gradino. Dopo Incubo non ci si ferma — un tetto rimetterebbe
+ * l'altopiano che abbiamo appena tolto — ma i passi si accorciano, cosi' la
+ * corsa dura piu' a lungo prima di diventare impossibile.
+ */
+export const SURVIVAL = { ogniQuanti: 5, passoOltre: 0.12 };
+
+export function regoleSurvival(settore) {
+  const gradino = Math.floor((Math.max(1, settore) - 1) / SURVIVAL.ogniQuanti);
+  const dentroLaScala = Math.min(gradino, DIFFICOLTA.length - 1);
+  const base = regoleDifficolta(DIFFICOLTA[dentroLaScala]);
+  const oltre = Math.max(0, gradino - (DIFFICOLTA.length - 1));
+  if (!oltre) return base;
+
+  // Oltre Incubo si continua, ma piano: i moltiplicatori che fanno male
+  // crescono, quelli che tolgono roba non scendono sotto il minimo — restare
+  // senza NIENTE non e' difficile, e' solo la fine della partita.
+  const piu = 1 + oltre * SURVIVAL.passoOltre;
+  return {
+    nemici: base.nemici * piu,
+    danno: base.danno * piu,
+    rinforzi: Math.max(0.25, base.rinforzi / piu),
+    caricatori: base.caricatori,
+    stazioni: base.stazioni,
+    evacuazione: base.evacuazione * piu,
+  };
 }
 
 /**

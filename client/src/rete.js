@@ -523,6 +523,14 @@ export class Rete {
       zo: d.zo && s.zo
         ? { x: s.zo.x, y: s.zo.y, r: s.zo.r, p: d.zo.p ?? 0, c: d.zo.c ?? 0 }
         : null,
+      // Il convoglio: il binario sta nella pianta perche' non si muove mai, il
+      // vagone nella fotografia perche' non fa altro.
+      cv: d.cv && s.cv
+        ? { via: s.cv.via, x: d.cv.x, y: d.cv.y, q: d.cv.q ?? 0, t: d.cv.t ?? 0, s: d.cv.s ?? 0 }
+        : null,
+      bs: d.bs ? { ...d.bs } : null,
+      ar: s.ar ?? null,
+      po: d.po ?? 0,
     };
   }
 
@@ -534,6 +542,17 @@ export class Rete {
   /** Le casse di rifornimento ancora in piedi. Stanno ferme: le dice la pianta. */
   rifornimenti() {
     return this.pianta?.ri ?? [];
+  }
+
+  /**
+   * Le porte in fondo all'arena sono aperte?
+   *
+   * Serve alla previsione, non al disegno: e' una regola di movimento, e il
+   * telefono la deve applicare insieme a chi ospita o i due si mettono a
+   * litigare su dove sta il personaggio.
+   */
+  porteAperte() {
+    return (this.fotografie.at(-1)?.ob?.po ?? 0) === 1;
   }
 
   /** Le stazioni di ricarica. Stanno nella pianta: non si spostano mai. */

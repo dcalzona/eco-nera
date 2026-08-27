@@ -4,8 +4,15 @@
 // invece che dentro una WebView su un telefono.
 
 import { centroCasella, pavimenti, muro } from '../condiviso/mappa.js';
-import { generaMappa, centroStanza } from '../condiviso/generatore.js';
-import { muovi, limita, angolo, scorri, velocitaFraIRipari } from '../condiviso/fisica.js';
+import { generaMappa, generaArena, centroStanza } from '../condiviso/generatore.js';
+import {
+  muovi,
+  limita,
+  angolo,
+  scorri,
+  velocitaFraIRipari,
+  fermatoDalleporte,
+} from '../condiviso/fisica.js';
 import {
   TILE,
   SOTTOPASSO,
@@ -50,6 +57,11 @@ import {
   SETTORI_PER_FINIRE,
   regoleDifficolta,
   DIFFICOLTA,
+  CONVOGLIO,
+  BOSS,
+  ARENA,
+  regoleSurvival,
+  SURVIVAL,
 } from '../condiviso/regole.js';
 import { creaNemici, passoNemici, chiVede } from './nemici.js';
 import { creaColpo, passoProiettili } from './proiettili.js';
@@ -70,7 +82,12 @@ export class Mondo {
    * cosa sola.
    */
   constructor(difficolta = 'facile') {
-    this.difficolta = DIFFICOLTA.includes(difficolta) ? difficolta : 'facile';
+    // 'survival' non e' una delle quattro difficolta' e va accettata lo stesso:
+    // e' l'altra scala, quella che sale da sola. Senza questa riga il
+    // costruttore la riportava zitto a 'facile' e la modalita' non esisteva —
+    // sembrava funzionare, ed era solo il gioco normale con un altro nome.
+    const ammesse = [...DIFFICOLTA, 'survival'];
+    this.difficolta = ammesse.includes(difficolta) ? difficolta : 'facile';
     this.vittoria = false;
     this.giocatori = new Map(); // id -> personaggio
     this.prossimoId = 1;
@@ -102,7 +119,10 @@ export class Mondo {
     // La modalita' si puo' imporre — serve alle prove, che devono poter
     // guardare una missione per volta senza aspettare il suo turno.
     this.modalita = modalita ?? modalitaDelSettore(numero);
-    this.mappa = generaMappa(Date.now() + numero * 7717, numero);
+    this.mappa =
+      this.modalita === 'boss'
+        ? generaArena(Date.now() + numero * 7717, numero)
+        : generaMappa(Date.now() + numero * 7717, numero);
     this.caselleLibere = pavimenti(this.mappa);
     this.rumori = new Rumori(this.mappa);
     this.proiettili = [];
@@ -132,8 +152,13 @@ export class Mondo {
     this.nuclei = [];
     this.bomba = null;
     this.zona = null;
+    this.convoglio = null;
+    this.boss = null;
+    this.porteAperte = false;
     if (this.modalita === 'bomba') this.preparaBomba(numero, lontane);
     else if (this.modalita === 'dominio') this.preparaDominio(numero, lontane);
+    else if (this.modalita === 'convoglio') this.preparaConvoglio(numero, lontane, ingresso);
+    else if (this.modalita === 'boss') this.preparaBoss(numero);
     else this.preparaSabotaggio(numero, lontane);
 
     // Le casse vanno nelle stanze di mezzo: non all'ingresso, dove non
@@ -178,38 +203,89 @@ export class Mondo {
     // Vanno LONTANE fra loro, e non e' estetica: due stazioni vicine sono una
     // stazione sola con due disegni, e il giro per raggiungerle — che e' il
     // costo vero del rifornirsi — sparirebbe.
+    // Nell'arena la cassa e' una sola e l'ha gia' messa `preparaBoss`, in fondo
+    // al corridoio: il giro delle stazioni sparse non c'entra niente con una
+    // mappa che e' un corridoio e una stanza.
+    if (this.modalita === 'boss') return this.finisciSettore(numero, ingresso);
+
+    // Le casse di munizioni stanno APPOGGIATE AL MURO, come i server del
+    // sabotaggio, e occupano una casella sola. In mezzo alla stanza erano un
+    // oggetto che galleggiava; contro una parete sembrano una cosa installata
+    // li', e obbligano a rasentare i muri per prenderle — che al buio e' tutta
+    // un'altra sensazione rispetto a stare in mezzo al pavimento.
     this.stazioni = [];
     const quanteStazioni = Math.min(
       stazioniDelSettore(numero, this.difficolta),
       this.mappa.stanze.length,
     );
-    const perLeStazioni = this.mappa.stanze.slice();
     for (let k = 0; k < quanteStazioni; k++) {
       let scelta = null;
       let migliorDistanza = -1;
-      for (const stanza of perLeStazioni) {
-        const p = centroStanza(stanza);
+      for (const stanza of this.mappa.stanze) {
+        // Si prova qualche appiglio diverso prima di rinunciare: con una sola
+        // prova capitava che un quarto delle casse finisse in mezzo alla
+        // stanza, che e' proprio quello che non si voleva.
+        let posto = null;
+        for (let prova = 0; prova < 6 && !posto; prova++) {
+          posto = this.postoAlMuro(stanza, k * 6 + prova);
+        }
+        if (!posto) posto = centroStanza(stanza);
         const distanza = this.stazioni.length
-          ? Math.min(...this.stazioni.map((z) => Math.hypot(z.x - p.x, z.y - p.y)))
-          : Math.hypot(p.x - centroStanza(ingresso).x, p.y - centroStanza(ingresso).y);
+          ? Math.min(...this.stazioni.map((z) => Math.hypot(z.x - posto.x, z.y - posto.y)))
+          : Math.hypot(posto.x - centroStanza(ingresso).x, posto.y - centroStanza(ingresso).y);
         if (distanza > migliorDistanza) {
           migliorDistanza = distanza;
-          scelta = p;
+          scelta = posto;
         }
       }
-      if (scelta) this.stazioni.push({ x: scelta.x, y: scelta.y, usatoDa: [], quanto: new Map() });
+      if (scelta) this.stazioni.push({ x: scelta.x, y: scelta.y, ang: scelta.ang ?? 0, quanto: new Map() });
     }
 
     // I ripari dell'Assalto si contano a settore, e il conto riparte qui.
     for (const g of this.giocatori.values()) g.ripari = RIPARI_PER_SETTORE;
 
-    this.estrazione = { ...centroStanza(ingresso), aperta: false, progresso: 0 };
+    return this.finisciSettore(numero, ingresso);
+  }
+
+  /**
+   * La coda comune di ogni settore: uscita, allarme, nemici.
+   *
+   * E' un metodo a parte perche' l'arena ci arriva per una strada diversa —
+   * salta le stazioni sparse e le casse, che in un corridoio non hanno senso —
+   * ma tutto il resto deve restare identico. Due code copiate sarebbero due
+   * code da tenere d'accordo per sempre.
+   */
+  finisciSettore(numero, ingresso) {
+    // Nell'arena si esce IN AVANTI, oltre le porte: e' l'unico settore in cui
+    // non si torna da dove si e' entrati, ed e' quello che rende la stanza del
+    // boss una fine invece di un'andata e ritorno.
+    const uscita = this.mappa.arena ? this.mappa.stanze[2] : ingresso;
+    this.estrazione = { ...centroStanza(uscita), aperta: false, progresso: 0 };
     this.allarme = false;
     this.prossimoRichiamo = 0;
     this.prossimaChiamata = 0;
 
     this.nemiciBase = Math.min(SPEDIZIONE.nemiciMax, SPEDIZIONE.nemiciBase + numero);
-    this.nemici = creaNemici(this.mappa, this.tettoNemici());
+    if (this.mappa.arena) {
+      // Nel corridoio, non sparsi per la mappa: nell'arena ci pensa il boss a
+      // chiamarne altri, e metterceli subito vorrebbe dire arrivarci gia'
+      // circondati.
+      const co = this.mappa.arena.corridoio;
+      this.nemici = [];
+      const quanti = this.mappa.arena.quantiNemici ?? ARENA.nemiciNelCorridoio;
+      for (let k = 0; k < quanti; k++) {
+        const quello = creaNemici(this.mappa, 1)[0];
+        if (!quello) continue;
+        const tx = co.x + 3 + Math.floor(((k + 1) / (quanti + 1)) * (co.w - 5));
+        const ty = co.y + 1 + ((k * 3) % Math.max(1, co.h - 2));
+        const p = centroCasella(this.mappa, tx, ty);
+        quello.x = p.x;
+        quello.y = p.y;
+        this.nemici.push(quello);
+      }
+    } else {
+      this.nemici = creaNemici(this.mappa, this.tettoNemici());
+    }
 
     for (const g of this.giocatori.values()) this.riportaAllIngresso(g);
     this.mappaCambiata = true;
@@ -315,6 +391,130 @@ export class Mondo {
       durata: DOMINIO.durata + (numero - 1) * DOMINIO.perSettore,
       contesa: false,
     };
+  }
+
+  /**
+   * Scorta il convoglio.
+   *
+   * Il binario si traccia UNA VOLTA, seguendo lo stesso campo di navigazione
+   * che usano i nemici: cosi' passa per i corridoi come ci passerebbe uno a
+   * piedi, invece di puntare dritto attraverso i muri. Poi il convoglio non e'
+   * altro che un punto lungo quella spezzata, e "torna indietro" diventa una
+   * sottrazione invece di un'inseguimento al contrario — che con un campo di
+   * flusso sarebbe stato molto piu' difficile e molto meno prevedibile.
+   */
+  preparaConvoglio(numero, lontane, ingresso) {
+    const meta = centroStanza(ingresso);
+    const partenza = centroStanza(lontane[0]);
+    const binario = this.tracciaBinario(partenza, meta);
+
+    this.convoglio = {
+      binario,
+      quanto: 0, // 0 = partenza, 1 = arrivato
+      lunghezza: lunghezzaDelBinario(binario),
+      x: binario[0].x,
+      y: binario[0].y,
+      // Il tempo cresce col binario: mappe piu' grandi non devono diventare
+      // impossibili solo perche' sono piu' lunghe da attraversare.
+      tempo: CONVOGLIO.tempo * (1 + (numero - 1) * 0.04),
+      scortato: false,
+      vita: CONVOGLIO.vita,
+    };
+  }
+
+  /**
+   * I punti del percorso, dal via all'arrivo, seguendo i corridoi.
+   *
+   * Si cammina sul campo CASELLA PER CASELLA, scendendo verso la distanza
+   * minore. Il primo tentativo usava `passoVerso`, che pero' torna una
+   * DIREZIONE e non una posizione: trattandola da punto veniva fuori un
+   * binario di tre punti in linea retta, che attraversava i muri. Sembrava
+   * funzionare — il convoglio si muoveva e il tempo scorreva — e sarebbe
+   * saltato fuori solo guardandolo passare dentro una parete.
+   *
+   * Solo passi dritti, niente diagonali: un convoglio sta in mezzo al
+   * corridoio, e una diagonale puo' tagliare l'angolo di un muro.
+   */
+  tracciaBinario(da, a) {
+    const c = campo(this.mappa, [a]);
+    let tx = Math.floor(da.x / TILE);
+    let ty = Math.floor(da.y / TILE);
+    const punti = [centroCasella(this.mappa, tx, ty)];
+
+    // Un tetto ai passi: senza, una meta irraggiungibile girerebbe per sempre.
+    for (let k = 0; k < 4000; k++) {
+      const qui = c.distanze[ty * c.larghezza + tx];
+      if (!(qui > 0)) break; // arrivati, oppure fuori dal campo
+      let mx = tx;
+      let my = ty;
+      let meglio = qui;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = tx + dx;
+        const ny = ty + dy;
+        if (nx < 0 || ny < 0 || nx >= c.larghezza || ny >= c.altezza) continue;
+        if (muro(this.mappa, nx, ny)) continue;
+        const d = c.distanze[ny * c.larghezza + nx];
+        if (d < meglio) {
+          meglio = d;
+          mx = nx;
+          my = ny;
+        }
+      }
+      if (mx === tx && my === ty) break; // non si scende piu': si e' arrivati
+      tx = mx;
+      ty = my;
+      punti.push(centroCasella(this.mappa, tx, ty));
+    }
+    return punti;
+  }
+
+  /**
+   * La stanza del boss.
+   *
+   * Il corridoio non e' un passaggio, e' una salita: nemici sparsi, alcuni
+   * dietro un riparo come quello dell'Assalto, e in fondo una cassa di
+   * munizioni. Chi arriva all'arena ci arriva consumato ma pieno, che e'
+   * esattamente lo stato in cui una stanza del boss vuole trovarti.
+   */
+  preparaBoss(numero) {
+    const a = this.mappa.arena;
+    const c = this.mappa.arena.centro;
+    const posto = centroCasella(this.mappa, c.tx, c.ty);
+
+    this.boss = {
+      id: -1,
+      x: posto.x,
+      y: posto.y,
+      ang: Math.PI,
+      vita: BOSS.vitaBase + (numero - 1) * BOSS.vitaPerSettore,
+      vitaPiena: BOSS.vitaBase + (numero - 1) * BOSS.vitaPerSettore,
+      ricarica: 0,
+      prossimoScagnozzo: BOSS.scagnozzi,
+    };
+    this.porteAperte = false;
+
+    // I ripari del corridoio: gli stessi dell'Assalto, ma sono loro ad averli.
+    // Non e' un dettaglio di scenografia — obbligano ad aggirare invece di
+    // avanzare dritto, che e' l'unica cosa che rende largo un corridoio largo.
+    const co = a.corridoio;
+    for (let k = 0; k < (a.quantiRipari ?? ARENA.ripariNelCorridoio); k++) {
+      const tx = co.x + Math.floor(((k + 1) / ((a.quantiRipari ?? ARENA.ripariNelCorridoio) + 1)) * co.w);
+      const ty = co.y + (k % 2 === 0 ? 2 : co.h - 3);
+      const p = centroCasella(this.mappa, tx, ty);
+      this.ripari.push({
+        id: this.prossimoRiparo++,
+        x: p.x,
+        y: p.y,
+        ang: Math.PI / 2,
+        vita: RIPARO.vita,
+        resta: Infinity, // sono dello scenario: non si consumano da soli
+        padrone: -1, // di nessuno: fermano i colpi dei nemici come i vostri
+      });
+    }
+
+    // La cassa in fondo al corridoio, prima di entrare.
+    const fine = centroCasella(this.mappa, co.x + co.w - 2, co.y + Math.floor(co.h / 2));
+    this.stazioni = [{ x: fine.x, y: fine.y, ang: 0, quanto: new Map() }];
   }
 
   riportaAllIngresso(g) {
@@ -712,7 +912,6 @@ export class Mondo {
 
     for (const z of this.stazioni) {
       for (const g of vivi) {
-        if (z.usatoDa.includes(g.id)) continue;
         if (Math.hypot(g.x - z.x, g.y - z.y) > STAZIONE.raggio) {
           // Allontanarsi azzera: il conto va fatto stando li', non a rate.
           if (z.quanto.has(g.id)) {
@@ -732,9 +931,7 @@ export class Mondo {
         g.abilitaRicarica = 0;
         g.ripari = RIPARI_PER_SETTORE;
         z.quanto.delete(g.id);
-        z.usatoDa.push(g.id);
-        this.piantaCambiata = true;
-        console.log(`${g.nome} si e' ricaricato a una stazione.`);
+        console.log(`${g.nome} si e' ricaricato a una cassa.`);
       }
     }
   }
@@ -801,6 +998,8 @@ export class Mondo {
     if (!this.missioneFatta) {
       if (this.modalita === 'bomba') this.passoBomba(dt, vivi);
       else if (this.modalita === 'dominio') this.passoDominio(dt, vivi);
+      else if (this.modalita === 'convoglio') this.passoConvoglio(dt, vivi);
+      else if (this.modalita === 'boss') this.passoBoss(dt, vivi);
       else this.passoSabotaggio(dt, vivi);
     }
 
@@ -831,7 +1030,7 @@ export class Mondo {
     if (this.estrazione.progresso < 1) return;
     // Quindici e si e' finita. Prima non finiva mai, e non era una scelta: era
     // che nessuno aveva deciso dove finisse.
-    if (this.settore >= SETTORI_PER_FINIRE) {
+    if (!this.senzaFine() && this.settore >= SETTORI_PER_FINIRE) {
       this.vittoria = true;
       this.estrazione.progresso = 1;
       this.piantaCambiata = true;
@@ -1023,6 +1222,109 @@ export class Mondo {
   }
 
   /**
+   * Il boss: lento, grosso, e con le porte alle spalle da cui arriva aiuto.
+   *
+   * Non insegue davvero — e' piu' lento di voi di proposito. Se corresse
+   * sarebbe solo un pattugliatore gonfiato; cosi' invece bisogna decidere se
+   * stargli davanti per colpirlo o girargli attorno per togliersi dal cono, e
+   * intanto gli scagnozzi arrivano da dietro.
+   */
+  passoBoss(dt, vivi) {
+    const b = this.boss;
+    if (!b) return;
+
+    if (b.vita <= 0) {
+      if (!this.porteAperte) {
+        this.porteAperte = true;
+        this.missioneFatta = true;
+        this.piantaCambiata = true;
+        console.log('Il boss e a terra. Le porte si aprono.');
+      }
+      return;
+    }
+
+    // Il piu' vicino fra quelli in piedi. Non c'e' una funzione buona da
+    // riusare: quella dei nemici sceglie dentro il cono, e il boss invece sa
+    // sempre dove siete — e' la sua stanza.
+    let preda = null;
+    let quantoLontano = Infinity;
+    for (const g of vivi) {
+      const d = Math.hypot(g.x - b.x, g.y - b.y);
+      if (d < quantoLontano) {
+        quantoLontano = d;
+        preda = g;
+      }
+    }
+    if (preda) {
+      const versoLaPreda = Math.atan2(preda.y - b.y, preda.x - b.x);
+      b.ang = angolo(b.ang, versoLaPreda, dt * 2.2);
+      const quanto = quantoLontano;
+      if (quanto > BOSS.raggio + 40) {
+        muovi(b, Math.cos(b.ang), Math.sin(b.ang), dt, this.mappa, BOSS.velocita);
+      }
+      b.ricarica -= dt;
+      if (b.ricarica <= 0 && quanto <= BOSS.gittata && lineaLibera(this.mappa, b.x, b.y, preda.x, preda.y)) {
+        b.ricarica = BOSS.cadenza;
+        this.proiettili.push(
+          creaColpo(-1, b.x, b.y, b.ang, BOSS.danno * this.regole().danno, BOSS.gittata, BOSS.velocitaColpo, true),
+        );
+        this.rumori.emetti('sparoNemico', b.x, b.y, -1, 20);
+      }
+    }
+
+    // Gli scagnozzi entrano dalle porte in fondo: da li' passano loro e non voi.
+    b.prossimoScagnozzo -= dt;
+    if (b.prossimoScagnozzo <= 0 && this.nemici.length < BOSS.scagnozziInsieme) {
+      b.prossimoScagnozzo = BOSS.scagnozzi;
+      const porta = this.mappa.arena.porte[this.nemici.length % this.mappa.arena.porte.length];
+      const p = centroCasella(this.mappa, porta.tx, porta.ty);
+      const nuovo = creaNemici(this.mappa, 1)[0];
+      if (nuovo) {
+        nuovo.x = p.x;
+        nuovo.y = p.y;
+        this.nemici.push(nuovo);
+      }
+    }
+  }
+
+  /**
+   * Il convoglio avanza se gli si sta vicino, torna indietro se lo si lascia.
+   *
+   * E' l'unica missione in cui FERMARSI A SPARARE FA PERDERE TERRENO: le altre
+   * quattro premiano il trovare una posizione e tenerla, questa punisce chi si
+   * attarda. Ed e' l'unica con un tempo che uccide davvero — scaduto quello la
+   * spedizione e' persa, ed e' quello che rende "lo seguo o mi tolgo di torno
+   * questi due" una scelta invece che una preferenza.
+   */
+  passoConvoglio(dt, vivi) {
+    const v = this.convoglio;
+    if (!v) return;
+
+    v.scortato = vivi.some((g) => Math.hypot(g.x - v.x, g.y - v.y) <= CONVOGLIO.raggio);
+    const passo = v.scortato ? CONVOGLIO.velocita : -CONVOGLIO.velocita * CONVOGLIO.indietro;
+    v.quanto = Math.max(0, Math.min(1, v.quanto + (passo * dt) / v.lunghezza));
+
+    const dove = puntoSulBinario(v.binario, v.quanto);
+    v.x = dove.x;
+    v.y = dove.y;
+
+    // I nemici sanno dov'e': un convoglio che avanza non si nasconde.
+    this.richiamaSu(v, dt);
+
+    v.tempo -= dt;
+    if (v.tempo <= 0 && !this.disfatta) {
+      this.disfatta = true;
+      console.log('Il convoglio non e arrivato in tempo. Spedizione perduta.');
+      return;
+    }
+
+    if (v.quanto >= 1) {
+      this.missioneFatta = true;
+      console.log('Convoglio arrivato.');
+    }
+  }
+
+  /**
    * Richiama i nemici su un punto — la bomba piazzata, la zona da tenere. E'
    * lo stesso meccanismo dell'allarme, ma puntato su una cosa invece che su
    * di voi: vengono li', e sta a voi essere li' quando arrivano.
@@ -1175,9 +1477,22 @@ export class Mondo {
     return Math.max(3, Math.round(quanti));
   }
 
-  /** Le manopole della difficolta' scelta. */
+  /**
+   * Le manopole in vigore adesso.
+   *
+   * In Survival non le sceglie nessuno: le detta il settore in cui si e'
+   * arrivati, e salgono di un gradino ogni cinque. Oltre Incubo continuano a
+   * salire a passi corti, perche' un tetto rimetterebbe l'altopiano che tutta
+   * questa versione serviva a togliere.
+   */
   regole() {
+    if (this.difficolta === 'survival') return regoleSurvival(this.settore);
     return regoleDifficolta(this.difficolta);
+  }
+
+  /** In Survival non si finisce: si vede fin dove si arriva. */
+  senzaFine() {
+    return this.difficolta === 'survival';
   }
 
   /** I giocatori ancora in piedi: bersagli per i nemici, sorgenti per il campo. */
@@ -1226,6 +1541,7 @@ export class Mondo {
       const primaX = g.x;
       const primaY = g.y;
       muovi(g, c.mx, c.my, SOTTOPASSO, this.mappa, velocita);
+      fermatoDalleporte(this.mappa.arena, this.porteAperte, g, { x: primaX, y: primaY });
       const a = angolo(c.ax, c.ay) ?? angolo(c.mx, c.my);
       if (a !== null) g.ang = a;
 
@@ -1355,6 +1671,15 @@ export class Mondo {
         return true;
       }
       return false;
+    }
+
+    // Il boss per primo: e' grosso, e i colpi che gli finiscono addosso non
+    // devono passargli attraverso per andare a prendere lo scagnozzo dietro.
+    const b = this.boss;
+    if (b && b.vita > 0 && Math.abs(c.x - b.x) <= BOSS.raggio && Math.abs(c.y - b.y) <= BOSS.raggio) {
+      b.vita -= c.danno;
+      if (b.vita <= 0) console.log('Il boss e a terra.');
+      return true;
     }
 
     for (const n of this.nemici) {
@@ -1723,14 +2048,28 @@ export class Mondo {
       zo: this.zona
         ? { x: Math.round(this.zona.x), y: Math.round(this.zona.y), r: this.zona.raggio }
         : null,
+      // Il binario sta nella pianta: e' disegnato una volta e non si muove
+      // piu'. Mandarlo venti volte al secondo sarebbe stato il pezzo piu'
+      // pesante di tutta la fotografia, per una cosa che non cambia mai.
+      ar: this.mappa.arena
+        ? {
+            porte: this.mappa.arena.porte.map((q) => [q.tx, q.ty]),
+            oltre: this.mappa.arena.oltre,
+          }
+        : null,
+      cv: this.convoglio
+        ? { via: this.convoglio.binario.map((q) => [Math.round(q.x), Math.round(q.y)]) }
+        : null,
       // Le stazioni non spariscono mai: restano disegnate, spente per chi le ha
       // gia' usate. Vederne una gia' consumata e sapere che non serve piu' e'
       // un'informazione; vedere il vuoto dove era non lo e'.
+      // Le casse non si consumano: chi le ha gia' usate non interessa piu' a
+      // nessuno, e nella pianta resta solo dove sono e come sono girate.
       st: (this.stazioni ?? []).map((z, i) => ({
         i,
         x: Math.round(z.x),
         y: Math.round(z.y),
-        u: z.usatoDa,
+        o: Math.round((z.ang ?? 0) * 100) / 100,
       })),
       ri: this.rifornimenti.map((r, i) => ({
         i,
@@ -1876,6 +2215,27 @@ export class Mondo {
       ob.zo = { p: Math.round(this.zona.progresso * 100) / 100 };
       if (this.zona.contesa) ob.zo.c = 1;
     }
+    if (this.convoglio) {
+      ob.cv = {
+        x: Math.round(this.convoglio.x),
+        y: Math.round(this.convoglio.y),
+        q: Math.round(this.convoglio.quanto * 1000) / 1000,
+        t: Math.max(0, Math.round(this.convoglio.tempo)),
+      };
+      if (this.convoglio.scortato) ob.cv.s = 1;
+    }
+    if (this.boss) {
+      ob.bs = {
+        x: Math.round(this.boss.x),
+        y: Math.round(this.boss.y),
+        a: Math.round(this.boss.ang * 100) / 100,
+        v: Math.max(0, Math.round(this.boss.vita)),
+        vp: this.boss.vitaPiena,
+      };
+    }
+    // Le porte servono alla PREVISIONE, non solo al disegno: il telefono deve
+    // sapere se puo' passare, sennò prevede di passare e viene tirato indietro.
+    if (this.porteAperte) ob.po = 1;
 
     return {
       t: 'stato',
@@ -1893,6 +2253,41 @@ function differenzaAngolo(a, b) {
   if (d > Math.PI) d -= Math.PI * 2;
   if (d < -Math.PI) d += Math.PI * 2;
   return d;
+}
+
+/** Quanto e' lungo un binario, in pixel percorsi. */
+function lunghezzaDelBinario(punti) {
+  let somma = 0;
+  for (let k = 1; k < punti.length; k++) {
+    somma += Math.hypot(punti[k].x - punti[k - 1].x, punti[k].y - punti[k - 1].y);
+  }
+  return Math.max(1, somma);
+}
+
+/**
+ * Il punto a una certa frazione del binario.
+ *
+ * Si cammina lungo la spezzata invece di interpolare fra il primo e l'ultimo
+ * punto: i tratti non sono lunghi uguali — un corridoio diritto fa passi
+ * lunghi, una curva ne fa tanti corti — e interpolare sull'indice farebbe
+ * scattare il convoglio ogni volta che il percorso gira.
+ */
+function puntoSulBinario(punti, quanto) {
+  if (punti.length < 2) return { ...punti[0] };
+  const bersaglio = lunghezzaDelBinario(punti) * Math.max(0, Math.min(1, quanto));
+  let fatto = 0;
+  for (let k = 1; k < punti.length; k++) {
+    const tratto = Math.hypot(punti[k].x - punti[k - 1].x, punti[k].y - punti[k - 1].y);
+    if (fatto + tratto >= bersaglio) {
+      const dentro = tratto > 0 ? (bersaglio - fatto) / tratto : 0;
+      return {
+        x: punti[k - 1].x + (punti[k].x - punti[k - 1].x) * dentro,
+        y: punti[k - 1].y + (punti[k].y - punti[k - 1].y) * dentro,
+      };
+    }
+    fatto += tratto;
+  }
+  return { ...punti[punti.length - 1] };
 }
 
 function statoIniziale(ruolo = CLASSE_PREDEFINITA) {

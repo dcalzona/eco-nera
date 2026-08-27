@@ -486,9 +486,16 @@ Colpi, kit, sonar e ripari, tutto insieme. Bisogna **starci fermi sopra** un
 paio di secondi, e non e' un fastidio aggiunto: e' quello che rende il
 rifornirsi una decisione. Passandoci di corsa non succede niente.
 
-Ognuno la puo' usare **una volta sola**. Una stazione che si riusa
-all'infinito non e' un rifornimento, e' un accampamento: ci si torna dietro
-ogni volta che si e' a secco e la scarsita' non esiste piu'.
+**Non si consumano**: si riusano quante volte serve. All'inizio valevano una
+volta per ciascuno, e provandolo si e' visto perche' non va — restare senza
+munizioni in un settore pieno di nemici non e' difficolta', e' la fine della
+partita senza rimedio. I due secondi fermi si pagano comunque ogni volta, e in
+mezzo a una sparatoria bastano a renderlo una decisione.
+
+Stanno **appoggiate al muro** e occupano una casella sola, come i server del
+sabotaggio: in mezzo alla stanza erano un oggetto che galleggiava, contro una
+parete sembrano una cosa installata li' e obbligano a rasentare i muri per
+prenderle.
 
 Quante ce ne siano dipende da quanto si e' scesi — tre nei settori 1-5, due nei
 6-10, una negli 11-15 — cosi' la stessa mappa pesa diversamente a seconda di
@@ -562,6 +569,98 @@ stesso passo.
 E l'orologio non recupera: senza quell'accortezza, al ritorno il mondo
 consumerebbe di colpo tutti i secondi di pausa e i nemici si
 teletrasporterebbero.
+
+## Le cinque missioni
+
+Ogni blocco di cinque settori contiene **tutte e quattro** le missioni normali
+in ordine sparso, e la quinta e' **sempre il boss**.
+
+| settore | 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- | --- |
+| esempio | dominio | convoglio | bomba | sabotaggio | **boss** |
+| blocco dopo | bomba | sabotaggio | convoglio | dominio | **boss** |
+
+Sparso e non a caso settore per settore: pescando ogni volta capiterebbe di
+farne tre uguali di fila proprio la sera che si vorrebbero vedere tutte.
+Mescolando il blocco si vedono tutte e quattro, sempre, in un ordine che
+cambia — che e' quello che si vuole davvero quando si dice "a caso".
+
+E il boss in fondo al blocco diventa il **muro fra un gradino e l'altro**: in
+Survival la difficolta' sale ogni cinque livelli, quindi il boss e' esattamente
+la prova che dice se sei pronto per quello dopo.
+
+### Scorta il convoglio
+
+Un vagone che avanza se gli si sta vicino e **torna indietro** se lo si lascia
+solo. E' l'unica missione in cui fermarsi a sparare fa perdere terreno: le
+altre quattro premiano il trovare una posizione e tenerla, questa punisce chi
+si attarda.
+
+Ed e' l'unica con un **tempo che uccide**: scaduto quello la spedizione e'
+persa. E' quello che rende la scelta «lo seguo o mi tolgo di torno questi due»
+una scelta vera invece che una preferenza.
+
+Il binario si traccia una volta sola, seguendo lo stesso campo di navigazione
+che usano i nemici, cosi' passa per i corridoi come ci passerebbe uno a piedi.
+Il primo tentativo usava `passoVerso`, che pero' torna una **direzione** e non
+una posizione: trattandola da punto veniva fuori un binario di tre punti in
+linea retta che attraversava i muri. Si muoveva, il tempo scorreva, sembrava
+funzionare — e sarebbe saltato fuori solo guardandolo passare dentro una
+parete. Ora la prova conta i punti dentro un muro: zero su trenta settori.
+
+### Uccidi il boss
+
+Il livello del boss non si genera: **si costruisce**. Tutti gli altri settori
+sono stanze sparse collegate da corridoi, e vanno bene perche' la missione e'
+andare a cercare qualcosa. Qui la missione e' un'altra.
+
+```
+[ingresso]===corridoio largo===[   ARENA   ]++[uscita]
+                               [   boss    ]||
+                               [           ]++
+```
+
+Si risale un corridoio largo nove caselle con nemici sparsi, alcuni **dietro un
+riparo** come quello dell'Assalto — obbligano ad aggirare invece di avanzare
+dritto, che e' l'unica cosa che rende largo un corridoio largo. In fondo una
+cassa di munizioni: chi arriva all'arena ci arriva consumato ma pieno, che e'
+esattamente lo stato in cui una stanza del boss vuole trovarti.
+
+Il boss e' lento di proposito. Se corresse sarebbe solo un pattugliatore
+gonfiato; cosi' invece bisogna decidere se stargli davanti per colpirlo o
+girargli attorno per uscire dal cono, e intanto gli scagnozzi arrivano dalle
+porte alle sue spalle. La sua vita cresce col settore: 780 al quinto, 1680 al
+quindicesimo — quindici colpi di Sniper, con trenta in tutto.
+
+**Le porte non sono un muro nella mappa, sono una regola**, e la regola sta in
+`condiviso/fisica.js` insieme al rallentamento dei ripari. Non e' un dettaglio:
+aprire le porte cambiando la griglia vorrebbe dire cambiare la mappa a partita
+in corso, e la mappa e' l'unica cosa che i due telefoni si dicono **una volta
+sola**. E se il divieto lo applicasse solo chi ospita, il telefono
+continuerebbe a prevedere di passare e verrebbe tirato indietro a ogni
+fotografia.
+
+Ucciso il boss le porte si aprono e si esce **in avanti**: e' l'unico settore
+in cui non si torna da dove si e' entrati, ed e' quello che lo rende una fine
+invece di un'andata e ritorno.
+
+## Survival
+
+Niente difficolta' da scegliere: si parte da facile e ogni cinque livelli si
+sale di un gradino. Livelli infiniti — si vede fin dove si arriva.
+
+| settore | 1 | 6 | 11 | 16 | 21 | 31 | 41 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| nemici in campo | 7 | 15 | 21 | 26 | 29 | 35 | 41 |
+
+Dopo Incubo **non ci si ferma** — un tetto rimetterebbe l'altopiano che tutta
+la versione prima serviva a togliere — ma i passi si accorciano, cosi' la corsa
+dura piu' a lungo prima di diventare impossibile.
+
+Sta nella **stessa riga** delle quattro difficolta' e non in una sua, e non e'
+solo per risparmiare spazio: scegliere Survival *e* una difficolta' non vuol
+dire niente, perche' li' la difficolta' la detta il settore. Mettendola in fila
+con le altre, «non si sceglie» si legge senza doverlo spiegare.
 
 ## Le lingue
 
@@ -916,3 +1015,4 @@ perche' gli scatti si vedono sul dispositivo vero e non si riproducono sul PC.
 - [x] **8. Fuori casa** — controller, e il server dentro il telefono
 - [x] **9. In due ovunque** — i due telefoni si parlano da soli, dentro una stanza di quattro cifre
 - [x] **10. Qualcosa da amministrare** — munizioni, stazioni, ripari contati, quattro difficolta' e quindici settori con una fine
+- [x] **11. Cinque missioni e Survival** — convoglio, boss in un'arena costruita a mano, e una corsa senza fine

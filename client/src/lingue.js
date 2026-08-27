@@ -180,6 +180,16 @@ const TESTI = {
     'fine.vittoria': 'SPEDIZIONE COMPIUTA',
     'fine.dettaglioVittoria': 'Tutti e {settori} i settori. Siete usciti.',
     'gioco.compagnoSparito': "Il compagno non c’è. Il mondo aspetta.",
+
+    'menu.difficolta.survival': 'Survival',
+    'modo.convoglio.nome': 'Scorta il convoglio',
+    'modo.convoglio.come':
+      'Stagli vicino e avanza. Se lo lasci solo torna indietro, e il tempo non aspetta.',
+    'modo.boss.nome': 'Uccidi il boss',
+    'modo.boss.come':
+      'Risali il corridoio, ricaricati in fondo, e abbatti quello grosso. Poi le porte si aprono.',
+    'gioco.convoglio': 'convoglio',
+    'gioco.convoglioSolo': 'il convoglio torna indietro!',
   },
 
   en: {
@@ -343,6 +353,16 @@ const TESTI = {
     'fine.vittoria': 'EXPEDITION COMPLETE',
     'fine.dettaglioVittoria': 'All {settori} sectors. You made it out.',
     'gioco.compagnoSparito': "Your partner is gone. The world is waiting.",
+
+    'menu.difficolta.survival': 'Survival',
+    'modo.convoglio.nome': 'Escort the convoy',
+    'modo.convoglio.come':
+      'Stay close and it moves. Leave it alone and it rolls back, and the clock does not wait.',
+    'modo.boss.nome': 'Kill the boss',
+    'modo.boss.come':
+      'Push up the corridor, reload at the end, and bring down the big one. Then the doors open.',
+    'gioco.convoglio': 'convoy',
+    'gioco.convoglioSolo': 'the convoy is rolling back!',
   },
 
   fr: {
@@ -508,6 +528,16 @@ const TESTI = {
     'fine.vittoria': 'EXPEDITION ACCOMPLIE',
     'fine.dettaglioVittoria': 'Les {settori} secteurs. Vous etes sortis.',
     'gioco.compagnoSparito': "Ton coequipier a disparu. Le monde attend.",
+
+    'menu.difficolta.survival': 'Survie',
+    'modo.convoglio.nome': 'Escorte le convoi',
+    'modo.convoglio.come':
+      "Reste pres et il avance. Laisse-le seul et il recule, et le temps n'attend pas.",
+    'modo.boss.nome': 'Tue le boss',
+    'modo.boss.come':
+      'Remonte le couloir, recharge au bout, et abats le gros. Les portes souvriront.',
+    'gioco.convoglio': 'convoi',
+    'gioco.convoglioSolo': 'le convoi recule !',
   },
 
   es: {
@@ -671,6 +701,16 @@ const TESTI = {
     'fine.vittoria': 'EXPEDICION COMPLETADA',
     'fine.dettaglioVittoria': 'Los {settori} sectores. Habeis salido.',
     'gioco.compagnoSparito': "Tu companero no esta. El mundo espera.",
+
+    'menu.difficolta.survival': 'Supervivencia',
+    'modo.convoglio.nome': 'Escolta el convoy',
+    'modo.convoglio.come':
+      'Quedate cerca y avanza. Si lo dejas solo retrocede, y el tiempo no espera.',
+    'modo.boss.nome': 'Mata al jefe',
+    'modo.boss.come':
+      'Sube por el pasillo, recarga al final y derriba al grande. Luego se abren las puertas.',
+    'gioco.convoglio': 'convoy',
+    'gioco.convoglioSolo': 'el convoy retrocede!',
   },
 
   ru: {
@@ -832,6 +872,14 @@ const TESTI = {
     'fine.vittoria': 'ЭКСПЕДИЦИЯ ЗАВЕРШЕНА',
     'fine.dettaglioVittoria': 'Все {settori} секторов. Вы вышли.',
     'gioco.compagnoSparito': "Напарника нет. Мир ждёт.",
+
+    'menu.difficolta.survival': 'Выживание',
+    'modo.convoglio.nome': 'Сопроводи конвой',
+    'modo.convoglio.come': 'Держись рядом — идёт. Отойдёшь — катится назад, а время не ждёт.',
+    'modo.boss.nome': 'Убей босса',
+    'modo.boss.come': 'Пройди коридор, пополни запасы и вали большого. Потом двери откроются.',
+    'gioco.convoglio': 'конвой',
+    'gioco.convoglioSolo': 'конвой катится назад!',
   },
 
   nl: {
@@ -997,6 +1045,16 @@ const TESTI = {
     'fine.vittoria': 'EXPEDITIE VOLBRACHT',
     'fine.dettaglioVittoria': 'Alle {settori} sectoren. Jullie zijn eruit.',
     'gioco.compagnoSparito': "Je maatje is weg. De wereld wacht.",
+
+    'menu.difficolta.survival': 'Survival',
+    'modo.convoglio.nome': 'Escorteer het konvooi',
+    'modo.convoglio.come':
+      'Blijf dichtbij en het rijdt. Laat het alleen en het rolt terug, en de klok wacht niet.',
+    'modo.boss.nome': 'Dood de baas',
+    'modo.boss.come':
+      'Ga de gang door, laad bij aan het eind, en leg de grote neer. Dan gaan de deuren open.',
+    'gioco.convoglio': 'konvooi',
+    'gioco.convoglioSolo': 'het konvooi rolt terug!',
   },
 };
 

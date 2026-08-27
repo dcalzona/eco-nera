@@ -10,6 +10,8 @@ import { disegnaOmino } from './render.js';
 
 const C = {
   fondo: '#080c14',
+  convoglio: '#c8a86a',
+  boss: '#ff8a3c',
   muro: '#313d5c',
   pavimento: '#141b28',
   nostro: '#b6e06a',
@@ -39,6 +41,8 @@ export function disegnaBriefing(c, modalita, w, h) {
 
   if (modalita === 'bomba') bomba(c);
   else if (modalita === 'dominio') dominio(c);
+  else if (modalita === 'convoglio') convoglio(c);
+  else if (modalita === 'boss') boss(c);
   else sabotaggio(c);
 
   c.restore();
@@ -134,6 +138,140 @@ function dominio(c) {
 }
 
 // --- I mattoncini ----------------------------------------------------------
+
+// --- Scorta il convoglio ---------------------------------------------------
+// Il binario che attraversa, il vagone a meta' strada col suo cerchio attorno,
+// i due omini DENTRO il cerchio, e la freccia all'indietro che dice cosa
+// succede se ci si allontana. L'orologio in un angolo: qui il tempo uccide.
+function convoglio(c) {
+  stanza(c, 16, 18, 268, 154);
+
+  // Il binario, da sinistra a destra.
+  c.strokeStyle = C.tratto;
+  c.lineWidth = 5;
+  c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(44, 108);
+  c.lineTo(120, 108);
+  c.lineTo(150, 74);
+  c.lineTo(250, 74);
+  c.stroke();
+
+  // Le traversine: lo fanno leggere come un binario e non come un tubo.
+  c.strokeStyle = 'rgba(120,132,159,0.5)';
+  c.lineWidth = 2;
+  for (let x = 50; x < 118; x += 14) {
+    c.beginPath();
+    c.moveTo(x, 102);
+    c.lineTo(x, 114);
+    c.stroke();
+  }
+  for (let x = 160; x < 248; x += 14) {
+    c.beginPath();
+    c.moveTo(x, 68);
+    c.lineTo(x, 80);
+    c.stroke();
+  }
+
+  // Il cerchio da tenere, attorno al vagone.
+  anello(c, 120, 106, 40, 1, C.uscita);
+
+  // Il vagone.
+  c.fillStyle = C.convoglio;
+  c.fillRect(104, 96, 32, 20);
+  c.fillStyle = C.fatto;
+  c.fillRect(104, 103, 32, 6);
+
+  // I due, dentro il cerchio: e' la condizione.
+  disegnaOmino(c, 92, 128, -Math.PI / 4, { corpo: C.nostro, arma: 'corta' });
+  disegnaOmino(c, 146, 126, (-3 * Math.PI) / 4, { corpo: C.compagno, arma: 'corta' });
+
+  // Avanti se ci siete, indietro se ve ne andate.
+  freccia(c, 150, 92, 214, 92, C.fatto);
+  freccia(c, 104, 84, 66, 84, C.nemico, true);
+
+  // I nemici che arrivano.
+  disegnaOmino(c, 236, 118, Math.PI, { corpo: C.nemico, arma: 'corta' });
+
+  // E il tempo che scorre: e' l'unica missione in cui scaduto si perde.
+  orologio(c, 254, 40);
+
+  // L'uscita in fondo al binario.
+  cerchio(c, 258, 74, 11, C.uscita);
+}
+
+// --- Uccidi il boss --------------------------------------------------------
+// Il corridoio largo con i ripari, la cassa di munizioni in fondo, l'arena col
+// grosso in mezzo, e le porte sbarrate dietro che si apriranno.
+function boss(c) {
+  // Il corridoio.
+  c.fillStyle = C.pavimento;
+  c.fillRect(20, 74, 116, 44);
+  c.strokeStyle = C.muro;
+  c.lineWidth = 3;
+  c.strokeRect(20, 74, 116, 44);
+
+  // I due che risalgono.
+  disegnaOmino(c, 34, 88, 0, { corpo: C.nostro, arma: 'corta' });
+  disegnaOmino(c, 34, 106, 0, { corpo: C.compagno, arma: 'corta' });
+
+  // I ripari nel corridoio: le stesse barre che pianta l'Assalto.
+  c.strokeStyle = '#8b95b3';
+  c.lineWidth = 5;
+  for (const [x, y] of [[68, 80], [92, 106], [114, 82]]) {
+    c.beginPath();
+    c.moveTo(x, y - 8);
+    c.lineTo(x, y + 8);
+    c.stroke();
+  }
+  disegnaOmino(c, 76, 104, Math.PI, { corpo: C.nemico, arma: 'corta' });
+  disegnaOmino(c, 106, 84, Math.PI, { corpo: C.nemico, arma: 'corta' });
+
+  // La cassa di munizioni in fondo al corridoio, prima di entrare.
+  c.fillStyle = C.server;
+  c.fillRect(126, 90, 12, 12);
+
+  // L'arena.
+  c.fillStyle = C.pavimento;
+  c.fillRect(136, 42, 106, 108);
+  c.strokeStyle = C.muro;
+  c.lineWidth = 3;
+  c.strokeRect(136, 42, 106, 108);
+
+  // Il boss: grosso, e si vede che e' un'altra cosa.
+  c.fillStyle = 'rgba(255,138,60,0.22)';
+  c.beginPath();
+  c.arc(186, 96, 26, 0, Math.PI * 2);
+  c.fill();
+  c.fillStyle = C.boss;
+  c.beginPath();
+  c.arc(186, 96, 18, 0, Math.PI * 2);
+  c.fill();
+  c.fillStyle = '#8a4a1c';
+  c.beginPath();
+  c.arc(179, 96, 6, 0, Math.PI * 2);
+  c.fill();
+
+  // Gli scagnozzi.
+  disegnaOmino(c, 214, 66, Math.PI, { corpo: C.nemico, arma: 'corta' });
+  disegnaOmino(c, 214, 128, Math.PI, { corpo: C.nemico, arma: 'corta' });
+
+  // Le porte sbarrate in fondo: le grate dicono "di qui non si passa".
+  c.strokeStyle = C.nemico;
+  c.lineWidth = 3;
+  for (const y of [72, 120]) {
+    for (let k = -1; k <= 1; k++) {
+      c.beginPath();
+      c.moveTo(242, y + k * 7);
+      c.lineTo(258, y + k * 7);
+      c.stroke();
+    }
+  }
+
+  // E l'uscita oltre, tratteggiata: c'e', ma non ancora.
+  freccia(c, 250, 96, 274, 96, C.uscita, true);
+  cerchio(c, 278, 96, 10, C.uscita);
+}
 
 function stanza(c, x, y, w, h) {
   c.save();
