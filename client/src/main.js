@@ -103,6 +103,7 @@ function creaRete(quale, ruolo = null) {
   r.chiediIndirizzo = chiediIndirizzo;
   r.chiediClasse = () => {
     pannelloMenu.hidden = false;
+    adattaIlMenu();
     aggiornaStatoServer();
     avvisaSeDisallineato();
   };
@@ -158,6 +159,7 @@ modulo.addEventListener('submit', (e) => {
   nota.textContent = '';
   pannello.hidden = true;
   if (rete.stato === 'menu') pannelloMenu.hidden = false;
+  adattaIlMenu();
 });
 
 // --- Il menu ---------------------------------------------------------------
@@ -299,7 +301,7 @@ function costruisciDifficolta() {
   for (const quale of SCELTE_DIFFICOLTA) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'modo';
+    b.className = quale === 'survival' ? 'modo survival' : 'modo';
     b.dataset.difficolta = quale;
     b.addEventListener('click', () => {
       suoni.avvia();
@@ -429,6 +431,86 @@ function perche(e) {
   return utile ? `${t('invito.stato.servizioDice')} ${suo}` : t('invito.stato.servizioGiu');
 }
 
+/**
+ * Il menu deve stare in una schermata sola, e deve restare bello.
+ *
+ * Le due cose sembrano in contrasto e non lo sono: invece di togliere pezzi —
+ * le descrizioni, l'arma, la figura — si rimpicciolisce tutto insieme. Le
+ * proporzioni restano identiche, e su uno schermo basso il menu e' lo stesso
+ * menu visto da un po' piu' lontano.
+ *
+ * Il conto lo deve fare JavaScript: il CSS non sa quanto e' alto il proprio
+ * contenuto, e una media query indovina la misura dello schermo senza sapere
+ * quante righe ci sono dentro — che poi e' il motivo per cui la riga della
+ * stanza, comparendo, faceva scorrere tutto.
+ */
+let improntaMenu = '';
+
+/**
+ * Il menu deve stare in una schermata sola, e deve restare bello.
+ *
+ * Le due cose sembrano in contrasto e non lo sono: invece di togliere pezzi —
+ * le descrizioni, l'arma, la figura — si rimpicciolisce TUTTO INSIEME. Le
+ * proporzioni restano identiche, e su uno schermo basso il menu e' lo stesso
+ * menu visto da un po' piu' lontano.
+ *
+ * Il riquadro si allarga di quanto si rimpicciolisce, cosi' torna esattamente
+ * della misura dello schermo invece di lasciare due fasce vuote ai lati. E
+ * siccome allargandolo il testo va a capo diverso — quindi l'altezza cambia —
+ * il conto si rifa' un paio di volte finche' non si assesta. Una passata sola
+ * sbagliava di qualche pixel, ed erano proprio quelli che facevano scorrere.
+ */
+function adattaIlMenu() {
+  const dentro = document.getElementById('menuDentro');
+  const scelte = document.getElementById('menuScelte');
+  const piede = document.getElementById('menuPiede');
+  if (!dentro || !scelte || !piede || pannelloMenu.hidden) return;
+
+  // Si chiama a ogni fotogramma mentre il menu si vede, ed e' apposta: appendere
+  // il conto a ogni punto in cui il menu cambia altezza vuol dire dimenticarsene
+  // uno. Se niente e' cambiato si esce prima di toccare lo stile, che e' la
+  // parte che costerebbe davvero.
+  const impronta = `${pannelloMenu.clientHeight}:${innerWidth}:${scelte.childElementCount}:${
+    document.getElementById('rigaStanza').hidden ? 0 : 1
+  }:${linguaCorrente()}`;
+  if (impronta === improntaMenu) return;
+  improntaMenu = impronta;
+
+  dentro.style.setProperty('--zoomMenu', '1');
+  dentro.style.width = '';
+  dentro.style.height = 'auto';
+
+  let zoom = 1;
+  for (let passata = 0; passata < 3; passata++) {
+    // Dove finisce DAVVERO il piede sullo schermo: `getBoundingClientRect`
+    // tiene conto della trasformazione, `scrollHeight` no — e quello e' il
+    // motivo per cui la prima versione si credeva a posto mentre debordava.
+    const fondo = piede.getBoundingClientRect().bottom;
+    if (fondo <= innerHeight) break;
+    const cima = dentro.getBoundingClientRect().top;
+    const serve = (fondo - cima) / zoom;
+    const disponibile = innerHeight - cima - 2;
+    zoom = Math.max(0.5, Math.min(1, disponibile / serve));
+    dentro.style.setProperty('--zoomMenu', zoom.toFixed(3));
+    dentro.style.width = `${(100 / zoom).toFixed(2)}%`;
+    dentro.style.height = `${disponibile / zoom}px`;
+  }
+}
+
+addEventListener('resize', adattaIlMenu);
+
+/**
+ * La rete di sicurezza.
+ *
+ * Il conto sta gia' nel giro di disegno e nell'evento `resize`, e in
+ * condizioni normali basterebbero. Ma il giro di disegno si ferma del tutto
+ * quando la pagina e' nascosta — zero fotogrammi, non pochi — e ci sono
+ * browser in cui una finestra che cambia misura non emette `resize`. Un
+ * controllo ogni tanto li copre tutti e due, e non costa niente: se le misure
+ * non sono cambiate esce prima di toccare qualunque cosa.
+ */
+setInterval(adattaIlMenu, 300);
+
 function adeguaMenuAlModo() {
   for (const b of elencoModi.children) {
     b.setAttribute('aria-pressed', String(b.dataset.modo === modo));
@@ -447,6 +529,9 @@ function adeguaMenuAlModo() {
     dalServer ? 'menu.difficoltaDalServer' : 'menu.scegliDifficolta',
   );
   rete.difficolta = difficolta;
+  // La riga della stanza compare e sparisce: e' il cambio d'altezza piu'
+  // grosso che il menu abbia, ed e' quello che prima lo faceva scorrere.
+  adattaIlMenu();
   rigaStanza.hidden = modo !== 'rete';
   if (modo !== 'rete') {
     statoStanza.textContent = '';
@@ -504,6 +589,7 @@ function sorvegliaIngresso() {
     rete.classe = null; // e non ci si ritrovi dentro fra dieci minuti, da soli
     rete.stato = 'menu';
     pannelloMenu.hidden = false;
+    adattaIlMenu();
     bottonePausa.hidden = true;
     aggiornaStatoServer();
   }, 8000);
@@ -521,6 +607,7 @@ function tornaAlMenu() {
   pannelloFine.hidden = true;
   bottonePausa.hidden = true;
   pannelloMenu.hidden = false;
+  adattaIlMenu();
   rete.lascia();
   suoni.sirena(false);
 }
@@ -703,6 +790,7 @@ function giro(ora) {
   if (rete.stato === 'menu') {
     // Se si sta scrivendo l'indirizzo del server, parla quel pannello.
     if (pannelloMenu.hidden && pannello.hidden) pannelloMenu.hidden = false;
+    adattaIlMenu();
     if (!bottonePausa.hidden) bottonePausa.hidden = true;
     controllerNelMenu();
     aggiornaStatoServer();

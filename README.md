@@ -662,6 +662,48 @@ solo per risparmiare spazio: scegliere Survival *e* una difficolta' non vuol
 dire niente, perche' li' la difficolta' la detta il settore. Mettendola in fila
 con le altre, «non si sceglie» si legge senza doverlo spiegare.
 
+## Il menu sta in una schermata
+
+E deve anche restare bello, che non e' in contrasto — ma per un po' l'ho
+trattato come se lo fosse. Per farlo entrare avevo stretto ogni cosa a mano:
+caratteri piu' piccoli, margini piu' corti, e a schermo basso via le
+descrizioni, poi l'arma, poi la figura. Lo scorrimento spariva e il disegno si
+rovinava, che sulla prima schermata e' un cattivo affare.
+
+Adesso si **rimpicciolisce tutto insieme**: uno `scale()` calcolato misurando
+quanto serve davvero. Le proporzioni restano identiche e su uno schermo basso e'
+lo stesso menu visto da un po' piu' lontano. Il riquadro si allarga di quanto si
+rimpicciolisce, cosi' torna esattamente della misura dello schermo invece di
+lasciare due fasce vuote ai lati.
+
+| schermo | zoom |
+| --- | --- |
+| 1280x720 | 1 — non serve |
+| 1000x542 | 1 — non serve |
+| 780x360 | 0,58 |
+| 667x340 | 0,69 |
+
+Il conto lo fa JavaScript perche' il CSS non sa quanto e' alto il proprio
+contenuto: una media query indovina la misura dello SCHERMO senza sapere quante
+righe ci sono dentro, ed e' esattamente per questo che la riga della stanza,
+comparendo, faceva scorrere tutto.
+
+E si misura dove finisce davvero il piede sullo schermo — `getBoundingClientRect`
+tiene conto della trasformazione, `scrollHeight` no. Con `scrollHeight` il conto
+si credeva a posto mentre debordava di sei pixel.
+
+## Una cosa da sapere provando nel browser
+
+`requestAnimationFrame` **non gira affatto** quando la pagina e' nascosta: zero
+fotogrammi, non pochi. Vuol dire che aprire il gioco in una scheda non visibile
+e guardare la console non prova niente sul disegno — la console e' pulita
+perche' non e' stato disegnato niente.
+
+Per questo `prova-disegno` chiama le funzioni di disegno una per una su una tela
+finta che si segna i comandi ricevuti. Non sostituisce il guardare col proprio
+occhio, ma dice almeno che nessuna va in eccezione e che ognuna disegna
+qualcosa.
+
 ## Le lingue
 
 Italiano, inglese, francese, spagnolo, russo e olandese. Si scelgono dal menu e

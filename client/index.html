@@ -84,24 +84,24 @@
          una schermata a parte con dei passi; era una procedura per una cosa
          che e' un numero. */
       #rigaStanza {
-        display: flex; gap: 8px; align-items: center; margin-top: 8px;
+        display: flex; gap: 10px; align-items: center; margin-top: 12px;
         flex-wrap: wrap;
       }
       #rigaStanza[hidden] { display: none; }
       #campoStanza {
-        font: 700 20px ui-monospace, Consolas, monospace;
-        letter-spacing: 0.28em; text-align: center; text-indent: 0.28em;
-        width: 118px; flex: none; padding: 5px 4px;
+        font: 700 26px ui-monospace, Consolas, monospace;
+        letter-spacing: 0.3em; text-align: center; text-indent: 0.3em;
+        width: 150px; flex: none; padding: 8px 4px;
         background: #0c1017; color: #dfe6f5;
-        border: 1px solid #2a3550; border-radius: 9px;
+        border: 1px solid #2a3550; border-radius: 10px;
       }
       #entraStanza {
-        font: inherit; font-size: 13px; font-weight: 600;
-        padding: 8px 15px; border: 0; border-radius: 9px;
+        font: inherit; font-size: 14px; font-weight: 600;
+        padding: 12px 22px; border: 0; border-radius: 9px;
         background: #1b2434; color: #dfe6f5; cursor: pointer;
       }
       #entraStanza:disabled { color: #6a7590; cursor: default; }
-      #statoStanza { font-size: 12px; color: #ffc65c; flex: 1 1 140px; min-width: 0; }
+      #statoStanza { font-size: 12px; color: #ffc65c; flex: 1 1 160px; min-width: 0; }
       /* L'indirizzo del servizio non si vede mai, finche' non serve: compare
          solo se il servizio non risponde, che e' l'unico momento in cui uno
          ha motivo di cambiarlo. */
@@ -178,32 +178,41 @@
         border: 1px solid #1c2434; border-radius: 12px;
       }
       .etichettaScelta {
-        font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-        color: #78849f; margin: 0 0 4px;
+        font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+        color: #78849f; margin: 0 0 6px;
       }
-      #classi { margin-bottom: 10px; }
-      #modi { display: flex; gap: 6px; }
-      #etichettaDifficolta { margin-top: 10px; }
-      #difficolta { display: flex; gap: 5px; }
+      #classi { margin-bottom: 16px; }
+      #modi { display: flex; gap: 8px; }
+      #etichettaDifficolta { margin-top: 14px; }
+      #difficolta { display: flex; gap: 8px; }
       #difficolta .modo { font-size: 12px; padding: 7px 4px; }
       #difficolta.spenta { opacity: 0.45; pointer-events: none; }
       .modo {
         flex: 1 1 0; min-width: 0;
-        background: #0c1017; border: 2px solid #232d41; border-radius: 9px;
-        padding: 8px 4px; color: #dfe6f5; font: inherit; font-size: 12.5px;
+        background: #0c1017; border: 2px solid #232d41; border-radius: 10px;
+        padding: 12px 6px; color: #dfe6f5; font: inherit; font-size: 14px;
         cursor: pointer; text-align: center;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       .modo[aria-pressed='true'] { border-color: #ffc65c; background: #141c2a; color: #ffc65c; }
+
+      /* Survival non e' una difficolta' e non deve sembrarlo: e' l'altra
+         scala, quella che sale da sola. Sta in fila con le quattro perche'
+         sceglierlo INSIEME a una difficolta' non vorrebbe dire niente, ma il
+         colore dice che e' un'altra cosa. */
+      .modo.survival { color: #c98bff; border-color: #3a2d4d; }
+      .modo.survival[aria-pressed='true'] {
+        border-color: #c98bff; background: #1d1630; color: #d9aeff;
+      }
       #avvio.grande {
-        display: block; width: 100%; margin-top: 10px;
-        font: inherit; font-size: 15px; font-weight: 700;
-        padding: 10px 20px; border: 0; border-radius: 9px;
+        display: block; width: 100%; margin-top: 18px;
+        font: inherit; font-size: 17px; font-weight: 700;
+        padding: 14px 20px; border: 0; border-radius: 10px;
         background: #ffc65c; color: #05070c; cursor: pointer;
       }
       #avvio.grande:disabled { background: #2a3550; color: #6a7590; cursor: default; }
       #menuPiede {
-        margin-top: auto; padding-top: 10px;
+        margin-top: auto; padding-top: 16px;
         display: flex; justify-content: flex-end; align-items: center; gap: 10px;
         font-size: 11px; color: #5c6780;
       }
@@ -258,26 +267,27 @@
 
       /* Schermo davvero basso (telefono in orizzontale): si stringe tutto e
          le descrizioni lunghe spariscono, tanto ci sono nella guida. */
-      /* Schermo basso — il telefono in orizzontale, che e' il caso normale.
-         Tutto quello che si puo' togliere si toglie, perche' il menu DEVE
-         stare in una schermata sola: doverlo far scorrere per arrivare al
-         pulsante che fa partire il gioco e' il modo piu' sicuro di far
-         sembrare rotta una cosa che funziona. */
-      @media (max-height: 560px) {
-        .classe .desc { display: none; }
-        .classe .abilita { display: none; }
-        .classe canvas { width: 34px; height: 26px; }
-        .classe { padding: 6px 8px; }
-        #menuFigura { flex-basis: 280px; }
-        #avvio.grande { margin-top: 8px; padding: 8px 20px; font-size: 14px; }
-        #menuPiede { padding-top: 6px; }
-        #classi { margin-bottom: 8px; }
-        #etichettaDifficolta { margin-top: 8px; }
+      /* Il menu si rimpicciolisce TUTTO INSIEME quando non ci sta, invece di
+         perdere pezzi per strada. Prima nascondeva le descrizioni, poi l'arma,
+         poi la figura: risolveva lo scorrimento e rovinava il disegno, che sulla
+         prima schermata e' un cattivo affare. Il fattore lo calcola `main.js`
+         misurando quanto serve davvero — il CSS da solo non sa quanto e' alto
+         il suo contenuto. */
+      #menuDentro {
+        transform: scale(var(--zoomMenu, 1));
+        /* Dall'angolo e non dal centro: cosi' `main.js` puo' allargare il
+           riquadro logico e farlo tornare esattamente della misura dello
+           schermo. Dal centro il menu si sarebbe rimpicciolito lasciando due
+           fasce vuote ai lati. */
+        transform-origin: top left;
       }
-      @media (max-height: 430px) {
-        .classe .arma { display: none; }
+      /* Rimpicciolito ci sta per definizione: la barra di scorrimento
+         resterebbe solo a segnare lo spazio che il riquadro occupava prima. */
+      #menu { overflow: hidden; }
+      /* Sotto una certa misura la figura se ne va comunque: rimpicciolire
+         all'infinito farebbe un menu leggibile col microscopio. */
+      @media (max-width: 760px) {
         #menuFigura { display: none; }
-        .etichettaScelta { margin-bottom: 2px; }
       }
 
       /* Schermo stretto: la figura se ne va prima delle scelte — e' bella, non
@@ -507,6 +517,9 @@
         <h2 data-t="guida.terra.titolo"></h2>
         <p data-t="guida.terra.testo"></p>
 
+        <h2 data-t="guida.munizioni.titolo"></h2>
+        <p data-t="guida.munizioni.testo"></p>
+
         <h2 data-t="guida.rifornimenti.titolo"></h2>
         <p data-t="guida.rifornimenti.testo"></p>
 
@@ -527,10 +540,15 @@
           <li data-t="guida.modalita.sabotaggio"></li>
           <li data-t="guida.modalita.bomba"></li>
           <li data-t="guida.modalita.dominio"></li>
+          <li data-t="guida.modalita.convoglio"></li>
+          <li data-t="guida.modalita.boss"></li>
         </ul>
 
         <h2 data-t="guida.spedizione.titolo"></h2>
         <p data-t="guida.spedizione.testo"></p>
+
+        <h2 data-t="guida.difficolta.titolo"></h2>
+        <p data-t="guida.difficolta.testo"></p>
 
         <button id="chiudiGuida" type="button" data-t="guida.chiudi"></button>
       </div>
