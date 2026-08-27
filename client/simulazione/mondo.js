@@ -1165,8 +1165,20 @@ export class Mondo {
         const quanto = Math.hypot(g.x - b.x, g.y - b.y);
         if (quanto > BOMBA.raggioSchegge) continue;
         if (quanto <= BOMBA.raggioLetale) {
+          // Il nocciolo ammazza da NORMALE in su. In facile fa quasi tutto il
+          // danno che puo' senza chiudere la partita: la missione chiede di
+          // stare li' a difenderla, e non puo' poi ammazzare chi l'ha fatto
+          // prima ancora che abbia imparato a scansarsi.
+          // In facile un colpo pesante ma non la fine: 117 contro i 160 di
+          // vita piu' armatura piena. Chi ci arriva intero resta in piedi con
+          // un terzo, chi ci arriva gia' malmesso no — ed e' giusto cosi'.
+          //
+          // Prima avevo scritto l'82% del massimo TEORICO (200), che fa 164:
+          // piu' di quanto uno ne abbia davvero addosso. "Non letale" ammazzava
+          // lo stesso, e la prova l'ha detto solo perche' contava il danno.
+          const ammazza = this.difficolta !== 'facile';
           console.log(`${g.nome} era sopra la bomba.`);
-          this.ferisci(g, VITA_MASSIMA + ARMATURA_MASSIMA);
+          this.ferisci(g, ammazza ? VITA_MASSIMA + ARMATURA_MASSIMA : BOMBA.dannoSchegge * 1.5);
           continue;
         }
         // Fuori dal nocciolo il danno cala col quadrato: vicino fa ancora
@@ -1421,8 +1433,12 @@ export class Mondo {
     // Con l'allarme arrivano fitti; mentre si tiene una zona pure, perche' e'
     // proprio la pressione a essere la missione.
     const tieneLaZona = this.modalita === 'dominio' && !this.missioneFatta;
+    // I rinforzi in allarme arrivano piu' fitti a mano a mano che sale la
+    // difficolta': cinque secondi e' il ritmo di sempre, e in facile si
+    // stringe appena. Per un po' e' stato 3,4 per tutti — anche in facile — e
+    // con le munizioni che finiscono voleva dire arrivare all'uscita a secco.
     this.attesaRinforzi = this.allarme
-      ? ALLARME.rinforzi
+      ? ALLARME.rinforzi / (this.regole().pressione ?? 1)
       : tieneLaZona
         ? DOMINIO.rinforzi
         : 12;
@@ -1470,10 +1486,14 @@ export class Mondo {
   /** Quanti nemici tiene in piedi questo settore, con lo sconto per chi e' solo. */
   tettoNemici() {
     const base = this.nemiciBase ?? SPEDIZIONE.nemiciBase;
+    // Quanti ne regge il settore con l'allarme: un numero per difficolta',
+    // non una formula. In facile sette diventano otto, in incubo tredici
+    // diventano diciannove.
+    const inAllarme = this.allarme ? (this.regole().tettoAllarme ?? ALLARME.tetto) : 1;
     const quanti =
       base *
       this.regole().nemici *
-      (this.allarme ? ALLARME.tetto : 1) *
+      inAllarme *
       (this.daSoli() ? SCONTO_DA_SOLI : 1);
     return Math.max(3, Math.round(quanti));
   }

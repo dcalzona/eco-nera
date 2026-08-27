@@ -659,7 +659,10 @@ export class Disegno {
     c.scale(this.zoom, this.zoom);
     c.translate(-this.cam.x, -this.cam.y);
 
-    if (ob.md === 'bomba') this.disegnaBomba(ob.bo);
+    if (ob.md === 'bomba') {
+      this.disegnaBomba(ob.bo);
+      this.avvisoBomba(ob.bo);
+    }
     else if (ob.md === 'dominio') this.disegnaZona(ob.zo);
     else if (ob.md === 'convoglio') this.convoglio(ob.cv);
     else if (ob.md === 'boss') {
@@ -732,6 +735,28 @@ export class Disegno {
   }
 
   /** La bomba: dove si prende, dove va portata, e quanto manca. */
+  /**
+   * Gli ultimi secondi della miccia: la bomba pulsa e si vede il cerchio che
+   * ammazza. Senza, si muore accanto a una cosa che non aveva detto niente —
+   * e la missione ti aveva appena chiesto di restarle vicino.
+   */
+  avvisoBomba(b) {
+    if (!b || b.st !== 'piazzata' || b.t > BOMBA.avviso) return;
+    const c = this.ctx;
+    const battito = 0.35 + 0.35 * Math.sin(performance.now() / 90);
+    c.strokeStyle = `rgba(255,93,93,${battito.toFixed(2)})`;
+    c.lineWidth = 3;
+    c.setLineDash([7, 6]);
+    c.beginPath();
+    c.arc(b.x, b.y, BOMBA.raggioLetale, 0, Math.PI * 2);
+    c.stroke();
+    c.setLineDash([]);
+    c.fillStyle = `rgba(255,93,93,${(battito * 0.25).toFixed(2)})`;
+    c.beginPath();
+    c.arc(b.x, b.y, BOMBA.raggioLetale, 0, Math.PI * 2);
+    c.fill();
+  }
+
   disegnaBomba(bo) {
     if (!bo || bo.st === 'finita') return;
     const c = this.ctx;

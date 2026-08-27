@@ -6,7 +6,7 @@
  * parte (mira assistita, allarme, modalita' in solitaria) e sembra che il
  * gioco sia rotto. Se i numeri non coincidono, ora lo si legge a schermo.
  */
-export const VERSIONE = '4.2';
+export const VERSIONE = '4.3';
 
 // Numeri che server e client devono conoscere allo stesso modo.
 // Questa cartella e' condivisa: il server la importa da ../client/condiviso/,
@@ -295,11 +295,18 @@ export const DIFFICOLTA = ['facile', 'normale', 'difficile', 'incubo'];
  */
 export const SCELTE_DIFFICOLTA = [...DIFFICOLTA, 'survival'];
 
+/**
+ * `pressione` e' quanto stringe l'ALLARME: i rinforzi arrivano piu' fitti e il
+ * settore ne regge di piu'. Era un numero solo per tutti — rinforzi ogni 3,4
+ * secondi e tetto x1,45 anche in facile — e con le munizioni che finiscono
+ * quel conto non tornava: l'Assalto ha colpi per dodici nemici e il settore 1
+ * gliene metteva davanti tredici. In facile resta un ritocco piccolo.
+ */
 const REGOLE_DIFFICOLTA = {
-  facile: { nemici: 1, danno: 1, rinforzi: 1, caricatori: 1, stazioni: 1, evacuazione: 1 },
-  normale: { nemici: 1.25, danno: 1.25, rinforzi: 0.8, caricatori: 1, stazioni: 1, evacuazione: 1.25 },
-  difficile: { nemici: 1.5, danno: 1.5, rinforzi: 0.62, caricatori: 0.67, stazioni: 0.7, evacuazione: 1.5 },
-  incubo: { nemici: 1.85, danno: 1.9, rinforzi: 0.45, caricatori: 0.67, stazioni: 0.5, evacuazione: 1.8 },
+  facile: { nemici: 1, danno: 1, rinforzi: 1, caricatori: 1, stazioni: 1, evacuazione: 1, pressione: 1.08, tettoAllarme: 1.15 },
+  normale: { nemici: 1.25, danno: 1.25, rinforzi: 0.8, caricatori: 1, stazioni: 1, evacuazione: 1.25, pressione: 1.25, tettoAllarme: 1.25 },
+  difficile: { nemici: 1.5, danno: 1.5, rinforzi: 0.62, caricatori: 0.67, stazioni: 0.7, evacuazione: 1.5, pressione: 1.45, tettoAllarme: 1.35 },
+  incubo: { nemici: 1.85, danno: 1.9, rinforzi: 0.45, caricatori: 0.67, stazioni: 0.5, evacuazione: 1.8, pressione: 1.7, tettoAllarme: 1.45 },
 };
 
 export function regoleDifficolta(quale) {
@@ -452,14 +459,15 @@ export const IMPULSO_SONAR = 1.6;
 export const ALLARME = {
   richiamo: 2.4, // ogni quanto i nemici si aggiornano su dove siete
   /**
-   * Ogni quanto arriva un rinforzo durante l'evacuazione.
+   * Ogni quanto arriva un rinforzo durante l'evacuazione, PRIMA di dividere
+   * per la pressione della difficolta'. Cinque secondi e' il numero di sempre:
+   * in facile diventa 4,6 e in incubo 2,9.
    *
-   * Era 5 secondi anche in facile, e il ritorno finiva prima che qualcuno
-   * riuscisse a tagliarvi la strada: si usciva quasi sempre indisturbati, e
-   * l'allarme era una scritta piu' che una fase. Adesso 3,4 anche al livello
-   * piu' basso, e le difficolta' piu' alte lo stringono ancora.
+   * Per un po' e' stato 3,4 per tutti, facile compreso, ed era troppo: con le
+   * munizioni che finiscono, un rinforzo ogni tre secondi e mezzo vuol dire
+   * arrivare all'uscita a secco.
    */
-  rinforzi: 3.4,
+  rinforzi: 5,
 
   memoria: 10, // quanto a lungo continuano a cercarvi dopo il richiamo
   // Con l'allarme corrono: da fermi sono piu' lenti di voi, e inseguendovi da
@@ -470,7 +478,12 @@ export const ALLARME = {
   // che rende il ritorno un attraversamento invece di una passeggiata con
   // qualcuno che arranca dietro.
   davanti: true,
-  /** Con l'allarme il settore ne regge di piu': e' il momento di punta. */
+  /**
+   * Quanti nemici in piu' regge il settore con l'allarme, se la difficolta'
+   * non dice altro. Ogni difficolta' ha il suo `tettoAllarme`, scritto per
+   * esteso: in facile 1,15 — sette diventano otto, che e' "un po' di piu'"
+   * senza mandare all'aria il conto delle munizioni — e in incubo 1,45.
+   */
   tetto: 1.45,
 };
 
@@ -510,7 +523,7 @@ export const SPEDIZIONE = {
    * arriva in fretta, che resta su un cerchio spento senza niente da fare.
    * Provandolo, il giocatore moriva li' in piedi ad aspettare una porta.
    */
-  durataEstrazione: 7,
+  durataEstrazione: 4,
   /**
    * Il briefing. Prima che il settore si svegli si legge cosa c'e' da fare:
    * per quei secondi i nemici stanno fermi. Non e' un dettaglio di comodo —
@@ -708,7 +721,9 @@ export const BOMBA = {
    * Il tempo per allontanarsi c'e' tutto: la miccia si vede scorrere.
    */
   raggioSchegge: 150,
-  raggioLetale: 46, // dentro questo, si va giu' e basta
+  raggioLetale: 38, // una casella scarsa: bisogna esserci proprio sopra
+  /** Quanti secondi prima dello scoppio la bomba comincia a dirlo. */
+  avviso: 5,
   dannoSchegge: 78, // al centro; sfuma a poco piu' di zero al bordo
   richiamo: 3, // ogni quanto i nemici si aggiornano su dov'e' la bomba
 };
