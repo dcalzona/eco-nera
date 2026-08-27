@@ -6,7 +6,7 @@
  * parte (mira assistita, allarme, modalita' in solitaria) e sembra che il
  * gioco sia rotto. Se i numeri non coincidono, ora lo si legge a schermo.
  */
-export const VERSIONE = '4.3';
+export const VERSIONE = '4.4';
 
 // Numeri che server e client devono conoscere allo stesso modo.
 // Questa cartella e' condivisa: il server la importa da ../client/condiviso/,
@@ -623,19 +623,103 @@ export const CONVOGLIO = {
 export const BOSS = {
   vitaBase: 420,
   vitaPerSettore: 90,
-  velocita: 66, // lento: e' una cosa che avanza, non che ti insegue
-  cadenza: 1.6,
-  danno: 26,
-  gittata: 300,
-  velocitaColpo: 380,
-  raggio: 26, // il doppio abbondante di un pattugliatore
-  cono: (78 * Math.PI) / 180,
-  vista: 320,
-  colore: '#ff8a3c',
   /** Ogni quanto arriva uno scagnozzo dalle porte in fondo. */
   scagnozzi: 7,
   scagnozziInsieme: 4,
 };
+
+/**
+ * I tre bossi.
+ *
+ * Ce n'era UNO, ed era un cerchio arancione che avanzava sparando: non
+ * rappresentava niente. In un gioco dove l'unico nemico che si conosce e' il
+ * pattugliatore, un boss deve partire da LI' — grosso il doppio, cosi' si
+ * capisce cos'e' prima ancora di leggerne la barra della vita.
+ *
+ * Sono tre modi di stare in una stanza, non tre mucchi di numeri:
+ *
+ *  - bruto: il pattugliatore identico, due volte piu' grosso. Stessa arma,
+ *    stessa cadenza, stessa velocita'. Si combatte come si combatte un nemico
+ *    normale — solo che quello non muore, e intanto ne arrivano altri.
+ *  - carro: lento a muoversi e lentissimo a girare, tira di rado ma il colpo
+ *    e' grosso e toglie un terzo della vita. Si batte MUOVENDOSI: fermo gli si
+ *    regala il bersaglio, e alla sua torretta basta un colpo per volta.
+ *  - mitragliere: il grosso con l'arma montata. Spara fitto, quasi il doppio
+ *    del danno al secondo di chiunque altro, ma corto: dentro la sua gittata
+ *    non si sopravvive, tre passi piu' in la' non ti tocca. Si batte alla
+ *    distanza giusta, e tenerla e' tutto il combattimento.
+ *
+ * `vita` e' un moltiplicatore sulla vita di base: il carro ne ha di piu'
+ * perche' e' corazzato, il mitragliere di meno perche' l'arma pesa e la
+ * corazza l'ha lasciata a casa.
+ */
+export const TIPI_BOSS = ['bruto', 'carro', 'mitragliere'];
+
+export const BOSSI = {
+  // Numero per numero il pattugliatore, tranne la mole.
+  bruto: {
+    vita: 1,
+    velocita: 94,
+    giro: 2.2,
+    cadenza: 1.15,
+    danno: 11,
+    gittata: 240,
+    velocitaColpo: 470,
+    raggio: 22, // due volte il bersaglio di uno scagnozzo
+    scala: 2, // due volte il disegno di uno scagnozzo
+    raggioColpo: 0, // colpo normale
+    colore: '#ff8a3c',
+  },
+  carro: {
+    vita: 1.35,
+    velocita: 52,
+    giro: 1.1, // la torretta gira piano: gli si sta dietro girandogli intorno
+    cadenza: 2.8,
+    danno: 34,
+    gittata: 380,
+    velocitaColpo: 300, // si vede arrivare, e si puo' togliersi
+    raggio: 28,
+    scala: 2,
+    raggioColpo: 9, // grosso: perdona meno una schivata tirata
+    colore: '#9aa05a',
+  },
+  mitragliere: {
+    vita: 0.85,
+    velocita: 74, // l'arma pesa
+    giro: 1.8,
+    cadenza: 0.3,
+    danno: 6,
+    gittata: 165, // cinque caselle scarse: fuori di li' e' innocuo
+    velocitaColpo: 560,
+    raggio: 22,
+    scala: 2,
+    raggioColpo: 0,
+    colore: '#ff5f8a',
+  },
+};
+
+export function regoleBoss(tipo) {
+  return BOSSI[tipo] ?? BOSSI.bruto;
+}
+
+/**
+ * Che boss tocca in questo settore. I settori boss sono il quinto di ogni
+ * blocco — 5, 10, 15 — e si girano in ordine: bruto, carro, mitragliere. In
+ * ordine e non a caso, perche' i tre non sono equivalenti: il bruto insegna
+ * che il boss e' uno scagnozzo che non muore, il carro insegna a muoversi, il
+ * mitragliere insegna la distanza. Impararli in quest'ordine e' il modo in cui
+ * la campagna dice qualcosa.
+ */
+export function tipoBossDelSettore(numero) {
+  const blocco = Math.floor((Math.max(1, numero) - 1) / 5);
+  return TIPI_BOSS[blocco % TIPI_BOSS.length];
+}
+
+/** Il tipo dopo questo, girando. Serve alla prova dei bossi in fila. */
+export function bossDopo(tipo) {
+  const dove = TIPI_BOSS.indexOf(tipo);
+  return TIPI_BOSS[(dove + 1) % TIPI_BOSS.length];
+}
 
 /** La forma del livello boss: un corridoio largo che sfocia in un'arena. */
 export const ARENA = {

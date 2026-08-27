@@ -14,7 +14,13 @@ const PEZZO = 6;
 
 let prossimoId = 1;
 
-export function creaColpo(padrone, x, y, ang, danno, gittata, velocita, daNemico) {
+/**
+ * `raggio` e' quanto e' grosso il colpo: zero vuol dire il proiettile di
+ * sempre, un puntino. Serve alla granata del carro, che si vede arrivare
+ * grande e deve anche PRENDERE grande — un colpo disegnato grosso ma con il
+ * bersaglio di prima sarebbe una bugia a schermo.
+ */
+export function creaColpo(padrone, x, y, ang, danno, gittata, velocita, daNemico, raggio = 0) {
   return {
     id: prossimoId++,
     padrone,
@@ -25,6 +31,7 @@ export function creaColpo(padrone, x, y, ang, danno, gittata, velocita, daNemico
     resta: gittata,
     danno,
     daNemico,
+    raggio,
   };
 }
 

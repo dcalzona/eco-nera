@@ -197,7 +197,7 @@ const TESTI = {
     'guida.modalita.convoglio':
       'Convoglio — stagli vicino e avanza; se lo lasci solo torna indietro, e il tempo non aspetta.',
     'guida.modalita.boss':
-      'Boss — risali il corridoio, ricaricati in fondo, abbatti quello grosso. Poi le porte si aprono e si esce di la.',
+      'Boss — risali il corridoio riparandoti dietro le barriere di traverso, ricaricati in fondo, abbatti quello grosso. Ce ne sono tre: il bruto e uno scagnozzo grande il doppio e spara come loro, il carro tira di rado ma il colpo e grosso e fa malissimo, il mitragliere tira fittissimo ma solo da vicino. Poi le porte si aprono e si esce di la.',
     'guida.difficolta.titolo': 'Difficolta e Survival',
     'guida.difficolta.testo':
       "Quattro difficolta': in Facile il gioco e' esattamente quello di sempre, le altre alzano quanti sono i nemici, quanto fanno male e quanto in fretta arrivano i rinforzi. La campagna e' di quindici settori e poi si e' finita. SURVIVAL e' un'altra cosa e per questo ha un altro colore: non si sceglie nessuna difficolta', si parte da facile e ogni cinque livelli si sale, all'infinito. Si vede fin dove si arriva.",
@@ -384,7 +384,7 @@ const TESTI = {
     'guida.modalita.convoglio':
       'Convoy — stay close and it moves; leave it alone and it rolls back, and the clock does not wait.',
     'guida.modalita.boss':
-      'Boss — push up the corridor, reload at the end, bring down the big one. Then the doors open and you leave through them.',
+      'Boss — push up the corridor behind the crosswise barriers, reload at the end, bring down the big one. There are three of them: the brute is a minion twice the size and shoots like one, the tank fires rarely but the shell is huge and hurts, the gunner fires very fast but only up close. Then the doors open and you leave through them.',
     'guida.difficolta.titolo': 'Difficulty and Survival',
     'guida.difficolta.testo':
       'Four difficulties: on Easy the game is exactly the one you know, the others raise how many enemies there are, how hard they hit and how fast reinforcements arrive. The campaign is fifteen sectors and then it is over. SURVIVAL is a different thing, which is why it is a different colour: you pick no difficulty at all — it starts easy and climbs a step every five levels, forever. You see how far you get.',
@@ -573,7 +573,7 @@ const TESTI = {
     'guida.modalita.convoglio':
       "Convoi — reste pres et il avance ; laisse-le seul et il recule, et le temps n'attend pas.",
     'guida.modalita.boss':
-      'Boss — remonte le couloir, recharge au bout, abats le gros. Les portes souvrent et on sort par la.',
+      'Boss — remonte le couloir en te couvrant derriere les barrieres en travers, recharge au bout, abats le gros. Il y en a trois : la brute est un sbire deux fois plus grand qui tire pareil, le char tire rarement mais son obus fait tres mal, le mitrailleur tire tres vite mais seulement de pres. Les portes souvrent et on sort par la.',
     'guida.difficolta.titolo': 'Difficulte et Survie',
     'guida.difficolta.testo':
       "Quatre difficultes : en Facile le jeu est exactement celui que tu connais, les autres augmentent le nombre d'ennemis, leurs degats et la vitesse des renforts. La campagne fait quinze secteurs et puis c'est fini. SURVIE est autre chose, d'ou la couleur differente : on ne choisit aucune difficulte — on part en facile et on monte d'un cran tous les cinq niveaux, sans fin. On voit jusqu'ou on arrive.",
@@ -760,7 +760,7 @@ const TESTI = {
     'guida.modalita.convoglio':
       'Convoy — quedate cerca y avanza; si lo dejas solo retrocede, y el tiempo no espera.',
     'guida.modalita.boss':
-      'Jefe — sube por el pasillo, recarga al final, derriba al grande. Luego se abren las puertas y se sale por ahi.',
+      'Jefe — sube por el pasillo cubriendote tras las barreras atravesadas, recarga al final, derriba al grande. Hay tres: el bruto es un esbirro del doble de tamano y dispara igual, el tanque dispara poco pero su proyectil es enorme y duele, el ametrallador dispara rapidisimo pero solo de cerca. Luego se abren las puertas y se sale por ahi.',
     'guida.difficolta.titolo': 'Dificultad y Supervivencia',
     'guida.difficolta.testo':
       'Cuatro dificultades: en Facil el juego es exactamente el de siempre, las otras suben cuantos enemigos hay, cuanto hacen dano y como de rapido llegan los refuerzos. La campana son quince sectores y luego se acaba. SUPERVIVENCIA es otra cosa, y por eso tiene otro color: no se elige ninguna dificultad — se empieza en facil y se sube un escalon cada cinco niveles, sin fin. Se ve hasta donde llegas.',
@@ -943,7 +943,7 @@ const TESTI = {
     'guida.modalita.convoglio':
       'Конвой — держись рядом, и он идёт; отойдёшь — катится назад, а время не ждёт.',
     'guida.modalita.boss':
-      'Босс — пройди коридор, пополни запасы, вали большого. Потом двери откроются.',
+      'Босс — пройди коридор, прикрываясь поперечными барьерами, пополни запасы в конце, вали большого. Их трое: громила — вдвое больший рядовой и стреляет так же, танк бьёт редко, но снаряд огромный и очень больно, пулемётчик бьёт очень часто, но только вблизи. Потом двери откроются.',
     'guida.difficolta.titolo': 'Сложность и Выживание',
     'guida.difficolta.testo':
       'Четыре сложности: на Лёгкой это ровно та игра, которую ты знаешь. Кампания — пятнадцать секторов, и на этом всё. ВЫЖИВАНИЕ — другое, поэтому и цвет другой: сложность не выбирают, она растёт каждые пять уровней, бесконечно.',
@@ -1132,7 +1132,7 @@ const TESTI = {
     'guida.modalita.convoglio':
       'Konvooi — blijf dichtbij en het rijdt; laat het alleen en het rolt terug, en de klok wacht niet.',
     'guida.modalita.boss':
-      'Baas — ga de gang door, laad bij aan het eind, leg de grote neer. Dan gaan de deuren open.',
+      'Baas — ga de gang door en dek je achter de dwarse barrieres, laad bij aan het eind, leg de grote neer. Er zijn er drie: de bullebak is een handlanger van dubbele grootte en schiet net zo, de tank schiet zelden maar zijn granaat doet enorm pijn, de schutter schiet heel snel maar alleen dichtbij. Dan gaan de deuren open.',
     'guida.difficolta.titolo': 'Moeilijkheid en Survival',
     'guida.difficolta.testo':
       'Vier moeilijkheden: op Makkelijk is het spel precies dat wat je kent. De campagne is vijftien sectoren en dan is het klaar. SURVIVAL is iets anders, vandaar de andere kleur: je kiest geen moeilijkheid — het begint makkelijk en stijgt elke vijf levels, eindeloos. Je ziet hoe ver je komt.',

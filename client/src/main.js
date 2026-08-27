@@ -12,7 +12,7 @@ import { Disegno } from './render.js';
 import { calcolaVisione, nuovaMemoria, ventaglio, illuminato } from './visione.js';
 import { Suoni } from './audio.js';
 import { disegnaOmino, coloreDi, armaDi } from './render.js';
-import { CLASSI, ABILITA, VERSIONE, BOMBA, DIFFICOLTA, SCELTE_DIFFICOLTA }
+import { CLASSI, ABILITA, VERSIONE, BOMBA, DIFFICOLTA, SCELTE_DIFFICOLTA, TIPI_BOSS }
   from '../condiviso/regole.js';
 import { LINGUE, t, impostaLingua, linguaCorrente, traduciPagina } from './lingue.js';
 import { disegnaBriefing } from './briefing.js';
@@ -564,6 +564,51 @@ bottoneAvvio.addEventListener('click', () => {
     aggiornaStatoServer();
     return;
   }
+  pannelloMenu.hidden = true;
+  pannelloFine.hidden = true;
+  pannelloPausa.hidden = true;
+  bottonePausa.hidden = false;
+  sorvegliaIngresso();
+});
+
+// --- PROVA BOSS (temporaneo) ----------------------------------------------
+//
+// Un pulsante che porta dritti a una stanza del boss, da soli, senza farsi i
+// cinque settori che ci sono prima. A ogni pressione tocca il boss successivo,
+// e la scritta dice sempre quale sta per cominciare: tre pressioni li fanno
+// vedere tutti e tre. Se poi si esce vivi dalla stanza, quella dopo e' ancora
+// una stanza del boss — cosi' si possono guardare anche di fila.
+//
+// Si toglie cercando "PROVA BOSS": qui, in index.html e in rete-locale.js.
+const bottoneProvaBoss = document.getElementById('provaBoss');
+let bossDaProvare = 0;
+
+function scriviProvaBoss() {
+  bottoneProvaBoss.textContent = `PROVA BOSS · ${TIPI_BOSS[bossDaProvare].toUpperCase()}`;
+}
+scriviProvaBoss();
+
+bottoneProvaBoss.addEventListener('click', () => {
+  suoni.avvia();
+  // Il mondo dev'essere qui dentro: una prova che dipende dal PC acceso non
+  // e' una prova che si fa quando serve.
+  if (modo !== 'solo') usaModo('solo');
+  // `usaModo` ha appena rifatto la rete: il campo si mette DOPO, sennò lo si
+  // mette su quella buttata via.
+  // Sempre il settore 5: la stessa arena e la stessa vita per tutti e tre,
+  // cosi' quello che cambia fra una prova e l'altra e' SOLO il boss. Se ognuno
+  // si provasse al suo settore vero — 5, 10, 15 — la stanza e la vita
+  // crescerebbero insieme al tipo, e non si saprebbe piu' cosa si sta
+  // guardando.
+  rete.provaBoss = { settore: 5, tipo: TIPI_BOSS[bossDaProvare] };
+  const classe = classeScelta ?? 'assalto';
+  if (!rete.entra(classe, true)) {
+    rete.provaBoss = null;
+    aggiornaStatoServer();
+    return;
+  }
+  bossDaProvare = (bossDaProvare + 1) % TIPI_BOSS.length;
+  scriviProvaBoss();
   pannelloMenu.hidden = true;
   pannelloFine.hidden = true;
   pannelloPausa.hidden = true;

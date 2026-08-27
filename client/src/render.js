@@ -3,7 +3,7 @@
 // che resta disegnato spento, come un ricordo.
 
 import { TILE, CASELLA, STATO, UMORE, NEMICI, ABILITA, ARMATURA_MASSIMA, RIPARO, BOMBA,
-  munizioniDi, STAZIONE, RIPARI_PER_SETTORE, CONVOGLIO, BOSS,
+  munizioniDi, STAZIONE, RIPARI_PER_SETTORE, CONVOGLIO, regoleBoss,
 } from '../condiviso/regole.js';
 import { giaVisto } from './visione.js';
 import { t } from './lingue.js';
@@ -390,6 +390,20 @@ export class Disegno {
   colpo(p) {
     const c = this.ctx;
     c.fillStyle = p.e ? COLORI.colpoNemico : COLORI.colpo;
+    // La granata del carro porta il suo raggio addosso: si vede grossa perche'
+    // PRENDE grosso, non per scenografia. E ha un alone, cosi' si legge da
+    // lontano che quella li' non e' un proiettile qualunque.
+    if (p.g) {
+      c.fillStyle = tinta(COLORI.fuoco, 0.22);
+      c.beginPath();
+      c.arc(p.x, p.y, p.g + 5, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = COLORI.fuoco;
+      c.beginPath();
+      c.arc(p.x, p.y, p.g, 0, Math.PI * 2);
+      c.fill();
+      return;
+    }
     c.beginPath();
     c.arc(p.x, p.y, p.e ? 3 : 2.4, 0, Math.PI * 2);
     c.fill();
@@ -592,26 +606,146 @@ export class Disegno {
    * cosa che si cerca e' lui: se la barra sta altrove si guarda quella e non
    * la stanza, e questo e' un gioco in cui bisogna guardare la stanza.
    */
+  /**
+   * Il boss, che adesso sono tre e nessuno e' una palla.
+   *
+   * Prima era un cerchio arancione con un puntino: una forma che nel gioco non
+   * esiste, disegnata al posto di quella che esiste. Due di questi tre sono lo
+   * scagnozzo che si conosce gia', ingrandito il doppio — la mole si legge
+   * perche' c'e' un metro accanto, gli scagnozzi veri — e il terzo e' un carro
+   * armato, che si capisce cos'e' senza bisogno che nessuno lo spieghi.
+   */
   boss(b) {
     if (!b) return;
     const c = this.ctx;
+    const tipo = b.tp ?? 'bruto';
+    const suo = regoleBoss(tipo);
 
-    // Il corpo: due cerchi concentrici, cosi' si distingue da un pattugliatore
-    // anche di sfuggita e anche mezzo al buio.
-    c.fillStyle = tinta(BOSS.colore, 0.22);
+    // L'ombra sotto, e un anello sottile che gli sta ADDOSSO. Il primo alone
+    // che avevo messo era un disco pieno largo il doppio della sagoma: da
+    // lontano tornava a essere una palla con dentro un omino, cioe' proprio la
+    // cosa da cui si scappava. Un alone deve dire "e' grosso", non prendere il
+    // posto di quello che e' grosso.
+    const attorno = suo.scala * 8;
+    c.fillStyle = 'rgba(5,7,12,0.45)';
     c.beginPath();
-    c.arc(b.x, b.y, BOSS.raggio + 6, 0, Math.PI * 2);
+    c.ellipse(b.x, b.y + 3, attorno * 1.05, attorno * 0.9, 0, 0, Math.PI * 2);
     c.fill();
-    c.fillStyle = BOSS.colore;
+    c.strokeStyle = tinta(suo.colore, 0.3);
+    c.lineWidth = 2;
     c.beginPath();
-    c.arc(b.x, b.y, BOSS.raggio, 0, Math.PI * 2);
+    c.arc(b.x, b.y, attorno, 0, Math.PI * 2);
+    c.stroke();
+
+    if (tipo === 'carro') this.carroArmato(b, suo);
+    else {
+      this.omino(b.x, b.y, b.a, { corpo: suo.colore, arma: 'lunga', scala: suo.scala });
+      if (tipo === 'mitragliere') this.armaMontata(b, suo);
+    }
+
+    barra(c, b.x - 30, b.y - suo.raggio - 16, 60, 6, b.v / Math.max(1, b.vp), COLORI.critico);
+  }
+
+  /**
+   * Il carro: scafo, due cingoli e una torretta con la canna lunga. Visto
+   * dall'alto e' una scatola con dei denti sui fianchi, ed e' abbastanza —
+   * nessuno ha mai avuto dubbi su cosa fosse una scatola con i cingoli.
+   */
+  carroArmato(b, suo) {
+    const c = this.ctx;
+    c.save();
+    c.translate(b.x, b.y);
+    c.rotate(b.a);
+
+    // I cingoli, con le maglie: sono loro a dire che quella cosa e' cingolata.
+    c.fillStyle = scurisci(suo.colore, 0.32);
+    stondato(c, -21, -23, 42, 10, 3);
     c.fill();
-    c.fillStyle = scurisci(BOSS.colore, 0.55);
+    stondato(c, -21, 13, 42, 10, 3);
+    c.fill();
+    c.strokeStyle = 'rgba(5,7,12,0.55)';
+    c.lineWidth = 1;
     c.beginPath();
-    c.arc(b.x + Math.cos(b.a) * 10, b.y + Math.sin(b.a) * 10, 8, 0, Math.PI * 2);
+    for (let x = -17; x <= 17; x += 6) {
+      c.moveTo(x, -22);
+      c.lineTo(x, -14);
+      c.moveTo(x, 14);
+      c.lineTo(x, 22);
+    }
+    c.stroke();
+
+    // Lo scafo.
+    c.fillStyle = suo.colore;
+    c.strokeStyle = 'rgba(5,7,12,0.7)';
+    c.lineWidth = 1.4;
+    stondato(c, -20, -14, 40, 28, 5);
+    c.fill();
+    c.stroke();
+
+    // La torretta, arretrata, e la canna che esce davanti.
+    c.fillStyle = '#0e121a';
+    c.fillRect(4, -3.2, 30, 6.4);
+    c.fillRect(30, -4.6, 4, 9.2); // il freno di bocca
+    c.fillStyle = scurisci(suo.colore, 0.62);
+    c.beginPath();
+    c.arc(-2, 0, 11.5, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+    c.fillStyle = scurisci(suo.colore, 1.25);
+    c.beginPath();
+    c.arc(-6, -4, 2.4, 0, Math.PI * 2);
     c.fill();
 
-    barra(c, b.x - 30, b.y - BOSS.raggio - 14, 60, 6, b.v / Math.max(1, b.vp), COLORI.critico);
+    c.restore();
+  }
+
+  /**
+   * L'arma montata del mitragliere: canna corta e grossa sopra quella
+   * dell'omino, cassa dei colpi e bipiede. Corta perche' la sua gittata E'
+   * corta — la sagoma dice da sola dove finisce il pericolo.
+   */
+  armaMontata(b, suo) {
+    const c = this.ctx;
+    c.save();
+    c.translate(b.x, b.y);
+    c.rotate(b.a);
+
+    // La canna in acciaio CHIARO, non nera come quella degli scagnozzi: e'
+    // questa la cosa che distingue il mitragliere dal bruto, e una canna nera
+    // su fondo nero non distingue niente. Corta e grossa, come la sua gittata.
+    c.fillStyle = '#7b8698';
+    stondato(c, 8, 2, 23, 7, 2.5);
+    c.fill();
+    c.fillStyle = '#39414f';
+    c.fillRect(29, 0.5, 4.5, 10); // il freno di bocca
+
+    // La cassa dei colpi appesa di lato, col nastro che entra nell'arma.
+    c.fillStyle = scurisci(suo.colore, 0.5);
+    c.strokeStyle = 'rgba(5,7,12,0.7)';
+    c.lineWidth = 1;
+    stondato(c, 11, -5, 12, 8, 2);
+    c.fill();
+    c.stroke();
+    c.strokeStyle = '#c8a86a';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(17, 3);
+    c.lineTo(17, 1);
+    c.stroke();
+
+    // E il bipiede sotto la volata.
+    c.strokeStyle = '#5a6478';
+    c.lineWidth = 1.6;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(24, 8.5);
+    c.lineTo(28, 13);
+    c.moveTo(24, 8.5);
+    c.lineTo(20, 13);
+    c.stroke();
+    c.lineCap = 'butt';
+
+    c.restore();
   }
 
   /**
@@ -1279,10 +1413,20 @@ export class Disegno {
  * l'asimmetria a far leggere "persona che tiene qualcosa" — con le braccia
  * simmetriche viene fuori un imbuto senza direzione.
  */
-export function disegnaOmino(c, x, y, angolo, { corpo, arma = 'corta', alpha = 1, aTerra = false }) {
+/**
+ * `scala` serve ai bossi: due di loro SONO uno scagnozzo, disegnato due volte
+ * piu' grande. Ridisegnarli a mano avrebbe voluto dire due sagome che si
+ * assomigliano ma non si somigliano, e la somiglianza qui e' il punto — chi
+ * vede il grosso deve capire in mezzo secondo che e' la stessa cosa di prima,
+ * solo che stavolta non muore.
+ */
+export function disegnaOmino(
+  c, x, y, angolo, { corpo, arma = 'corta', alpha = 1, aTerra = false, scala = 1 },
+) {
   c.save();
   c.translate(x, y);
   c.rotate(angolo);
+  if (scala !== 1) c.scale(scala, scala);
   c.globalAlpha = alpha;
 
   if (aTerra) {

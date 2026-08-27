@@ -221,6 +221,23 @@
         background: #0c1017; color: #98a3bd;
         border: 1px solid #232d41; border-radius: 8px;
       }
+      /* PROVA BOSS (temporaneo): tratteggiato, cosi' si vede che non e' del
+         gioco ma di chi lo sta facendo. Sta sotto la figura, dove c'era il
+         vuoto. */
+      #provaBoss {
+        margin: 10px 0 0;
+        width: 100%;
+        padding: 9px 10px;
+        border-radius: 10px;
+        border: 1px dashed #5c4a2e;
+        background: rgba(255,198,92,0.06);
+        color: #ffc65c;
+        font: 600 12px/1.3 ui-monospace, Consolas, monospace;
+        letter-spacing: 1px;
+        cursor: pointer;
+      }
+      #provaBoss:active { background: rgba(255,198,92,0.16); }
+
       #menuPiede button {
         font: inherit; font-size: 13px; font-weight: 600;
         padding: 7px 14px; border: 0; border-radius: 8px;
@@ -448,6 +465,10 @@
                     font-size="17" font-weight="700" letter-spacing="7"
                     fill="#dfe6f5" opacity="0.72">ECO NERA</text>
             </svg>
+
+            <!-- PROVA BOSS (temporaneo): si toglie insieme a tutto il resto
+                 che porta questa scritta. -->
+            <button id="provaBoss" type="button">PROVA BOSS · BRUTO</button>
           </div>
         </div>
 

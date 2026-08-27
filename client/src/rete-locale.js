@@ -33,6 +33,9 @@ export class ReteLocale extends Rete {
     this.ping = 0;
     this.stato = 'menu';
     this.collegamento = 'aperto'; // il server e' qui dentro: c'e' sempre
+    // PROVA BOSS (temporaneo): se c'e', la prossima entrata butta via il
+    // mondo di prima e ne fa uno che e' tutto stanze del boss.
+    this.provaBoss = null;
   }
 
   /** Niente da collegare: si va dritti al menu. */
@@ -49,6 +52,15 @@ export class ReteLocale extends Rete {
   entra(classe, solo = true) {
     this.classe = classe;
     this.solo = true; // fuori casa si gioca da soli per definizione
+    // PROVA BOSS (temporaneo): mondo nuovo, e da qui in poi ogni settore e'
+    // una stanza del boss, girando i tre tipi. Cosi' si esce da uno e si
+    // entra nel successivo senza rifarsi la campagna ogni volta.
+    if (this.provaBoss) {
+      this.mondo = new Mondo(this.difficolta);
+      this.mondo.soloBoss = true;
+      this.mondo.nuovoSettore(this.provaBoss.settore, 'boss', this.provaBoss.tipo);
+      this.provaBoss = null;
+    }
     if (!this.mondo) this.mondo = new Mondo(this.difficolta);
 
     const g = this.mondo.entra('telefono', null, classe, true);

@@ -59,6 +59,9 @@ import {
   DIFFICOLTA,
   CONVOGLIO,
   BOSS,
+  regoleBoss,
+  tipoBossDelSettore,
+  bossDopo,
   ARENA,
   regoleSurvival,
   SURVIVAL,
@@ -114,11 +117,16 @@ export class Mondo {
    * accendere e si torna indietro — e tornare indietro non e' una formalita',
    * perche' nel frattempo la mappa si e' svegliata.
    */
-  nuovoSettore(numero, modalita = null) {
+  nuovoSettore(numero, modalita = null, tipoBoss = null) {
     this.settore = numero;
     // La modalita' si puo' imporre — serve alle prove, che devono poter
     // guardare una missione per volta senza aspettare il suo turno.
-    this.modalita = modalita ?? modalitaDelSettore(numero);
+    this.modalita = modalita ?? (this.soloBoss ? 'boss' : modalitaDelSettore(numero));
+    // E anche QUALE boss. Nella campagna lo decide il settore; con
+    // `soloBoss` acceso — la prova dei bossi in fila — si gira al successivo
+    // a ogni stanza, cosi' tre uscite di seguito li fanno vedere tutti e tre.
+    this.tipoBoss =
+      tipoBoss ?? (this.soloBoss ? bossDopo(this.tipoBoss ?? null) : tipoBossDelSettore(numero));
     this.mappa =
       this.modalita === 'boss'
         ? generaArena(Date.now() + numero * 7717, numero)
@@ -158,7 +166,7 @@ export class Mondo {
     if (this.modalita === 'bomba') this.preparaBomba(numero, lontane);
     else if (this.modalita === 'dominio') this.preparaDominio(numero, lontane);
     else if (this.modalita === 'convoglio') this.preparaConvoglio(numero, lontane, ingresso);
-    else if (this.modalita === 'boss') this.preparaBoss(numero);
+    else if (this.modalita === 'boss') this.preparaBoss(numero, this.tipoBoss);
     else this.preparaSabotaggio(numero, lontane);
 
     // Le casse vanno nelle stanze di mezzo: non all'ingresso, dove non
@@ -476,40 +484,59 @@ export class Mondo {
    * munizioni. Chi arriva all'arena ci arriva consumato ma pieno, che e'
    * esattamente lo stato in cui una stanza del boss vuole trovarti.
    */
-  preparaBoss(numero) {
+  preparaBoss(numero, tipo = null) {
     const a = this.mappa.arena;
     const c = this.mappa.arena.centro;
     const posto = centroCasella(this.mappa, c.tx, c.ty);
+    const quale = tipo ?? tipoBossDelSettore(numero);
+    const suo = regoleBoss(quale);
+    const vita = Math.round((BOSS.vitaBase + (numero - 1) * BOSS.vitaPerSettore) * suo.vita);
 
     this.boss = {
       id: -1,
+      tipo: quale,
       x: posto.x,
       y: posto.y,
       ang: Math.PI,
-      vita: BOSS.vitaBase + (numero - 1) * BOSS.vitaPerSettore,
-      vitaPiena: BOSS.vitaBase + (numero - 1) * BOSS.vitaPerSettore,
+      vita,
+      vitaPiena: vita,
       ricarica: 0,
       prossimoScagnozzo: BOSS.scagnozzi,
     };
     this.porteAperte = false;
 
     // I ripari del corridoio: gli stessi dell'Assalto, ma sono loro ad averli.
-    // Non e' un dettaglio di scenografia — obbligano ad aggirare invece di
-    // avanzare dritto, che e' l'unica cosa che rende largo un corridoio largo.
+    //
+    // Stanno DI TRAVERSO alla marcia, non lungo di essa. Erano paralleli al
+    // corridoio, e un muretto parallelo alla strada non ripara da niente:
+    // copre dai fianchi, e nel corridoio dai fianchi ci sono le pareti. Di
+    // traverso invece coprono da cio' che spara IN FONDO, che e' l'unica cosa
+    // che spara — e allora il corridoio si risale a sbalzi, da un riparo al
+    // successivo, invece che camminando dritti sotto il fuoco.
+    //
+    // Ognuno e' fatto di due pezzi attaccati a una parete, uno per volta a
+    // destra e a sinistra: uno solo sarebbe un moncone di due caselle in un
+    // corridoio largo nove, cioe' niente da aggirare e niente dietro cui
+    // stare.
     const co = a.corridoio;
-    for (let k = 0; k < (a.quantiRipari ?? ARENA.ripariNelCorridoio); k++) {
-      const tx = co.x + Math.floor(((k + 1) / ((a.quantiRipari ?? ARENA.ripariNelCorridoio) + 1)) * co.w);
-      const ty = co.y + (k % 2 === 0 ? 2 : co.h - 3);
-      const p = centroCasella(this.mappa, tx, ty);
-      this.ripari.push({
-        id: this.prossimoRiparo++,
-        x: p.x,
-        y: p.y,
-        ang: Math.PI / 2,
-        vita: RIPARO.vita,
-        resta: Infinity, // sono dello scenario: non si consumano da soli
-        padrone: -1, // di nessuno: fermano i colpi dei nemici come i vostri
-      });
+    const quanti = a.quantiRipari ?? ARENA.ripariNelCorridoio;
+    for (let k = 0; k < quanti; k++) {
+      const tx = co.x + Math.floor(((k + 1) / (quanti + 1)) * co.w);
+      const x = (tx + 0.5) * TILE;
+      const dallAlto = k % 2 === 0;
+      const parete = dallAlto ? co.y * TILE : (co.y + co.h) * TILE;
+      for (const passo of [1, 3]) {
+        const y = parete + (dallAlto ? 1 : -1) * passo * RIPARO.mezzaLunghezza;
+        this.ripari.push({
+          id: this.prossimoRiparo++,
+          x,
+          y,
+          ang: 0, // la faccia guarda in fondo al corridoio: il muro sta di traverso
+          vita: RIPARO.vita,
+          resta: Infinity, // sono dello scenario: non si consumano da soli
+          padrone: -1, // di nessuno: fermano i colpi dei nemici come i vostri
+        });
+      }
     }
 
     // La cassa in fondo al corridoio, prima di entrare.
@@ -1245,6 +1272,7 @@ export class Mondo {
   passoBoss(dt, vivi) {
     const b = this.boss;
     if (!b) return;
+    const suo = regoleBoss(b.tipo);
 
     if (b.vita <= 0) {
       if (!this.porteAperte) {
@@ -1270,16 +1298,26 @@ export class Mondo {
     }
     if (preda) {
       const versoLaPreda = Math.atan2(preda.y - b.y, preda.x - b.x);
-      b.ang = angolo(b.ang, versoLaPreda, dt * 2.2);
+      b.ang = angolo(b.ang, versoLaPreda, dt * suo.giro);
       const quanto = quantoLontano;
-      if (quanto > BOSS.raggio + 40) {
-        muovi(b, Math.cos(b.ang), Math.sin(b.ang), dt, this.mappa, BOSS.velocita);
+      if (quanto > suo.raggio + 40) {
+        muovi(b, Math.cos(b.ang), Math.sin(b.ang), dt, this.mappa, suo.velocita);
       }
       b.ricarica -= dt;
-      if (b.ricarica <= 0 && quanto <= BOSS.gittata && lineaLibera(this.mappa, b.x, b.y, preda.x, preda.y)) {
-        b.ricarica = BOSS.cadenza;
+      if (b.ricarica <= 0 && quanto <= suo.gittata && lineaLibera(this.mappa, b.x, b.y, preda.x, preda.y)) {
+        // Il resto si porta avanti invece di buttarlo. Azzerando, una cadenza
+        // che non cade esatta su un tick si arrotonda sempre per ECCESSO: il
+        // mitragliere dichiarava 0,30 e sparava ogni 0,35: il diciassette per
+        // cento piu' piano di quanto c'era scritto. Numeri che mentono di poco
+        // sono i peggiori, perche' nessuno li va a controllare.
+        b.ricarica += suo.cadenza;
+        // Ma dopo una lunga attesa fuori gittata il conto e' molto sotto zero,
+        // e riportarlo avanti a pezzetti vorrebbe dire una raffica di
+        // benvenuto appena si rimette la testa fuori.
+        if (b.ricarica <= 0) b.ricarica = suo.cadenza;
         this.proiettili.push(
-          creaColpo(-1, b.x, b.y, b.ang, BOSS.danno * this.regole().danno, BOSS.gittata, BOSS.velocitaColpo, true),
+          creaColpo(-1, b.x, b.y, b.ang, suo.danno * this.regole().danno, suo.gittata,
+                    suo.velocitaColpo, true, suo.raggioColpo),
         );
         this.rumori.emetti('sparoNemico', b.x, b.y, -1, 20);
       }
@@ -1685,10 +1723,13 @@ export class Mondo {
   /** Chi c'e' sulla traiettoria del colpo. Torna vero se ha centrato qualcosa. */
   chiHoColpito(c) {
     if (c.daNemico) {
+      // Un colpo grosso prende grosso: la granata del carro e' larga nove
+      // pixel, e schivarla per due non deve voler dire schivarla.
+      const largo = CORPO + (c.raggio ?? 0);
       for (const g of this.giocatori.values()) {
         if (g.stato === STATO.MORTO) continue;
         if (!g.online && !g.bot) continue;
-        if (Math.abs(c.x - g.x) > CORPO || Math.abs(c.y - g.y) > CORPO) continue;
+        if (Math.abs(c.x - g.x) > largo || Math.abs(c.y - g.y) > largo) continue;
         this.ferisci(g, c.danno);
         return true;
       }
@@ -1698,7 +1739,8 @@ export class Mondo {
     // Il boss per primo: e' grosso, e i colpi che gli finiscono addosso non
     // devono passargli attraverso per andare a prendere lo scagnozzo dietro.
     const b = this.boss;
-    if (b && b.vita > 0 && Math.abs(c.x - b.x) <= BOSS.raggio && Math.abs(c.y - b.y) <= BOSS.raggio) {
+    const grosso = b ? regoleBoss(b.tipo).raggio : 0;
+    if (b && b.vita > 0 && Math.abs(c.x - b.x) <= grosso && Math.abs(c.y - b.y) <= grosso) {
       b.vita -= c.danno;
       if (b.vita <= 0) console.log('Il boss e a terra.');
       return true;
@@ -2163,12 +2205,19 @@ export class Mondo {
       return uno;
     });
 
-    const c = this.proiettili.map((p) => ({
-      i: p.id,
-      x: Math.round(p.x),
-      y: Math.round(p.y),
-      e: p.daNemico ? 1 : 0,
-    }));
+    const c = this.proiettili.map((p) => {
+      const uno = {
+        i: p.id,
+        x: Math.round(p.x),
+        y: Math.round(p.y),
+        e: p.daNemico ? 1 : 0,
+      };
+      // Solo la granata del carro porta il raggio: sugli altri sarebbe un
+      // campo in piu' su ogni colpo di ogni raffica, e i colpi sono la cosa
+      // piu' numerosa che passa per la rete.
+      if (p.raggio) uno.g = p.raggio;
+      return uno;
+    });
 
     // I kit fanno anche un po' di luce: uno da terra si deve poter trovare
     // al buio, altrimenti lasciarlo dietro non serve a niente.
@@ -2253,6 +2302,9 @@ export class Mondo {
         a: Math.round(this.boss.ang * 100) / 100,
         v: Math.max(0, Math.round(this.boss.vita)),
         vp: this.boss.vitaPiena,
+        // Quale dei tre: senza, il telefono disegnerebbe sempre il primo, e i
+        // tre bossi si distinguono soprattutto guardandoli.
+        tp: this.boss.tipo,
       };
     }
     // Le porte servono alla PREVISIONE, non solo al disegno: il telefono deve

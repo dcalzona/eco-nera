@@ -621,16 +621,43 @@ andare a cercare qualcosa. Qui la missione e' un'altra.
 ```
 
 Si risale un corridoio largo nove caselle con nemici sparsi, alcuni **dietro un
-riparo** come quello dell'Assalto — obbligano ad aggirare invece di avanzare
-dritto, che e' l'unica cosa che rende largo un corridoio largo. In fondo una
-cassa di munizioni: chi arriva all'arena ci arriva consumato ma pieno, che e'
-esattamente lo stato in cui una stanza del boss vuole trovarti.
+riparo** come quello dell'Assalto. I ripari stanno **di traverso alla marcia**,
+attaccati a una parete e poi all'altra: un muretto parallelo al corridoio non
+ripara da niente — copre dai fianchi, e nel corridoio dai fianchi ci sono le
+pareti. Di traverso invece coprono da cio' che spara in fondo, che e' l'unica
+cosa che spara, e il corridoio si risale a sbalzi da un riparo al successivo
+invece che camminando dritti sotto il fuoco. In fondo una cassa di munizioni:
+chi arriva all'arena ci arriva consumato ma pieno, che e' esattamente lo stato
+in cui una stanza del boss vuole trovarti.
 
-Il boss e' lento di proposito. Se corresse sarebbe solo un pattugliatore
-gonfiato; cosi' invece bisogna decidere se stargli davanti per colpirlo o
-girargli attorno per uscire dal cono, e intanto gli scagnozzi arrivano dalle
-porte alle sue spalle. La sua vita cresce col settore: 780 al quinto, 1680 al
-quindicesimo — quindici colpi di Sniper, con trenta in tutto.
+### I tre bossi
+
+Il boss era **uno solo**, ed era un cerchio arancione che avanzava sparando:
+una forma che nel gioco non esiste, disegnata al posto di quella che esiste.
+Adesso sono tre, e tutti e tre partono dall'unico nemico che si conosce — il
+pattugliatore — grosso il doppio.
+
+| | com'e' fatto | come si batte |
+|---|---|---|
+| **bruto** | lo scagnozzo identico, il doppio piu' grande: 1,15 s, 11 danni, 240 px | come un nemico normale, solo che quello non muore |
+| **carro** | corazzato, 2,8 s, 34 danni, granata larga 9 px a 300 px/s | muovendosi: fermo gli si regala il bersaglio, e la torretta gira piano |
+| **mitragliere** | l'arma montata: 0,3 s, 6 danni, ma **165 px** di gittata | alla distanza giusta — dentro non si sopravvive, fuori non ti tocca |
+
+La granata del carro **prende** larga quanto si vede: il raggio viaggia col
+colpo dal mondo fino allo schermo. Un proiettile disegnato grosso e sottile nei
+fatti sarebbe una bugia — si vedrebbe passare addosso senza che succeda niente.
+
+Nella campagna si girano in ordine, non a caso: quinto settore il bruto, decimo
+il carro, quindicesimo il mitragliere. In ordine perche' i tre non sono
+equivalenti — il bruto insegna che il boss e' uno scagnozzo che non muore, il
+carro insegna a muoversi, il mitragliere insegna la distanza.
+
+Il boss e' lento di proposito (il carro lentissimo). Se corresse sarebbe solo un
+pattugliatore gonfiato; cosi' invece bisogna decidere se stargli davanti per
+colpirlo o girargli attorno per uscire dal cono, e intanto gli scagnozzi
+arrivano dalle porte alle sue spalle. La sua vita cresce col settore: 780 al
+quinto per il bruto, e il carro incassa un terzo in piu' mentre il mitragliere
+un sesto in meno.
 
 **Le porte non sono un muro nella mappa, sono una regola**, e la regola sta in
 `condiviso/fisica.js` insieme al rallentamento dei ripari. Non e' un dettaglio:
